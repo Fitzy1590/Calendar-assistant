@@ -56,3 +56,7 @@ export function WeatherIcon({ sky, size = 22, night }: { sky: Sky; size?: number
     case "storm": return <S size={size}>{cloud(-4)}<path d="m13 15-2.5 4h3L11 23" /></S>;
   }
 }
+export const INote = (p: P) => <S {...p}><path d="M5 4h14v10l-6 6H5z" /><path d="M13 20v-6h6M8.5 8.5h7M8.5 12h4" /></S>;
+export const IPinNote = ({ filled, ...p }: P & { filled?: boolean }) => <S {...p}><path d="M9 4h6l-1 5 3 3v1H7v-1l3-3zM12 13v7" fill={filled ? "currentColor" : "none"} /></S>;
+export const IArchive = (p: P) => <S {...p}><rect x="3.5" y="4.5" width="17" height="4" rx="1" /><path d="M5 8.5v10h14v-10M10 12.5h4" /></S>;
+export const IPalette = (p: P) => <S {...p}><path d="M12 3.5a8.5 8.5 0 1 0 0 17c1.2 0 1.6-1 1-1.9-.7-1 .1-2.1 1.2-2.1H17a3.5 3.5 0 0 0 3.5-3.5c0-5.3-3.8-9.5-8.5-9.5z" /><circle cx="8" cy="11" r="1" /><circle cx="11" cy="7.5" r="1" /><circle cx="15.5" cy="8.5" r="1" /></S>;

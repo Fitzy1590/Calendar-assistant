@@ -57,19 +57,33 @@ export interface Contact extends Synced {
   favourite?: boolean;
 }
 
+export type NoteColor = "yellow" | "mint" | "sky" | "rose" | "lilac" | "sand";
+
+export interface Note extends Synced {
+  title: string;
+  body: string; // plain text; lines starting "[ ] " / "[x] " render as checkboxes
+  color: NoteColor;
+  pinned?: boolean;
+  archived?: boolean;
+  order: number; // manual sort position on the board
+  tags?: string[];
+}
+
 export interface Feedback extends Synced {
   kind: "idea" | "bug" | "praise";
   text: string;
 }
 
-export type CollectionName = "events" | "tasks" | "contacts" | "feedback";
+export type CollectionName = "events" | "tasks" | "contacts" | "notes" | "feedback";
 export type RecordOf<C extends CollectionName> = C extends "events"
   ? CalEvent
   : C extends "tasks"
     ? Task
     : C extends "contacts"
       ? Contact
-      : Feedback;
+      : C extends "notes"
+        ? Note
+        : Feedback;
 
 export interface Place {
   name: string; // suburb / locality
@@ -95,13 +109,14 @@ export type PageId =
   | "calendar"
   | "tasks"
   | "contacts"
+  | "notes"
   | "reminders"
   | "news"
   | "sports"
   | "settings";
 
 export interface HomeWidget {
-  id: "weather" | "clock" | "minical" | "agenda" | "tasks" | "birthdays" | "headlines" | "sports" | "localEvents";
+  id: "weather" | "clock" | "minical" | "agenda" | "tasks" | "birthdays" | "headlines" | "sports" | "localEvents" | "notes";
   visible: boolean;
 }
 
@@ -140,6 +155,16 @@ export interface Settings {
   phone: {
     route: "companion" | "phonelink"; // how the Windows app reaches the Android phone
   };
+  voice: {
+    wakeWord: boolean; // listen for the wake word while the app is open
+    engine: "picovoice" | "browser"; // on-device (Picovoice) or the browser's speech service
+    picovoiceKey: string; // free AccessKey from console.picovoice.ai; kept out of backups
+    keyword: string; // "custom" or a built-in keyword name
+    customKeyword?: { label: string; base64: string }; // "Hey Planner" .ppn trained in Picovoice Console
+    sensitivity: number;
+    chime: boolean;
+    closeToTray: boolean; // Windows: keep running (and listening) in the tray when the window is closed
+  };
   assistant: {
     provider: "local" | "claude";
     apiKey: string;
@@ -147,7 +172,9 @@ export interface Settings {
     speakReplies: boolean;
   };
   email: {
-    googleClientId: string;
+    googleClientId: string; // "Web application" client: browser / dev builds
+    googleDesktopClientId: string; // "Desktop app" client: installed Windows app (loopback sign-in)
+    googleDesktopClientSecret: string; // Google treats desktop secrets as non-confidential; still kept out of backups
     microsoftClientId: string;
   };
   localEventsApiKey: string; // Ticketmaster Discovery key (optional)
@@ -168,6 +195,7 @@ export interface Settings {
     calendar: { view: "day" | "week" | "month" | "year"; showTasks: boolean; dayStartHour: number };
     tasks: { showDone: boolean; groupBy: "day" | "priority" };
     news: { layout: "list" | "cards"; showImages: boolean };
+    notes: { layout: "board" | "list"; size: "s" | "m" | "l"; showArchived: boolean };
     sports: { resultsCount: number };
   };
 }

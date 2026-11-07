@@ -58,3 +58,14 @@ describe("relative words", () => {
     expect(parseWhen("pay rates yesterday", now).date?.getDate()).toBe(6);
   });
 });
+
+import { toggleLine, tagsOf } from "./notes";
+describe("notes helpers", () => {
+  it("toggles checklist lines", () => {
+    expect(toggleLine("Shop\n[ ] milk\n[x] eggs", 1)).toBe("Shop\n[x] milk\n[x] eggs");
+    expect(toggleLine("- [x] bread", 0)).toBe("- [ ] bread");
+  });
+  it("collects #tags", () => {
+    expect(tagsOf({ title: "Trip", body: "Pack #holiday and #Kids stuff" })).toEqual(["holiday", "kids"]);
+  });
+});

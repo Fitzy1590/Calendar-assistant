@@ -55,14 +55,9 @@ const redirectUri = () => `${location.origin}/oauth.html`;
 
 /* ---------- Gmail ---------- */
 
-export async function scanGmail(clientId: string): Promise<Candidate[]> {
-  const auth = await popupAuth(
-    `https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(clientId)}` +
-      `&redirect_uri=${encodeURIComponent(redirectUri())}&response_type=token&prompt=select_account` +
-      `&scope=${encodeURIComponent("https://www.googleapis.com/auth/gmail.readonly")}`,
-  );
-  const token = new URLSearchParams(auth.hash.slice(1)).get("access_token");
-  if (!token) throw new Error("Google sign-in did not return a token");
+export async function scanGmail(): Promise<Candidate[]> {
+  const { googleToken, SCOPES } = await import("./google");
+  const token = await googleToken([SCOPES.gmail]);
   const H = { Authorization: `Bearer ${token}` };
   const list = await (
     await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=40&q=${encodeURIComponent(`newer_than:45d ${KEYWORDS}`)}`, { headers: H })

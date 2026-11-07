@@ -31,23 +31,25 @@ export const DEFAULT_SETTINGS: Settings = {
   sync: { enabled: false, serverUrl: "", pairingCode: pairingCode(), deviceName: "" },
   phone: { route: "companion" },
   assistant: { provider: "local", apiKey: "", voiceLang: "en-AU", speakReplies: false },
-  email: { googleClientId: "", microsoftClientId: "" },
+  email: { googleClientId: "", googleDesktopClientId: "", googleDesktopClientSecret: "", microsoftClientId: "" },
+  voice: { wakeWord: false, engine: "picovoice", picovoiceKey: "", keyword: "custom", sensitivity: 0.6, chime: true, closeToTray: true },
   localEventsApiKey: "",
   google: { calendarSync: false, calendarId: "primary", driveBackup: false },
   backup: { autoLocal: true },
-  sidebar: (["home", "calendar", "tasks", "reminders", "contacts", "news", "sports", "settings"] as PageId[]).map((id) => ({
+  sidebar: (["home", "calendar", "tasks", "notes", "reminders", "contacts", "news", "sports", "settings"] as PageId[]).map((id) => ({
     id,
     visible: true,
   })),
   pages: {
     home: {
-      widgets: (["weather", "clock", "minical", "agenda", "tasks", "localEvents", "birthdays", "headlines", "sports"] as const).map(
+      widgets: (["weather", "clock", "minical", "agenda", "tasks", "notes", "localEvents", "birthdays", "headlines", "sports"] as const).map(
         (id) => ({ id, visible: true }),
       ),
     },
     calendar: { view: "week", showTasks: true, dayStartHour: 7 },
     tasks: { showDone: false, groupBy: "day" },
     news: { layout: "list", showImages: false },
+    notes: { layout: "board", size: "m", showArchived: false },
     sports: { resultsCount: 5 },
   },
 };
@@ -62,6 +64,7 @@ interface State {
   events: Coll<"events">;
   tasks: Coll<"tasks">;
   contacts: Coll<"contacts">;
+  notes: Coll<"notes">;
   feedback: Coll<"feedback">;
   dismissedReminders: Record<string, number>; // reminder key -> dismissed at
   snoozedReminders: Record<string, number>; // reminder key -> snoozed until
@@ -103,6 +106,7 @@ export const useStore = create<State>()(
       events: {},
       tasks: {},
       contacts: {},
+      notes: {},
       feedback: {},
       dismissedReminders: {},
       snoozedReminders: {},
@@ -165,6 +169,7 @@ export const useStore = create<State>()(
         events: s.events,
         tasks: s.tasks,
         contacts: s.contacts,
+        notes: s.notes,
         feedback: s.feedback,
         dismissedReminders: s.dismissedReminders,
         snoozedReminders: s.snoozedReminders,
@@ -174,11 +179,12 @@ export const useStore = create<State>()(
       // new settings keys added in later versions get their defaults
       merge: (persisted, current) => {
         const p = persisted as Partial<State>;
-        return {
-          ...current,
-          ...p,
-          settings: deepMerge(DEFAULT_SETTINGS, p.settings ?? {}) as Settings,
-        };
+        const settings = deepMerge(DEFAULT_SETTINGS, p.settings ?? {}) as Settings;
+        // pages and widgets added in later versions are appended to saved lists
+        for (const d of DEFAULT_SETTINGS.sidebar) if (!settings.sidebar.some((x) => x.id === d.id)) settings.sidebar.splice(-1, 0, { ...d });
+        for (const d of DEFAULT_SETTINGS.pages.home.widgets)
+          if (!settings.pages.home.widgets.some((x) => x.id === d.id)) settings.pages.home.widgets.push({ ...d });
+        return { ...current, ...p, notes: p.notes ?? {}, settings };
       },
     },
   ),

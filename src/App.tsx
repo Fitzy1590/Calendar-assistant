@@ -15,13 +15,14 @@ import { Reminders } from "./pages/Reminders";
 import { News } from "./pages/News";
 import { Sports } from "./pages/Sports";
 import { Settings } from "./pages/Settings";
+import { Notes } from "./pages/Notes";
 import { Wizard } from "./pages/Wizard";
 import { dueNow } from "./lib/reminders";
 import { notify } from "./lib/platform";
 import { dailyBackups } from "./lib/backup";
-import { googleConnected, SCOPES, syncGoogleCalendar } from "./lib/google";
+import { googleConnected, quietly, SCOPES, syncGoogleCalendar } from "./lib/google";
 
-const PAGES = { home: Home, calendar: Calendar, tasks: Tasks, contacts: Contacts, reminders: Reminders, news: News, sports: Sports, settings: Settings };
+const PAGES = { home: Home, calendar: Calendar, tasks: Tasks, notes: Notes, contacts: Contacts, reminders: Reminders, news: News, sports: Sports, settings: Settings };
 
 function useTheme() {
   const { theme, accent, density, fontScale } = useStore((s) => s.settings);
@@ -51,7 +52,7 @@ function useBackground() {
     };
     const tickSync = () => {
       const g = useStore.getState().settings.google;
-      if (g.calendarSync && googleConnected(SCOPES.calendar)) syncGoogleCalendar().catch(() => {});
+      if (g.calendarSync && googleConnected(SCOPES.calendar)) quietly(syncGoogleCalendar).catch(() => {});
       dailyBackups();
     };
     tickReminders();

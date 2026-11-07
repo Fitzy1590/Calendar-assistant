@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import { toast, useStore } from "../store";
 import { crossConflicts, extract, parseIcs, scanGmail, scanOutlook, type Candidate } from "../lib/email";
 import { localIso } from "../lib/util";
-import { importGoogleCalendar } from "../lib/google";
+import { googleConfigured, googleSignInAvailable, importGoogleCalendar } from "../lib/google";
 import { Modal } from "./ui";
 import { IMail } from "./Icons";
 
@@ -44,7 +44,8 @@ export function EmailImport() {
     toast(`Added ${selected.length} event${selected.length === 1 ? "" : "s"}`);
     close();
   };
-  const { googleClientId: g, microsoftClientId: m } = s.settings.email;
+  const g = googleSignInAvailable() && googleConfigured();
+  const { microsoftClientId: m } = s.settings.email;
 
   return (
     <Modal title="Import events: email & Google Calendar" onClose={close} wide footer={<>
@@ -53,7 +54,7 @@ export function EmailImport() {
       <button className="btn primary" disabled={!selected.length} onClick={importNow}>Add to calendar</button>
     </>}>
       <div className="row">
-        <button className="btn" disabled={!g || !!busy} onClick={() => run("Gmail", () => scanGmail(g))}><IMail /> Scan Gmail</button>
+        <button className="btn" disabled={!g || !!busy} onClick={() => run("Gmail", scanGmail)}><IMail /> Scan Gmail</button>
         <button className="btn" disabled={!m || !!busy} onClick={() => run("Outlook", () => scanOutlook(m))}><IMail /> Scan Outlook / Microsoft 365</button>
         <button className="btn" disabled={!g || !!busy} onClick={() => run("Google Calendar", importGoogleCalendar)}>Import Google Calendar</button>
         <label className="btn">Import .ics file<input type="file" accept=".ics,text/calendar" hidden onChange={async (e) => {
@@ -62,7 +63,8 @@ export function EmailImport() {
         }} /></label>
         {busy && <span className="muted">Scanning {busy}…</span>}
       </div>
-      {(!g || !m) && <div className="faint" style={{ fontSize: 12.5 }}>To scan a mailbox, add your Google and/or Microsoft client ID in Settings → Email. Mail is read on this device only.</div>}
+      {!googleSignInAvailable() && <div className="faint" style={{ fontSize: 12.5 }}>Gmail and Google Calendar import run from the Windows app; what you add there syncs to this phone.</div>}
+      {googleSignInAvailable() && (!g || !m) && <div className="faint" style={{ fontSize: 12.5 }}>To scan a mailbox, add your Google and/or Microsoft client ID in Settings → Email, Google & Outlook. Mail is read on this device only.</div>}
       <details>
         <summary className="muted" style={{ cursor: "pointer" }}>Or paste an email</summary>
         <textarea className="input" rows={4} value={paste} onChange={(e) => setPaste(e.target.value)} placeholder="Paste a booking confirmation or invite…" style={{ marginTop: 8 }} />

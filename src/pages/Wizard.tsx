@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from "react";
 import { toast, useStore } from "../store";
 import { restoreBackup } from "../lib/backup";
-import { restoreFromDrive } from "../lib/google";
+import { googleConfigured, googleSignInAvailable, restoreFromDrive } from "../lib/google";
 import { AssistantSetup, FormatPicker, GoogleSetup, LocationPicker, NewsPicker, RemindersPicker, SyncSetup, ThemePicker } from "../components/SetupParts";
 import { FollowPanel } from "./Sports";
 
@@ -98,7 +98,7 @@ function Welcome() {
       <div className="muted">Already used Calendar Assistant? Restore your data and settings instead of starting fresh:</div>
       <div className="row">
         <label className="btn">Restore from backup file<input type="file" accept=".json" hidden onChange={(e) => e.target.files?.[0] && restoreFile(e.target.files[0])} /></label>
-        <button className="btn" disabled={busy || !s.settings.email.googleClientId} title={!s.settings.email.googleClientId ? "Needs a Google client ID (Google step)" : ""} onClick={async () => {
+        <button className="btn" hidden={!googleSignInAvailable()} disabled={busy || !googleConfigured()} title={!googleConfigured() ? "Add your Google client ID in the Google step first" : ""} onClick={async () => {
           setBusy(true);
           try {
             const j = await restoreFromDrive();

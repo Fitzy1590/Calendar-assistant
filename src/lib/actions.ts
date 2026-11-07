@@ -6,6 +6,7 @@ import { occurrencesInRange } from "./recurrence";
 import { fromYmd, localIso, todayYmd, ymd } from "./util";
 import { describeDay, getForecast } from "./weather";
 import { placeCall, sendSms } from "./phone";
+import * as notesLib from "./notes";
 
 /**
  * The one command surface every input path uses: buttons, the local intent parser and Claude tool calls.
@@ -152,7 +153,7 @@ export function addContact(a: { name: string; phone?: string; email?: string; bi
 const PAGE_WORDS: Record<string, PageId> = {
   home: "home", dashboard: "home", calendar: "calendar", diary: "calendar", tasks: "tasks", todo: "tasks", "to-do": "tasks",
   contacts: "contacts", people: "contacts", birthdays: "contacts", reminders: "reminders", news: "news", headlines: "news",
-  sport: "sports", sports: "sports", settings: "settings", preferences: "settings",
+  sport: "sports", sports: "sports", settings: "settings", preferences: "settings", notes: "notes", note: "notes", "sticky notes": "notes",
 };
 export function navigate(word: string): ActionResult {
   const page = PAGE_WORDS[word.toLowerCase()] ?? (word as PageId);
@@ -197,4 +198,20 @@ export function openSettings(query: string): ActionResult {
   st().setPage("settings");
   window.dispatchEvent(new CustomEvent("settings-search", { detail: query }));
   return { text: `Searching settings for "${query}".` };
+}
+
+export function takeNote(text: string, title?: string): ActionResult {
+  const { addNote } = notesLib;
+  const body = text.trim();
+  if (!body) return { text: "What should the note say?" };
+  addNote({ title: title ?? "", body: body.charAt(0).toUpperCase() + body.slice(1) });
+  return { text: `Saved a note: "${body.length > 60 ? body.slice(0, 57) + "…" : body}".` };
+}
+
+export function findNotes(q: string): ActionResult {
+  const hits = notesLib.searchNotes(q);
+  st().setPage("notes");
+  window.dispatchEvent(new CustomEvent("notes-search", { detail: q }));
+  if (!hits.length) return { text: `No notes mention "${q}".` };
+  return { text: `${hits.length} note${hits.length > 1 ? "s" : ""} about "${q}":`, items: hits.slice(0, 6).map((n) => n.title || n.body.split("\n")[0].slice(0, 80)) };
 }

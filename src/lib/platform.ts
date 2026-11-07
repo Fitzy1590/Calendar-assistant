@@ -24,3 +24,19 @@ export async function notify(title: string, body: string) {
   if (Notification.permission === "default") await Notification.requestPermission();
   if (Notification.permission === "granted") new Notification(title, { body });
 }
+
+/** Windows: tell the native shell whether closing the window should hide it to the tray. */
+export function startTraySetting() {
+  if (!isTauri() || isAndroid()) return;
+  import("../store").then(({ useStore }) => {
+    let last: boolean | undefined;
+    const push = () => {
+      const v = useStore.getState().settings.voice.closeToTray;
+      if (v === last) return;
+      last = v;
+      import("@tauri-apps/api/core").then(({ invoke }) => invoke("set_close_to_tray", { enabled: v }).catch(() => {}));
+    };
+    push();
+    useStore.subscribe(push);
+  });
+}

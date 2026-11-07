@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { create } from "zustand";
 import { useStore } from "../store";
 import { EXAMPLES, resetClaude, runAssistant, type ChatTurn } from "../lib/assistant";
-import { canListen, listen, speak } from "../lib/voice";
+import { speak } from "../lib/voice";
+import { dictate, stopDictation, unsupportedMessage, useVoice, voiceReady } from "../lib/wake";
 import { IChat, IMic, ISend, IX } from "./Icons";
 
 const useChat = create<{ turns: ChatTurn[]; busy: boolean; push: (t: ChatTurn) => void; setBusy: (b: boolean) => void; clear: () => void }>((set) => ({
@@ -30,35 +31,27 @@ export async function ask(text: string) {
   }
 }
 
+/** Mic button state shared with the wake word: one dictation engine for the whole app. */
 function useMic(onFinal: (t: string) => void) {
-  const lang = useStore((s) => s.settings.assistant.voiceLang);
-  const [on, setOn] = useState(false);
-  const [interim, setInterim] = useState("");
-  const stop = useRef<() => void>(() => {});
+  const { status, interim } = useVoice();
+  const on = status === "dictating";
   const toggle = () => {
-    if (on) return stop.current();
-    if (!canListen()) {
-      useChat.getState().push({
-        role: "assistant",
-        text: "Voice input isn't available in this window. On Windows press Win+H to dictate into the box; on Android use the keyboard's mic.",
-      });
+    if (on) return stopDictation();
+    if (!voiceReady()) {
+      useChat.getState().push({ role: "assistant", text: unsupportedMessage() });
       useStore.getState().setUi({ assistantOpen: true });
       return;
     }
-    setOn(true);
-    stop.current = listen(
-      lang,
-      (t, final) => {
-        setInterim(t);
-        if (final) onFinal(t);
-      },
-      () => {
-        setOn(false);
-        setInterim("");
-      },
-    );
+    dictate(() => {}, (t) => t && onFinal(t));
   };
   return { on, interim, toggle };
+}
+
+/** Wake word heard: open the assistant and take the command (or run it if it was said in one breath). */
+export function handleWake(rest?: string) {
+  useStore.getState().setUi({ assistantOpen: true });
+  if (rest) return void ask(rest);
+  dictate(() => {}, (t) => t && ask(t));
 }
 
 /** Always-visible command bar in the top bar: type or speak, results open in the drawer. */
@@ -88,7 +81,7 @@ export function CommandBar() {
         id="command-input"
         value={mic.on ? mic.interim || "Listening…" : text}
         onChange={(e) => setText(e.target.value)}
-        placeholder='Ask or tell me anything — "Dentist Tuesday 3pm", "Call Luke"  (Ctrl+K)'
+        placeholder='Say "Hey Planner" or type — "Dentist Tuesday 3pm", "Call Luke"  (Ctrl+K)'
         aria-label="Assistant command"
       />
       <button type="button" className={"btn ghost icon" + (mic.on ? " mic-on" : "")} onClick={mic.toggle} aria-label="Voice input" title="Voice input"><IMic /></button>
@@ -112,6 +105,7 @@ export function AssistantDrawer() {
         <IChat />
         <h3>Assistant</h3>
         <span className="tag">{s.settings.assistant.provider === "claude" && s.settings.assistant.apiKey ? "Claude" : "on-device"}</span>
+        <WakeBadge />
         <button className="btn ghost sm" onClick={() => (clear(), resetClaude())}>Clear</button>
         <button className="btn ghost icon" onClick={() => s.setUi({ assistantOpen: false })} aria-label="Close"><IX /></button>
       </header>
@@ -140,4 +134,14 @@ export function AssistantDrawer() {
       </form>
     </aside>
   );
+}
+
+/** Small status chip: is the app listening for "Hey Planner"? */
+export function WakeBadge() {
+  const { status, error } = useVoice();
+  const wake = useStore((s) => s.settings.voice.wakeWord);
+  if (!wake && status !== "dictating") return null;
+  const label = status === "waiting" ? "Listening for wake word" : status === "dictating" ? "Listening…" : status === "loading" ? "Loading voice…" : status === "error" ? "Voice off" : "";
+  if (!label) return null;
+  return <span className="tag" title={error || label} style={{ color: status === "error" ? "var(--bad)" : status === "dictating" ? "var(--accent)" : undefined }}>{label}</span>;
 }

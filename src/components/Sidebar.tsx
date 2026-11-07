@@ -5,12 +5,13 @@ import { live, useStore } from "../store";
 import { onSyncStatus } from "../lib/sync";
 import { upcomingReminders } from "../lib/reminders";
 import { todayYmd } from "../lib/util";
-import { IBell, ICal, IChat, ICog, IDown, IHome, IIdea, INews, IPeople, IRight, ISport, ITasks } from "./Icons";
+import { IBell, ICal, IChat, ICog, IDown, IHome, IIdea, INews, INote, IPeople, IRight, ISport, ITasks } from "./Icons";
 
 const META: Record<PageId, { label: string; icon: (p: { size?: number }) => React.JSX.Element }> = {
   home: { label: "Home", icon: IHome },
   calendar: { label: "Calendar", icon: ICal },
   tasks: { label: "Tasks", icon: ITasks },
+  notes: { label: "Notes", icon: INote },
   reminders: { label: "Reminders", icon: IBell },
   contacts: { label: "Contacts", icon: IPeople },
   news: { label: "News", icon: INews },

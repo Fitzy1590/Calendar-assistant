@@ -14,6 +14,8 @@ and an **Android app** ([Tauri 2](https://tauri.app)), and the two stay in sync 
 | **Tasks** | Synced with the calendar. Week board with drag-to-reschedule, list by day or priority, natural-language quick add, **Plan my week** (spreads undated/overdue tasks across your lightest days). |
 | **Unfinished tasks** | Each morning, tasks you didn't tick off get a prompt: mark complete, move to today/tomorrow, pick a day, ignore for now, or remove. |
 | **Reminders** | Events, birthdays (N days before) and tasks; each kind on/off; snooze, ignore once, or turn off per item; desktop/phone notifications. |
+| **Notes** | Sticky-note board: colours, pin, drag to reorder, `[ ]` checklists, `#tags`, search, dictation, archive, undo delete, turn a note into a task or event. "Take a note: gate code is 4821". |
+| **"Hey Planner"** | Wake word while the app is open (and in the Windows tray when the window is closed): chime, then speak a command, a question or a note. On-device with Picovoice; nothing leaves the device while it waits. |
 | **Contacts** | Birthdays, favourites, `.vcf` import, **Call** / **Text** from Windows through your Android phone. |
 | **Assistant** | Command bar on every page (Ctrl+K) + mic. "Dentist Tuesday 3pm", "Soccer every Wednesday at 6pm", "Call Luke", "Text Mum saying running late", "What's on this week?", "Weather Saturday", "Plan my week", "Dark theme". Runs on-device, or switch to Claude for free-form requests. |
 | **News** | Google News headlines by category and edition, followed topics, search. |
@@ -94,11 +96,19 @@ npm run android:build  # APK/AAB
 
 ## Current limits / next steps
 
-* **Voice input** uses the Web Speech API. Where the webview lacks it, the mic button says to use
-  Windows dictation (Win+H) or the Android keyboard mic. A native speech plugin is the next step.
+* **Voice** in the installed apps uses Picovoice (on-device): a free AccessKey from
+  console.picovoice.ai, plus a "Hey Planner" model trained there (Porcupine → Web/WASM) added in
+  Settings. Until you add it, the built-in word "Computer" is used. Models download once (~40 MB) and
+  are cached. In a Chrome/Edge browser window, the browser's speech service also works.
+* **Android** pauses the microphone for apps in the background, so "Hey Planner" works while the app is
+  on screen. On Windows, closing the window keeps it running in the tray (can be turned off).
+* **Android microphone permission**: after `npm run android:init`, add
+  `<uses-permission android:name="android.permission.RECORD_AUDIO" />` to
+  `src-tauri/gen/android/app/src/main/AndroidManifest.xml`.
 * **Calling from Android** opens the dialer with the number filled in (one tap to call). Auto-dialling
   needs the `CALL_PHONE` permission and a small native plugin.
-* **Google/Microsoft sign-in in packaged builds** needs a loopback OAuth flow; see the doc above.
+* **Google sign-in** works in the installed Windows app (browser + loopback, stays signed in). Outlook
+  scanning from the installed app still needs the same change; see the doc.
 * **News in a plain browser** needs the sync server's proxy (Google News blocks cross-site requests);
   the Windows/Android apps fetch it natively.
 

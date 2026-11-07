@@ -5,9 +5,11 @@ import { toast, useStore } from "../store";
 import { placeFromDevice, searchPlaces } from "../lib/weather";
 import { NEWS_REGIONS, NEWS_TOPICS } from "../lib/news";
 import { pairingCode } from "../lib/util";
-import { backupToDrive, googleConnected, googleToken, restoreFromDrive, SCOPES, syncGoogleCalendar } from "../lib/google";
+import { backupToDrive, googleConfigured, googleConnected, googleDisconnect, googleSignInAvailable, googleToken, restoreFromDrive, SCOPES, syncGoogleCalendar, usesLoopback } from "../lib/google";
 import { backupJson, restoreBackup } from "../lib/backup";
 import { onSyncStatus } from "../lib/sync";
+import { BUILT_IN_WORDS, browserSpeechAvailable, dictate, useVoice, voiceReady } from "../lib/wake";
+import { isAndroid, isTauri } from "../lib/platform";
 import { IPin } from "./Icons";
 import { Field, Toggle } from "./ui";
 
@@ -170,6 +172,8 @@ export function GoogleSetup({ compact }: { compact?: boolean }) {
   const g = s.settings.google;
   const e = s.settings.email;
   const [busy, setBusy] = useState("");
+  const [, bump] = useState(0);
+  const setEmail = (p: Partial<typeof e>) => s.updateSettings((st) => void Object.assign(st.email, p));
   const run = async (label: string, fn: () => Promise<string | void>) => {
     setBusy(label);
     try {
@@ -179,33 +183,59 @@ export function GoogleSetup({ compact }: { compact?: boolean }) {
       toast((err as Error).message);
     } finally {
       setBusy("");
+      bump((n) => n + 1);
     }
   };
   const restore = () => run("restore", async () => {
     const json = await restoreFromDrive();
     if (!json) return "No backup found in your Google Drive yet.";
-    if (!confirm("Merge the Google Drive backup into this device? Newer local changes are kept.")) return;
     return restoreBackup(json, { settings: true });
   });
+  if (!googleSignInAvailable()) {
+    return (
+      <div className="stack">
+        <div className="muted">Google Calendar sync, Drive backup and Gmail scanning run from the Windows app. Anything they add reaches this phone through sync, so there's nothing to sign in to here.</div>
+        {!compact && <div className="faint" style={{ fontSize: 12.5 }}>Microsoft Outlook client ID (optional, for scanning on this phone)
+          <input className="input mono" value={e.microsoftClientId} onChange={(ev) => setEmail({ microsoftClientId: ev.target.value.trim() })} /></div>}
+      </div>
+    );
+  }
+  const ready = googleConfigured();
+  const connected = googleConnected(SCOPES.calendar) || googleConnected(SCOPES.drive);
   return (
     <div className="stack">
-      <div className="grid2">
-        <Field label="Google OAuth client ID (Web application)"><input className="input mono" value={e.googleClientId} onChange={(ev) => s.updateSettings((st) => void (st.email.googleClientId = ev.target.value.trim()))} placeholder="xxxx.apps.googleusercontent.com" /></Field>
-        {!compact && <Field label="Microsoft app (client) ID for Outlook"><input className="input mono" value={e.microsoftClientId} onChange={(ev) => s.updateSettings((st) => void (st.email.microsoftClientId = ev.target.value.trim()))} placeholder="00000000-0000-…" /></Field>}
+      {usesLoopback() ? (
+        <div className="grid2">
+          <Field label="Google client ID (Desktop app)"><input className="input mono" value={e.googleDesktopClientId} onChange={(ev) => setEmail({ googleDesktopClientId: ev.target.value.trim() })} placeholder="xxxx.apps.googleusercontent.com" /></Field>
+          <Field label="Google client secret (Desktop app)"><input className="input mono" type="password" value={e.googleDesktopClientSecret} onChange={(ev) => setEmail({ googleDesktopClientSecret: ev.target.value.trim() })} placeholder="GOCSPX-…" /></Field>
+        </div>
+      ) : (
+        <Field label="Google OAuth client ID (Web application)"><input className="input mono" value={e.googleClientId} onChange={(ev) => setEmail({ googleClientId: ev.target.value.trim() })} placeholder="xxxx.apps.googleusercontent.com" /></Field>
+      )}
+      {!compact && <Field label="Microsoft app (client) ID for Outlook"><input className="input mono" value={e.microsoftClientId} onChange={(ev) => setEmail({ microsoftClientId: ev.target.value.trim() })} placeholder="00000000-0000-…" /></Field>}
+      {!compact && (
+        <div className="faint" style={{ fontSize: 12.5 }}>
+          {usesLoopback()
+            ? "Create a “Desktop app” OAuth client in Google Cloud. Sign-in opens your browser and returns to the app automatically; you stay signed in."
+            : <>Register <span className="mono">{location.origin}/oauth.html</span> as the redirect URI.</>}{" "}
+          Step-by-step in docs/GOOGLE_AND_OUTLOOK.md.
+        </div>
+      )}
+      <div className="row">
+        <span className={"dot " + (connected ? "ok" : "")} /> {connected ? "Google account connected" : "Not connected"}
+        {!connected && <button className="btn sm primary" disabled={!ready || !!busy} onClick={() => run("connect", async () => void (await googleToken([SCOPES.calendar, SCOPES.drive])))}>{busy === "connect" ? "Waiting for browser…" : "Connect Google account"}</button>}
+        {connected && <button className="btn sm ghost" onClick={() => (googleDisconnect(), bump((n) => n + 1), toast("Disconnected from Google"))}>Disconnect</button>}
       </div>
-      {!compact && <div className="faint" style={{ fontSize: 12.5 }}>Register <span className="mono">{location.origin}/oauth.html</span> as the redirect URI. Step-by-step in docs/GOOGLE_AND_OUTLOOK.md.</div>}
       <div className="row"><Toggle checked={g.calendarSync} onChange={(v) => s.updateSettings((st) => void (st.google.calendarSync = v))} label="Google Calendar sync" /> Two-way sync with Google Calendar
-        <button className="btn sm" disabled={!e.googleClientId || !!busy} onClick={() => run("cal", syncGoogleCalendar)}>{busy === "cal" ? "Syncing…" : "Sync now"}</button>
+        <button className="btn sm" disabled={!ready || !!busy} onClick={() => run("cal", syncGoogleCalendar)}>{busy === "cal" ? "Syncing…" : "Sync now"}</button>
         {g.lastCalendarSync && <span className="faint" style={{ fontSize: 12 }}>last {format(g.lastCalendarSync, "d MMM h:mm a")}</span>}
       </div>
       <div className="row"><Toggle checked={g.driveBackup} onChange={(v) => s.updateSettings((st) => void (st.google.driveBackup = v))} label="Drive backup" /> Back up data & settings to Google Drive daily
-        <button className="btn sm" disabled={!e.googleClientId || !!busy} onClick={() => run("drive", () => backupToDrive(backupJson()))}>Back up now</button>
-        <button className="btn sm" disabled={!e.googleClientId || !!busy} onClick={restore}>Restore from Drive</button>
+        <button className="btn sm" disabled={!ready || !!busy} onClick={() => run("drive", () => backupToDrive(backupJson()))}>Back up now</button>
+        <button className="btn sm" disabled={!ready || !!busy} onClick={restore}>Restore from Drive</button>
         {g.lastDriveBackup && <span className="faint" style={{ fontSize: 12 }}>last {format(g.lastDriveBackup, "d MMM h:mm a")}</span>}
       </div>
-      {e.googleClientId && !googleConnected(SCOPES.calendar) && (g.calendarSync || g.driveBackup) && (
-        <div className="row"><button className="btn sm primary" onClick={() => run("connect", async () => void (await googleToken([SCOPES.calendar, SCOPES.drive])))}>Connect Google account</button><span className="faint" style={{ fontSize: 12.5 }}>Automatic sync runs while connected (Google sessions last about an hour).</span></div>
-      )}
+      {!usesLoopback() && connected && <div className="faint" style={{ fontSize: 12.5 }}>In the browser, Google sessions last about an hour; the Windows app stays signed in.</div>}
     </div>
   );
 }
@@ -232,6 +262,70 @@ export function AssistantSetup() {
           </select>
         </label>
         <span className="row"><Toggle checked={a.speakReplies} onChange={(v) => set({ speakReplies: v })} label="Speak replies" /> Read replies aloud</span>
+      </div>
+      <div className="hr" />
+      <WakeWordSetup />
+    </div>
+  );
+}
+
+export function WakeWordSetup() {
+  const s = useStore();
+  const v = s.settings.voice;
+  const { status, error } = useVoice();
+  const set = (p: Partial<typeof v>) => s.updateSettings((st) => void Object.assign(st.voice, p));
+  const [heard, setHeard] = useState("");
+  const loadPpn = async (f: File) => {
+    const buf = new Uint8Array(await f.arrayBuffer());
+    let bin = "";
+    for (const b of buf) bin += String.fromCharCode(b);
+    set({ customKeyword: { label: f.name.replace(/_[a-z]{2}_wasm.*$/i, "").replace(/[-_]/g, " ").replace(/\.ppn$/i, "") || "Hey Planner", base64: btoa(bin) }, keyword: "custom" });
+    toast("Wake word model added");
+  };
+  const desktop = isTauri() && !isAndroid();
+  return (
+    <div className="stack">
+      <span className="row"><Toggle checked={v.wakeWord} onChange={(x) => set({ wakeWord: x })} label="Wake word" /> <b>Listen for “Hey Planner”</b> while the app is open
+        <span className="faint" style={{ fontSize: 12.5 }}>· {status === "waiting" ? "listening" : status === "loading" ? "loading voice models…" : status === "error" ? error : status === "dictating" ? "taking dictation" : "off"}</span>
+      </span>
+      <div className="seg">
+        <button aria-pressed={v.engine === "picovoice"} onClick={() => set({ engine: "picovoice" })}>On-device (Picovoice)</button>
+        <button aria-pressed={v.engine === "browser"} onClick={() => set({ engine: "browser" })} disabled={!browserSpeechAvailable()} title={browserSpeechAvailable() ? "" : "Only in Chrome or Edge browser windows"}>Browser speech</button>
+      </div>
+      {v.engine === "picovoice" && (
+        <>
+          <Field label="Picovoice AccessKey (free for personal use at console.picovoice.ai; stays on this device)">
+            <input className="input mono" type="password" value={v.picovoiceKey} onChange={(e) => set({ picovoiceKey: e.target.value.trim() })} placeholder="Paste your AccessKey" />
+          </Field>
+          <div className="grid2">
+            <Field label="Wake word">
+              <select className="input" value={v.keyword} onChange={(e) => set({ keyword: e.target.value })}>
+                <option value="custom">{v.customKeyword ? `${v.customKeyword.label} (your model)` : "Hey Planner (add your model below; uses “Computer” until then)"}</option>
+                {BUILT_IN_WORDS.map((w) => <option key={w} value={w}>{w}</option>)}
+              </select>
+            </Field>
+            <Field label={`Sensitivity ${Math.round(v.sensitivity * 100)}% (higher hears you more easily, with more false starts)`}>
+              <input type="range" min={0.3} max={0.9} step={0.05} value={v.sensitivity} onChange={(e) => set({ sensitivity: +e.target.value })} />
+            </Field>
+          </div>
+          <div className="row">
+            <label className="btn sm">{v.customKeyword ? "Replace" : "Add"} “Hey Planner” model (.ppn)<input type="file" accept=".ppn" hidden onChange={(e) => e.target.files?.[0] && loadPpn(e.target.files[0])} /></label>
+            <span className="faint" style={{ fontSize: 12.5 }}>In Picovoice Console → Porcupine, type “Hey Planner”, choose <b>Web (WASM)</b>, download, and add the file here.</span>
+          </div>
+        </>
+      )}
+      <div className="row">
+        <span className="row"><Toggle checked={v.chime} onChange={(x) => set({ chime: x })} label="Chime" /> Chime when listening starts and stops</span>
+        {desktop && <span className="row"><Toggle checked={v.closeToTray} onChange={(x) => set({ closeToTray: x })} label="Tray" /> Keep running in the tray when the window is closed</span>}
+      </div>
+      <div className="row">
+        <button className="btn sm" disabled={!voiceReady() || status === "dictating"} onClick={() => dictate(setHeard, (t) => setHeard(t || "(didn't catch anything)"))}>Test dictation</button>
+        {heard && <span className="muted">Heard: “{heard}”</span>}
+      </div>
+      <div className="faint" style={{ fontSize: 12.5 }}>
+        {isAndroid()
+          ? "On Android the wake word works while the app is on screen; Android pauses the microphone for apps in the background."
+          : "Audio is processed on this device; nothing is sent anywhere while it waits for the wake word."}
       </div>
     </div>
   );

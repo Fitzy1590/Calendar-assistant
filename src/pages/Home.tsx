@@ -18,7 +18,7 @@ import { PageHead, Toggle } from "../components/ui";
 import { STEP_NAMES } from "./Wizard";
 
 const LABELS: Record<HomeWidget["id"], string> = {
-  weather: "Weather", clock: "Clock", minical: "Mini calendar", agenda: "Today & tomorrow", tasks: "Tasks due",
+  notes: "Pinned notes", weather: "Weather", clock: "Clock", minical: "Mini calendar", agenda: "Today & tomorrow", tasks: "Tasks due",
   localEvents: "Local events today", birthdays: "Birthdays", headlines: "Headlines", sports: "Your teams",
 };
 
@@ -281,7 +281,27 @@ function LocalEventsWidget() {
   );
 }
 
+function NotesWidget() {
+  const s = useStore();
+  const notes = live(s.notes).filter((n) => !n.archived).sort((a, b) => Number(!!b.pinned) - Number(!!a.pinned) || a.order - b.order).slice(0, 4);
+  return (
+    <>
+      <h2>Notes <span className="spacer" /><button className="btn sm ghost" onClick={() => s.setPage("notes")}>All</button></h2>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+        {notes.map((n) => (
+          <div key={n.id} className="note" style={{ ["--nc" as string]: `var(--n-${n.color})`, minHeight: 70, padding: 10, transform: "none" }} onClick={() => s.setPage("notes")}>
+            {n.title && <b style={{ fontSize: 13 }}>{n.title}</b>}
+            <div style={{ fontSize: 12.5, whiteSpace: "pre-wrap", maxHeight: 72, overflow: "hidden" }}>{n.body}</div>
+          </div>
+        ))}
+      </div>
+      {!notes.length && <div className="empty">Jot something on the Notes page or say “take a note…”.</div>}
+    </>
+  );
+}
+
 const WIDGETS: Record<HomeWidget["id"], () => React.JSX.Element> = {
+  notes: NotesWidget,
   weather: WeatherWidget, clock: ClockWidget, minical: MiniCalWidget, agenda: AgendaWidget, tasks: TasksWidget,
   birthdays: BirthdaysWidget, headlines: HeadlinesWidget, sports: SportsWidget, localEvents: LocalEventsWidget,
 };

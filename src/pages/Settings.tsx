@@ -41,7 +41,7 @@ export function Settings() {
     { id: "news", section: "News", label: "News categories, topics and edition", keywords: "news headlines categories topics google news region country edition", wide: true, render: () => <NewsPicker /> },
     { id: "sports", section: "Sports", label: "Sports and favourite teams", keywords: "sports teams football soccer afl nrl cricket nba favourite follow fixtures results highlights", wide: true, render: () => <FollowPanel /> },
     { id: "sportskey", section: "Sports", label: "TheSportsDB API key", help: "Optional. Leave blank for the free public key.", keywords: "sports api key thesportsdb", render: () => <input className="input mono" value={s.settings.sportsApiKey} onChange={(e) => s.updateSettings((st) => void (st.sportsApiKey = e.target.value.trim()))} /> },
-    { id: "assistant", section: "Assistant & voice", label: "Assistant engine and voice", keywords: "assistant chat bot voice speech microphone claude ai api key language speak", wide: true, render: () => <AssistantSetup /> },
+    { id: "assistant", section: "Assistant & voice", label: "Assistant engine, voice and “Hey Planner” wake word", keywords: "assistant chat bot voice speech microphone claude ai api key language speak wake word hey planner hotword dictation picovoice tray background listen", wide: true, render: () => <AssistantSetup /> },
     { id: "sync", section: "Phone & sync", label: "Sync with Android and calling", keywords: "sync android phone pair pairing code server call sms text phone link devices", wide: true, render: () => <SyncSetup /> },
     { id: "google", section: "Email, Google & Outlook", label: "Google Calendar, Google Drive, Gmail and Outlook", keywords: "google calendar sync import gmail outlook microsoft email scan drive backup oauth client id", wide: true, render: () => <GoogleSetup /> },
     { id: "backup", section: "Backup & restore", label: "Backup, import and export", help: "Nothing is lost: keep file backups, daily on-device snapshots and an optional Google Drive copy.", keywords: "backup restore import export json ics csv snapshot data lost recover google drive", wide: true, render: () => <BackupPanel /> },
@@ -88,7 +88,7 @@ export function Settings() {
   );
 }
 
-const NAMES: Record<PageId, string> = { home: "Home", calendar: "Calendar", tasks: "Tasks", reminders: "Reminders", contacts: "Contacts", news: "News", sports: "Sports", settings: "Settings" };
+const NAMES: Record<PageId, string> = { home: "Home", calendar: "Calendar", tasks: "Tasks", notes: "Notes", reminders: "Reminders", contacts: "Contacts", news: "News", sports: "Sports", settings: "Settings" };
 
 function NavEditor() {
   const s = useStore();

@@ -4,12 +4,18 @@ import { live, useStore } from "../store";
 import { conflictsFor } from "./planner";
 import type { Candidate } from "./email";
 import { fromYmd, localIso } from "./util";
+import { isAndroid, isTauri, openUrl } from "./platform";
 
 /**
  * Google sign-in, Google Calendar (import + two-way sync) and Google Drive backup.
- * Uses the Google OAuth client ID from Settings → Email & Google (token flow in a popup).
- * Tokens last about an hour and are kept in memory only; background sync runs while one is valid,
- * otherwise the Settings page shows "Reconnect".
+ *
+ * Two sign-in paths, picked automatically:
+ *  - Installed Windows app: the "loopback" flow Google recommends for desktop apps. A tiny local
+ *    server (tauri-plugin-oauth) listens on 127.0.0.1, the system browser opens Google's page, and the
+ *    code comes back to the app (auth code + PKCE). A refresh token is kept on this device, so
+ *    Calendar sync and Drive backup keep working in the background without signing in again.
+ *  - Browser / dev build: token flow in a popup with a "Web application" client ID.
+ * Android doesn't sign in itself: Google sync runs from the Windows app and reaches the phone via sync.
  */
 
 export const SCOPES = {
@@ -18,29 +24,145 @@ export const SCOPES = {
   drive: "https://www.googleapis.com/auth/drive.appdata", // hidden per-app folder: can't see your other files
 };
 
+const REFRESH_KEY = "google-refresh"; // device-only: never synced or backed up
 let token: { value: string; expires: number; scopes: string } | null = null;
 
-export const googleConnected = (scope: string) => !!token && token.expires > Date.now() + 60e3 && token.scopes.includes(scope);
+type Saved = { refresh: string; scopes: string };
+const saved = (): Saved | null => {
+  try {
+    return JSON.parse(localStorage.getItem(REFRESH_KEY) || "null");
+  } catch {
+    return null;
+  }
+};
 
-export async function googleToken(scopes: string[]): Promise<string> {
-  const want = scopes.join(" ");
+export const usesLoopback = () => isTauri() && !isAndroid();
+export const googleSignInAvailable = () => !isAndroid();
+
+export function googleConfigured() {
+  const e = useStore.getState().settings.email;
+  return usesLoopback() ? !!(e.googleDesktopClientId && e.googleDesktopClientSecret) : !!e.googleClientId;
+}
+
+/** True when a call needing `scope` can run without showing a sign-in window. */
+export const googleConnected = (scope: string) =>
+  (!!token && token.expires > Date.now() + 60e3 && token.scopes.includes(scope)) || (!!saved()?.scopes.includes(scope) && usesLoopback());
+
+export function googleDisconnect() {
+  const r = saved()?.refresh ?? token?.value;
+  token = null;
+  localStorage.removeItem(REFRESH_KEY);
+  if (r) fetch(`https://oauth2.googleapis.com/revoke?token=${encodeURIComponent(r)}`, { method: "POST" }).catch(() => {});
+}
+
+export async function googleToken(scopes: string[], interactive = true): Promise<string> {
+  if (isAndroid()) throw new Error("Google sign-in runs from the Windows app; your events reach the phone through sync.");
   if (token && token.expires > Date.now() + 60e3 && scopes.every((s) => token!.scopes.includes(s))) return token.value;
+  const sv = saved();
+  if (usesLoopback() && sv && scopes.every((s) => sv.scopes.includes(s))) {
+    const ok = await refresh(sv).catch(() => false);
+    if (ok) return token!.value;
+  }
+  if (!interactive) throw new Error("Google needs you to sign in again.");
+  if (!googleConfigured()) throw new Error("Add your Google client ID in Settings → Email, Google & Outlook first.");
+  // ask for everything granted before plus the new scopes, so one sign-in covers them all
+  const all = [...new Set([...(token?.scopes.split(" ") ?? []), ...(sv?.scopes.split(" ") ?? []), ...scopes])].join(" ");
+  return usesLoopback() ? loopbackSignIn(all) : popupSignIn(all);
+}
+
+async function tokenRequest(body: Record<string, string>) {
+  // native HTTP in the app: no CORS, and the client secret never touches a web origin
+  const { fetch: tfetch } = await import("@tauri-apps/plugin-http");
+  const r = await tfetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams(body).toString(),
+  });
+  const j = await r.json();
+  if (!r.ok) throw new Error(j.error_description || j.error || `Google ${r.status}`);
+  return j as { access_token: string; expires_in: number; refresh_token?: string; scope: string };
+}
+
+async function refresh(sv: Saved) {
+  const e = useStore.getState().settings.email;
+  const j = await tokenRequest({
+    client_id: e.googleDesktopClientId,
+    client_secret: e.googleDesktopClientSecret,
+    refresh_token: sv.refresh,
+    grant_type: "refresh_token",
+  });
+  token = { value: j.access_token, expires: Date.now() + j.expires_in * 1000, scopes: j.scope || sv.scopes };
+  return true;
+}
+
+async function pkce() {
+  const verifier = Array.from(crypto.getRandomValues(new Uint8Array(32)), (b) => b.toString(16).padStart(2, "0")).join("");
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(verifier));
+  const challenge = btoa(String.fromCharCode(...new Uint8Array(digest))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  return { verifier, challenge };
+}
+
+const DONE_PAGE = `<!doctype html><html><head><meta charset="utf-8"><title>Signed in</title></head>
+<body style="font:16px system-ui;padding:48px;max-width:560px;margin:auto;color:#1d1b17;background:#f6f5f2">
+<h2 style="margin:0 0 8px">Signed in to Calendar Assistant</h2><p>You can close this tab and go back to the app.</p></body></html>`;
+
+async function loopbackSignIn(scopes: string): Promise<string> {
+  const { start, onUrl, cancel } = await import("@fabianlars/tauri-plugin-oauth");
+  const e = useStore.getState().settings.email;
+  const port = await start({ response: DONE_PAGE });
+  const redirect = `http://127.0.0.1:${port}`;
+  const { verifier, challenge } = await pkce();
+  const state = crypto.randomUUID();
+  let unlisten: (() => void) | undefined;
+  try {
+    const url = await new Promise<string>((resolve, reject) => {
+      const timer = setTimeout(() => reject(new Error("Google sign-in timed out. Try again.")), 5 * 60e3);
+      onUrl((u) => {
+        clearTimeout(timer);
+        resolve(u);
+      }).then((fn) => (unlisten = fn), reject);
+      openUrl(
+        `https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(e.googleDesktopClientId)}` +
+          `&redirect_uri=${encodeURIComponent(redirect)}&response_type=code&access_type=offline&prompt=consent` +
+          `&include_granted_scopes=true&code_challenge=${challenge}&code_challenge_method=S256&state=${state}` +
+          `&scope=${encodeURIComponent(scopes)}`,
+      ).catch(reject);
+    });
+    const q = new URL(url).searchParams;
+    if (q.get("error")) throw new Error(q.get("error") === "access_denied" ? "Google sign-in was cancelled." : q.get("error")!);
+    if (q.get("state") !== state) throw new Error("Google sign-in response didn't match. Try again.");
+    const j = await tokenRequest({
+      client_id: e.googleDesktopClientId,
+      client_secret: e.googleDesktopClientSecret,
+      code: q.get("code")!,
+      code_verifier: verifier,
+      redirect_uri: redirect,
+      grant_type: "authorization_code",
+    });
+    token = { value: j.access_token, expires: Date.now() + j.expires_in * 1000, scopes: j.scope || scopes };
+    const keep = j.refresh_token ?? saved()?.refresh;
+    if (keep) localStorage.setItem(REFRESH_KEY, JSON.stringify({ refresh: keep, scopes: token.scopes }));
+    return token.value;
+  } finally {
+    unlisten?.();
+    cancel(port).catch(() => {});
+  }
+}
+
+async function popupSignIn(scopes: string): Promise<string> {
   const clientId = useStore.getState().settings.email.googleClientId;
-  if (!clientId) throw new Error("Add your Google OAuth client ID in Settings → Email & Google first.");
-  // ask for everything we've used before plus the new scopes, so one sign-in covers the session
-  const all = [...new Set([...(token?.scopes.split(" ") ?? []), ...want.split(" ")])].join(" ");
   const res = await new Promise<{ hash: string }>((resolve, reject) => {
     const url =
       `https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(clientId)}` +
       `&redirect_uri=${encodeURIComponent(location.origin + "/oauth.html")}&response_type=token` +
-      `&include_granted_scopes=true&scope=${encodeURIComponent(all)}`;
+      `&include_granted_scopes=true&scope=${encodeURIComponent(scopes)}`;
     const w = window.open(url, "oauth", "width=520,height=680");
     if (!w) return reject(new Error("Popup blocked"));
-    const onMsg = (e: MessageEvent) => {
-      if (e.origin !== location.origin || e.data?.type !== "oauth") return;
+    const onMsg = (ev: MessageEvent) => {
+      if (ev.origin !== location.origin || ev.data?.type !== "oauth") return;
       window.removeEventListener("message", onMsg);
       clearInterval(t);
-      resolve(e.data);
+      resolve(ev.data);
     };
     window.addEventListener("message", onMsg);
     const t = setInterval(() => w.closed && (clearInterval(t), window.removeEventListener("message", onMsg), reject(new Error("Sign-in window closed"))), 500);
@@ -48,12 +170,23 @@ export async function googleToken(scopes: string[]): Promise<string> {
   const p = new URLSearchParams(res.hash.slice(1));
   const value = p.get("access_token");
   if (!value) throw new Error(p.get("error") || "Google sign-in failed");
-  token = { value, expires: Date.now() + Number(p.get("expires_in") || 3600) * 1000, scopes: p.get("scope") || all };
+  token = { value, expires: Date.now() + Number(p.get("expires_in") || 3600) * 1000, scopes: p.get("scope") || scopes };
   return value;
 }
 
+let interactiveCalls = true;
+/** Run Google calls without ever opening a sign-in window (background sync / backup). */
+export async function quietly<T>(fn: () => Promise<T>): Promise<T> {
+  interactiveCalls = false;
+  try {
+    return await fn();
+  } finally {
+    interactiveCalls = true;
+  }
+}
+
 async function gfetch(url: string, scope: string, init: RequestInit = {}) {
-  const t = await googleToken([scope]);
+  const t = await googleToken([scope], interactiveCalls);
   const r = await fetch(url, { ...init, headers: { Authorization: `Bearer ${t}`, "Content-Type": "application/json", ...(init.headers ?? {}) } });
   if (r.status === 401) token = null;
   if (!r.ok && r.status !== 204 && r.status !== 410) throw new Error(`Google ${r.status}: ${(await r.text()).slice(0, 200)}`);
@@ -246,7 +379,7 @@ export async function backupToDrive(json: string): Promise<string> {
 export async function restoreFromDrive(): Promise<string | null> {
   const f = await findBackup();
   if (!f) return null;
-  const t = await googleToken([SCOPES.drive]);
+  const t = await googleToken([SCOPES.drive], interactiveCalls);
   const r = await fetch(`${DRIVE}/${f.id}?alt=media`, { headers: { Authorization: `Bearer ${t}` } });
   if (!r.ok) throw new Error(`Drive ${r.status}`);
   return r.text();

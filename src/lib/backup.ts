@@ -2,7 +2,7 @@ import { format } from "date-fns";
 import { DEFAULT_SETTINGS, live, useStore, type Change } from "../store";
 import type { CollectionName, Settings } from "../types";
 import { fromYmd } from "./util";
-import { backupToDrive, googleConnected, SCOPES } from "./google";
+import { backupToDrive, googleConnected, quietly, SCOPES } from "./google";
 
 /**
  * Backups so nothing is ever lost:
@@ -13,7 +13,7 @@ import { backupToDrive, googleConnected, SCOPES } from "./google";
  * Import merges record-by-record (newest wins) so restoring never wipes newer changes.
  */
 
-const COLLECTIONS: CollectionName[] = ["events", "tasks", "contacts", "feedback"];
+const COLLECTIONS: CollectionName[] = ["events", "tasks", "contacts", "notes", "feedback"];
 const SNAP_KEY = "snapshots";
 
 export interface Backup {
@@ -31,7 +31,12 @@ export function makeBackup(): Backup {
     version: 1,
     createdAt: new Date().toISOString(),
     // secrets stay on the device: API keys are not written into backups
-    settings: { ...s.settings, assistant: { ...s.settings.assistant, apiKey: "" } },
+    settings: {
+      ...s.settings,
+      assistant: { ...s.settings.assistant, apiKey: "" },
+      voice: { ...s.settings.voice, picovoiceKey: "" },
+      email: { ...s.settings.email, googleDesktopClientSecret: "" },
+    },
     data: Object.fromEntries(COLLECTIONS.map((c) => [c, Object.values(s[c])])) as Backup["data"],
   };
 }
@@ -53,6 +58,8 @@ export function restoreBackup(json: string, opts: { settings: boolean }): string
       ...b.settings,
       onboarded: true,
       assistant: { ...b.settings.assistant, apiKey: keep.assistant.apiKey },
+      voice: { ...DEFAULT_SETTINGS.voice, ...b.settings.voice, picovoiceKey: keep.voice.picovoiceKey },
+      email: { ...DEFAULT_SETTINGS.email, ...b.settings.email, googleDesktopClientSecret: keep.email.googleDesktopClientSecret },
       sync: { ...b.settings.sync, deviceName: keep.sync.deviceName },
     }));
   }
@@ -132,6 +139,6 @@ export async function dailyBackups() {
   const day = 20 * 3600e3;
   if (s.backup.autoLocal && Date.now() - (s.backup.lastLocal ?? 0) > day) takeSnapshot();
   if (s.google.driveBackup && Date.now() - (s.google.lastDriveBackup ?? 0) > day) {
-    if (googleConnected(SCOPES.drive)) await backupToDrive(backupJson()).catch(() => {});
+    if (googleConnected(SCOPES.drive)) await quietly(() => backupToDrive(backupJson())).catch(() => {});
   }
 }

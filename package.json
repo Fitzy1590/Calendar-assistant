@@ -18,6 +18,10 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.6.0",
+    "@fabianlars/tauri-plugin-oauth": "2.1.0",
+    "@picovoice/cheetah-web": "4.2.0",
+    "@picovoice/porcupine-web": "4.0.1",
+    "@picovoice/web-voice-processor": "4.0.10",
     "@tauri-apps/api": "^2.12.4",
     "@tauri-apps/plugin-http": "^2.8.3",
     "@tauri-apps/plugin-notification": "^2.8.0",

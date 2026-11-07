@@ -11,6 +11,7 @@ const pad = (n: number) => String(n).padStart(2, "0");
 const hm = (h?: number, m?: number) => (h === undefined ? undefined : `${pad(h)}:${pad(m ?? 0)}`);
 
 export const EXAMPLES = [
+  "Take a note: gate code is 4821",
   "Dentist next Tuesday at 3pm",
   "Soccer every Wednesday at 6pm",
   "Remind me to renew rego on Friday",
@@ -29,6 +30,9 @@ export async function runLocal(input: string): Promise<A.ActionResult> {
   const low = text.toLowerCase();
   let m: RegExpMatchArray | null;
 
+  if ((m = text.match(/^(?:take|make|add|write|jot down)(?: a| me a)? note(?: that| saying| about|:)?\s+(.+)$/i)) || (m = text.match(/^(?:note|remember that|remember)[:,]?\s+(.+)$/i)))
+    return A.takeNote(m[1]);
+  if ((m = low.match(/^(?:find|search|show|open)(?: my)? notes?(?: for| about| on| with)? (.+)$/))) return A.findNotes(m[1]);
   if ((m = low.match(/^(?:call|ring|phone|dial) (.+)$/))) return A.call(m[1]);
   if ((m = text.match(/^(?:text|sms|message) (.+?)(?: (?:saying|that|to say|:)\s*(.+))?$/i))) return A.sms(m[1], m[2]);
 
@@ -130,7 +134,9 @@ const TOOLS: Anthropic.Tool[] = [
   tool("call_contact", "Phone a contact or number through the linked Android phone.", { name: { type: "string" } }, ["name"]),
   tool("text_contact", "Send an SMS to a contact through the linked Android phone.", { name: { type: "string" }, body: { type: "string" } }, ["name"]),
   tool("add_contact", "Add or update a contact.", { name: { type: "string" }, phone: { type: "string" }, email: { type: "string" }, birthday: { type: "string", description: "yyyy-mm-dd" } }, ["name"]),
-  tool("navigate", "Open a page of the app.", { page: { type: "string", enum: ["home", "calendar", "tasks", "contacts", "reminders", "news", "sports", "settings"] } }, ["page"]),
+  tool("navigate", "Open a page of the app.", { page: { type: "string", enum: ["home", "calendar", "tasks", "notes", "contacts", "reminders", "news", "sports", "settings"] } }, ["page"]),
+  tool("add_note", "Save a sticky note (things to remember, codes, lists; use \"[ ] item\" lines for a checklist).", { text: { type: "string" }, title: { type: "string" } }, ["text"]),
+  tool("search_notes", "Find notes mentioning a word or phrase.", { query: { type: "string" } }, ["query"]),
   tool("set_calendar_view", "Switch the calendar view.", { view: { type: "string", enum: ["day", "week", "month", "year"] } }, ["view"]),
   tool("set_theme", "Change the colour theme.", { theme: { type: "string", enum: ["paper", "ink", "slate", "sand", "system"] } }, ["theme"]),
   tool("plan_week", "Spread unscheduled and overdue tasks across the next 7 days.", { apply: { type: "boolean" } }, ["apply"]),
@@ -160,11 +166,13 @@ async function runTool(name: string, i: any): Promise<A.ActionResult> {
     case "plan_week": return A.planMyWeek(!!i.apply);
     case "search_news": return A.openNews(i.query);
     case "search_settings": return A.openSettings(i.query);
+    case "add_note": return A.takeNote(i.text, i.title);
+    case "search_notes": return A.findNotes(i.query);
     default: return { text: `Unknown tool ${name}` };
   }
 }
 
-const SYSTEM = `You are the assistant inside a personal planner app (calendar, tasks, contacts, reminders, weather, news, sports).
+const SYSTEM = `You are the assistant inside a personal planner app (calendar, tasks, notes, contacts, reminders, weather, news, sports).
 Act on requests with the tools; ask one short question only when a required detail is genuinely missing.
 Reply in one or two plain sentences: the user may be listening via text-to-speech. Use the user's local dates and times.`;
 

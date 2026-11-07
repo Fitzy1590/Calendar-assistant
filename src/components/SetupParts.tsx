@@ -21,7 +21,7 @@ export const THEMES: { id: ThemeName; name: string; bg: string; fg: string }[] =
   { id: "slate", name: "Slate", bg: "#0e151d", fg: "#e3e8ed" },
 ];
 export const ACCENTS = [
-  { c: "#b4532a", n: "Terracotta" }, { c: "#4f6b3a", n: "Moss" }, { c: "#2f5d8a", n: "Ink blue" },
+  { c: "#2f5d8a", n: "Ink blue" }, { c: "#4f6b3a", n: "Moss" }, { c: "#b4532a", n: "Terracotta" },
   { c: "#b8860b", n: "Ochre" }, { c: "#8a3a55", n: "Mulberry" }, { c: "#50606e", n: "Slate" },
 ];
 

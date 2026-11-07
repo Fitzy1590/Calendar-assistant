@@ -4,7 +4,7 @@
    glows or glass; depth comes from tone steps and rules, not shadows. */
 
 :root {
-  --accent: #b4532a;
+  --accent: #2f5d8a;
   --font-ui: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-display: "Fraunces", Georgia, "Times New Roman", serif;
   --font-mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;

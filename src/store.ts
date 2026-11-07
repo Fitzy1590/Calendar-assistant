@@ -8,7 +8,7 @@ export const DEFAULT_SETTINGS: Settings = {
   setupSkipped: [],
   displayName: "",
   theme: "system",
-  accent: "#b4532a",
+  accent: "#2f5d8a",
   density: "comfortable",
   fontScale: 1,
   units: "metric",

@@ -1,0 +1,13 @@
+<!doctype html>
+<meta charset="utf-8" />
+<title>Signing in…</title>
+<body style="font: 14px system-ui; padding: 24px">
+  Signed in. You can close this window.
+  <script>
+    // Hand the OAuth response (token in the hash for Google, code in the query for Microsoft) back to the app.
+    if (window.opener) {
+      window.opener.postMessage({ type: "oauth", hash: location.hash, search: location.search }, location.origin);
+      window.close();
+    }
+  </script>
+</body>

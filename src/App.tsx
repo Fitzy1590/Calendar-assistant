@@ -8,6 +8,7 @@ import { CarryOver } from "./components/CarryOver";
 import { EmailImport } from "./components/EmailImport";
 import { UpdatePrompt } from "./components/Updates";
 import { ErrorAlert, ErrorBoundary, useFirstRunCheck } from "./components/Errors";
+import { BrowserModeBanner } from "./components/BrowserModeBanner";
 import { IIdea, IMail } from "./components/Icons";
 import { Home } from "./pages/Home";
 import { Calendar } from "./pages/Calendar";
@@ -87,6 +88,7 @@ export default function App() {
           <button className="btn ghost" onClick={() => s.setUi({ emailImportOpen: true })} title="Import events from email or Google Calendar"><IMail /> <span className="hide-sm">Import</span></button>
           <button className="btn ghost" onClick={() => s.setUi({ feedbackOpen: true })} title="Suggestions & feedback"><IIdea /> <span className="hide-sm">Feedback</span></button>
         </div>
+        <BrowserModeBanner />
         <div className="content">
           {/* a crash in one page shows a recovery screen there; the menu keeps working */}
           <ErrorBoundary key={s.page} where={s.page}>

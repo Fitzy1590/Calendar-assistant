@@ -63,7 +63,7 @@ export function restoreBackup(json: string, opts: { settings: boolean }): string
       sync: { ...b.settings.sync, deviceName: keep.sync.deviceName },
     }));
   }
-  return `Restored ${changes.length} records from ${format(new Date(b.createdAt), "d MMM yyyy, h:mm a")}.`;
+  return `Restored ${changes.length} record${changes.length === 1 ? "" : "s"} from ${format(new Date(b.createdAt), "d MMM yyyy, h:mm a")}.`;
 }
 
 export function download(name: string, text: string, type = "application/json") {
@@ -125,6 +125,10 @@ export function snapshotJson(at: string) {
 export function takeSnapshot() {
   try {
     const all = JSON.parse(localStorage.getItem(SNAP_KEY) || "[]") as { at: string; json: string }[];
+    // never let an empty snapshot push good ones out (e.g. right after saved data was damaged)
+    const s = useStore.getState();
+    const records = (["events", "tasks", "contacts", "notes", "shopping"] as const).reduce((n, c) => n + Object.keys(s[c]).length, 0);
+    if (!records && all.length) return;
     all.unshift({ at: new Date().toISOString(), json: backupJson() });
     localStorage.setItem(SNAP_KEY, JSON.stringify(all.slice(0, 14)));
     useStore.getState().updateSettings((s) => void (s.backup.lastLocal = Date.now()));

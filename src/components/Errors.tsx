@@ -5,7 +5,8 @@ import { clearErrorLog, detailsText, dismissError, explainError, recordError, re
 import { problems, runSystemCheck, type Check } from "../lib/diagnostics";
 import { checkForUpdates } from "../lib/updates";
 import { exportJsonFile } from "../lib/backup";
-import { openUrl } from "../lib/platform";
+import { isAndroid, isBrowserMode, isTauri, openUrl, requestWebViewRepair, webviewStatus } from "../lib/platform";
+import { forceSync } from "../lib/sync";
 
 function doFix(fix: Explained["fix"]) {
   if (!fix) return;
@@ -39,8 +40,9 @@ export function ErrorAlert() {
         <button className="btn ghost sm" onClick={dismissError} aria-label="Dismiss">Dismiss</button>
       </div>
       <div className="muted" style={{ fontSize: 13.5 }}>{cur.text}</div>
+      {cur.autoFixed && <div className="alert" style={{ fontSize: 13 }}><b>Fixed automatically:</b> {cur.autoFixed}</div>}
       <div className="row">
-        {cur.fix && <button className="btn sm primary" onClick={() => doFix(cur.fix)}>{cur.fix.label}</button>}
+        {cur.fix && !cur.autoFixed && <button className="btn sm primary" onClick={() => doFix(cur.fix)}>{cur.fix.label}</button>}
         <button className="btn sm" onClick={() => openUrl(reportUrl(cur))}>Report problem</button>
         <button className="btn sm ghost" onClick={() => setOpen(!open)}>{open ? "Hide details" : "Details"}</button>
       </div>
@@ -50,7 +52,7 @@ export function ErrorAlert() {
 }
 
 /** Shown instead of a page (or the whole app) if drawing it crashes. Data is untouched. */
-function CrashScreen({ error, where, onRetry }: { error: Error; where: string; onRetry: () => void }) {
+function CrashScreen({ error, where, onRetry, tried }: { error: Error; where: string; onRetry: () => void; tried?: string }) {
   const ex = explainError(error);
   const entry = { at: Date.now(), message: error.message, stack: error.stack, where };
   return (
@@ -59,6 +61,7 @@ function CrashScreen({ error, where, onRetry }: { error: Error; where: string; o
         <h2 style={{ margin: 0, font: "600 22px var(--font-display)" }}>{ex.title}</h2>
         <div>{ex.text}</div>
         <div className="muted" style={{ fontSize: 13 }}>Your events, tasks, notes and settings are saved and not affected.</div>
+        {tried && <div className="alert" style={{ fontSize: 13 }}>Already tried automatically: {tried} It still didn't open, so it needs a closer look; reporting it helps.</div>}
         <div className="row">
           <button className="btn primary" onClick={onRetry}>Try again</button>
           <button className="btn" onClick={() => location.reload()}>Restart the app</button>
@@ -76,16 +79,31 @@ function CrashScreen({ error, where, onRetry }: { error: Error; where: string; o
   );
 }
 
-export class ErrorBoundary extends Component<{ where: string; children: ReactNode }, { error: Error | null }> {
-  state = { error: null as Error | null };
+/**
+ * Catches a crash while drawing. First time: reset that page's layout (data untouched) and retry by
+ * itself. If it crashes again, show the recovery screen.
+ */
+export class ErrorBoundary extends Component<{ where: string; children: ReactNode }, { error: Error | null; tried?: string }> {
+  state = { error: null as Error | null, tried: undefined as string | undefined };
   static getDerivedStateFromError(error: Error) {
     return { error };
   }
   componentDidCatch(error: Error, info: ErrorInfo) {
     recordError(Object.assign(error, { stack: `${error.stack ?? ""}\n${info.componentStack ?? ""}` }), this.props.where, false);
+    if (this.state.tried === undefined) {
+      import("../lib/autofix").then(({ resetPageLayout }) => {
+        const did = resetPageLayout(this.props.where);
+        if (did) {
+          toast(`Fixed automatically: ${did}`);
+          this.setState({ error: null, tried: did });
+        } else this.setState({ tried: "" });
+      });
+    }
   }
   render() {
-    if (this.state.error) return <CrashScreen error={this.state.error} where={this.props.where} onRetry={() => this.setState({ error: null })} />;
+    if (this.state.error && this.state.tried !== undefined)
+      return <CrashScreen error={this.state.error} where={this.props.where} tried={this.state.tried || undefined} onRetry={() => this.setState({ error: null })} />;
+    if (this.state.error) return <div className="empty" style={{ padding: 24 }}>Fixing a problem with this page…</div>;
     return this.props.children;
   }
 }
@@ -96,11 +114,44 @@ const DOT: Record<Check["status"], string> = { ok: "ok", warn: "warn", fail: "ba
 export function Diagnostics() {
   const [checks, setChecks] = useState<Check[] | null>(null);
   const [busy, setBusy] = useState(false);
+  const [wv, setWv] = useState("");
+  const [fixing, setFixing] = useState("");
   const log = useErrors((s) => s.log);
   const run = async () => {
     setBusy(true);
     setChecks(await runSystemCheck());
+    setWv(await webviewStatus());
     setBusy(false);
+  };
+  const repair = async () => {
+    setFixing("Repairing WebView2… Windows will ask for permission.");
+    try {
+      setFixing(await requestWebViewRepair());
+    } catch (e) {
+      setFixing(String((e as Error)?.message ?? e));
+    }
+  };
+  /** Everything that can be fixed from here without changing Windows settings. */
+  const fixAll = async () => {
+    const did: string[] = [];
+    try {
+      if (isTauri()) {
+        const n = await import("@tauri-apps/plugin-notification");
+        if (!(await n.isPermissionGranted()) && (await n.requestPermission()) === "granted") did.push("notifications allowed");
+      } else if (typeof Notification !== "undefined" && Notification.permission === "default" && (await Notification.requestPermission()) === "granted") did.push("notifications allowed");
+    } catch {
+      /* ignore */
+    }
+    if (await navigator.storage?.persist?.().catch(() => false)) did.push("storage protected from clean-up");
+    if (useStore.getState().settings.sync.enabled) {
+      forceSync();
+      did.push("sync restarted");
+    }
+    const { pruneStorage } = await import("../lib/autofix");
+    const freed = checks?.some((c) => c.id === "storage" && c.status !== "ok") ? pruneStorage() : "";
+    if (freed) did.push(`freed space (${freed})`);
+    toast(did.length ? `Fixed: ${did.join(", ")}.` : "Nothing else could be fixed automatically; see the suggestions below.");
+    run();
   };
   useEffect(() => {
     run();
@@ -109,8 +160,21 @@ export function Diagnostics() {
     <div className="stack">
       <div className="row">
         <button className="btn sm primary" onClick={run} disabled={busy}>{busy ? "Checking…" : "Run system check"}</button>
+        <button className="btn sm" onClick={fixAll} disabled={busy}>Fix what I can</button>
         {checks && <span className="muted" style={{ fontSize: 13 }}>{problems(checks).length ? `${problems(checks).length} thing${problems(checks).length > 1 ? "s" : ""} need attention` : "Everything looks good."}</span>}
       </div>
+      {((isTauri() && !isAndroid()) || isBrowserMode()) && (
+        <div className="card stack" style={{ gap: 6 }}>
+          <b>Microsoft Edge WebView2</b>
+          {wv && <pre style={{ margin: 0, whiteSpace: "pre-wrap", fontFamily: "inherit", fontSize: 13 }} className="muted">{wv}</pre>}
+          {isBrowserMode() && <div className="muted" style={{ fontSize: 13 }}>You're using Calendar Assistant in your web browser because WebView2 isn't working on this PC.</div>}
+          <div className="row">
+            <button className="btn sm" onClick={repair}>Repair WebView2</button>
+            <span className="faint" style={{ fontSize: 12.5 }}>Undoes WebView2 blocks left by clean-up tools and reinstalls it from Microsoft. Windows asks for permission.</span>
+          </div>
+          {fixing && <div className="alert" style={{ fontSize: 13 }}>{fixing}</div>}
+        </div>
+      )}
       {checks && (
         <div className="list">
           {checks.map((c) => (

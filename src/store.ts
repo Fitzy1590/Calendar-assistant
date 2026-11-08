@@ -191,8 +191,25 @@ export const useStore = create<State>()(
         lastSyncSeq: s.lastSyncSeq,
         page: s.page,
       }),
+      // saved data that can't be read (damaged): restore the newest daily snapshot automatically
+      onRehydrateStorage: () => (_state, error) => {
+        // only when something was saved and couldn't be read; a brand-new install has nothing to restore
+        let saved: string | null = null;
+        try {
+          saved = localStorage.getItem("calendar-assistant");
+        } catch {
+          /* storage unavailable */
+        }
+        if (!error || !saved) return;
+        import("./lib/autofix").then(({ restoreFromSnapshot }) => {
+          const did = restoreFromSnapshot();
+          import("./lib/errors").then(({ recordError }) => recordError(error, "startup", false));
+          if (did) setTimeout(() => toast(`Your saved data couldn't be read, so it was restored from the latest backup. ${did}`), 1500);
+        });
+      },
       // new settings keys added in later versions get their defaults
       merge: (persisted, current) => {
+        if (!persisted) return current; // nothing saved yet (first launch)
         const p = persisted as Partial<State>;
         const settings = deepMerge(DEFAULT_SETTINGS, p.settings ?? {}) as Settings;
         // pages and widgets added in later versions are appended to saved lists

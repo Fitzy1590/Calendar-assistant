@@ -122,6 +122,20 @@ npm run android:build  # APK/AAB
   vanishing, with buttons to get the fix (for example the WebView2 download), report the problem
   (GitHub with the details filled in), or close. A crash report is saved in
   `%LOCALAPPDATA%\com.fitzy.calendarassistant\crash-reports`.
+* **WebView2 removed or blocked by a "debloat" tool:** the app checks why it can't open its window (WebView2
+  not installed, blocked from starting, or blocked from being installed by a policy) and offers:
+  * **Fix it automatically**: one Windows admin prompt; undoes only the WebView2 blocks (a debloat tool's
+    other choices, like blocking the Edge browser, stay), reinstalls WebView2 from Microsoft and restarts.
+    A log is saved as `webview2-repair.log` in the crash-reports folder.
+  * **Open in your web browser instead**: the app serves itself to your normal browser on this PC only
+    (`http://127.0.0.1:47821`) and closes a few minutes after the tab does. Calendar, tasks, notes,
+    reminders and sync all work; tray icon, Windows Google sign-in and in-app updates don't. It can
+    remember this choice (delete `%LOCALAPPDATA%\com.fitzy.calendarassistant\prefer-browser-mode` to undo).
+    You can also start it this way with `"Calendar Assistant.exe" --browser-mode`.
+* **Automatic fixes:** problems are fixed by themselves where that's safe. A page that won't draw has its
+  layout reset and is retried; damaged saved data is restored from the newest daily backup; a full storage
+  is cleared of caches and old history; a half-loaded update reloads; lost connections catch up when you're
+  back online. Nothing that deletes your data or changes Windows settings happens without asking.
 * **Problems while using it** show a short explanation with a fix where there is one; a page that
   breaks shows a recovery screen (Try again / Restart / Back up my data / Report) while the rest of the
   app keeps working.

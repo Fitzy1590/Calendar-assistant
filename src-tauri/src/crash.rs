@@ -86,7 +86,7 @@ fn explain(p: &Problem) -> Explained {
     }
 }
 
-fn looks_like_webview(d: &str) -> bool {
+pub fn looks_like_webview(d: &str) -> bool {
     let d = d.to_lowercase();
     d.contains("webview2")
         || d.contains("webview")
@@ -119,7 +119,7 @@ fn windows_version() -> String {
     std::env::consts::OS.to_string()
 }
 
-fn report_dir() -> Option<PathBuf> {
+pub fn report_dir() -> Option<PathBuf> {
     let base = std::env::var_os("LOCALAPPDATA").or_else(|| std::env::var_os("HOME"))?;
     Some(PathBuf::from(base).join(APP_ID).join("crash-reports"))
 }
@@ -176,7 +176,7 @@ fn encode(s: &str) -> String {
     out
 }
 
-fn open(url: &str) {
+pub fn open(url: &str) {
     #[cfg(windows)]
     {
         let _ = std::process::Command::new("explorer.exe").arg(url).spawn();
@@ -187,11 +187,22 @@ fn open(url: &str) {
     }
 }
 
-/// Yes / No / Cancel message box. Returns 6 for Yes, 7 for No, anything else for Cancel.
+pub const YES: i32 = 6;
+pub const NO: i32 = 7;
+
+#[derive(Clone, Copy)]
+pub enum Buttons {
+    YesNoCancel,
+    YesNo,
+    Ok,
+}
+
+/// A Windows message box. Returns YES (6), NO (7) or anything else for Cancel / OK / closed.
 #[cfg(windows)]
-fn ask(title: &str, text: &str) -> i32 {
+pub fn ask_with(title: &str, text: &str, buttons: Buttons, error: bool) -> i32 {
     use windows_sys::Win32::UI::WindowsAndMessaging::{
-        MessageBoxW, MB_ICONERROR, MB_SETFOREGROUND, MB_TOPMOST, MB_YESNOCANCEL,
+        MessageBoxW, MB_ICONERROR, MB_ICONINFORMATION, MB_OK, MB_SETFOREGROUND, MB_TOPMOST,
+        MB_YESNO, MB_YESNOCANCEL,
     };
     let wide = |s: &str| {
         s.encode_utf16()
@@ -199,20 +210,34 @@ fn ask(title: &str, text: &str) -> i32 {
             .collect::<Vec<u16>>()
     };
     let (t, c) = (wide(text), wide(title));
+    let b = match buttons {
+        Buttons::YesNoCancel => MB_YESNOCANCEL,
+        Buttons::YesNo => MB_YESNO,
+        Buttons::Ok => MB_OK,
+    };
+    let icon = if error {
+        MB_ICONERROR
+    } else {
+        MB_ICONINFORMATION
+    };
     unsafe {
         MessageBoxW(
             std::ptr::null_mut(),
             t.as_ptr(),
             c.as_ptr(),
-            MB_YESNOCANCEL | MB_ICONERROR | MB_TOPMOST | MB_SETFOREGROUND,
+            b | icon | MB_TOPMOST | MB_SETFOREGROUND,
         )
     }
 }
 
 #[cfg(not(windows))]
-fn ask(title: &str, text: &str) -> i32 {
+pub fn ask_with(title: &str, text: &str, _buttons: Buttons, _error: bool) -> i32 {
     eprintln!("{title}\n{text}");
     2
+}
+
+fn ask(title: &str, text: &str) -> i32 {
+    ask_with(title, text, Buttons::YesNoCancel, true)
 }
 
 /// Tell the person what went wrong and offer the fix. Blocks until they choose.
@@ -231,8 +256,8 @@ pub fn report(p: Problem) {
         ));
     }
     match ask(e.title, &text) {
-        6 => open(&e.fix_url),
-        7 => open(&issue_url(&e)),
+        YES => open(&e.fix_url),
+        NO => open(&issue_url(&e)),
         _ => {}
     }
 }

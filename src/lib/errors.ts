@@ -70,7 +70,9 @@ function readLog(): LoggedError[] {
   }
 }
 
-export const useErrors = create<{ log: LoggedError[]; current: (LoggedError & Explained) | null }>(() => ({
+export type CurrentError = LoggedError & Explained & { autoFixed?: string };
+
+export const useErrors = create<{ log: LoggedError[]; current: CurrentError | null }>(() => ({
   log: readLog(),
   current: null,
 }));
@@ -84,10 +86,19 @@ export function recordError(err: unknown, where: string, show = true) {
   } catch {
     /* storage full: keep it in memory */
   }
+  useErrors.setState({ log });
+  if (!show) return;
   const cur = useErrors.getState().current;
-  // don't stack alerts for the same problem
-  const next = show && (!cur || cur.message !== entry.message) ? { ...entry, ...explainError(err) } : cur;
-  useErrors.setState({ log, current: next });
+  if (cur && cur.message === entry.message) return; // don't stack alerts for the same problem
+  const explained: CurrentError = { ...entry, ...explainError(err) };
+  useErrors.setState({ current: explained });
+  // then try to fix it automatically; the alert updates to say what was done
+  import("./autofix")
+    .then(({ autoFix }) => autoFix(err))
+    .then((did) => {
+      if (did && useErrors.getState().current?.at === entry.at) useErrors.setState({ current: { ...explained, autoFixed: did } });
+    })
+    .catch(() => {});
 }
 
 export const clearErrorLog = () => {

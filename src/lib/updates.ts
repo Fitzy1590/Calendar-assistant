@@ -35,8 +35,14 @@ export const updatesSupported = () => isTauri();
 
 /** a > b for plain x.y.z versions (a leading "v" is ignored). */
 export function newer(a: string, b: string) {
-  const pa = a.replace(/^v/, "").split(/[.-]/).map((x) => parseInt(x) || 0);
-  const pb = b.replace(/^v/, "").split(/[.-]/).map((x) => parseInt(x) || 0);
+  const pa = a
+    .replace(/^v/, "")
+    .split(/[.-]/)
+    .map((x) => parseInt(x) || 0);
+  const pb = b
+    .replace(/^v/, "")
+    .split(/[.-]/)
+    .map((x) => parseInt(x) || 0);
   for (let i = 0; i < 3; i++) if ((pa[i] ?? 0) !== (pb[i] ?? 0)) return (pa[i] ?? 0) > (pb[i] ?? 0);
   return false;
 }
@@ -75,7 +81,7 @@ export async function checkForUpdates(manual = false): Promise<boolean> {
       }
       if (viaUpdater) {
         done();
-        if (!manual && settings.skipVersion === viaUpdater.version) return set({ kind: "idle" }), false;
+        if (!manual && settings.skipVersion === viaUpdater.version) return (set({ kind: "idle" }), false);
         set({ kind: "available", version: viaUpdater.version, notes: viaUpdater.body ?? "", via: "updater" }, true);
         if (!manual && settings.installAutomatically) await installUpdate();
         return true;
@@ -96,7 +102,7 @@ export async function checkForUpdates(manual = false): Promise<boolean> {
       set({ kind: "none", checkedAt: Date.now() });
       return false;
     }
-    if (!manual && settings.skipVersion === version) return set({ kind: "idle" }), false;
+    if (!manual && settings.skipVersion === version) return (set({ kind: "idle" }), false);
     const apk = (rel.assets ?? []).find((a: { name: string }) => /\.apk$/i.test(a.name));
     set(
       {
@@ -157,7 +163,8 @@ export const dismissPrompt = () => useUpdates.setState({ prompt: false });
 
 function friendly(e: unknown) {
   const m = String((e as Error)?.message ?? e);
-  if (/signature/i.test(m)) return "The download's signature didn't match, so it wasn't installed. Try again later or download it from the Releases page.";
+  if (/signature/i.test(m))
+    return "The download's signature didn't match, so it wasn't installed. Try again later or download it from the Releases page.";
   if (/fetch|network|dns|timed? ?out/i.test(m)) return "Couldn't reach GitHub to check for updates. Check your internet connection.";
   return m;
 }

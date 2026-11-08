@@ -43,7 +43,10 @@ export function BirthdaySync({ onClose }: { onClose: () => void }) {
       const name = get("FN");
       const raw = get("BDAY");
       if (!name || !raw) continue;
-      const b = raw.replace(/^--/, "1900-").replace(/^(\d{4})(\d{2})(\d{2})$/, "$1-$2-$3").slice(0, 10);
+      const b = raw
+        .replace(/^--/, "1900-")
+        .replace(/^(\d{4})(\d{2})(\d{2})$/, "$1-$2-$3")
+        .slice(0, 10);
       if (!/^\d{4}-\d{2}-\d{2}$/.test(b)) continue;
       const match = contacts.find((c) => c.name.toLowerCase() === name.toLowerCase());
       if (match && match.birthday) continue;
@@ -54,42 +57,88 @@ export function BirthdaySync({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <Modal title="Birthdays on your calendar" onClose={onClose} wide footer={<button className="btn primary" onClick={onClose}>Done</button>}>
+    <Modal
+      title="Birthdays on your calendar"
+      onClose={onClose}
+      wide
+      footer={
+        <button className="btn primary" onClick={onClose}>
+          Done
+        </button>
+      }
+    >
       <div className="row" style={{ gap: 16 }}>
-        <span><b style={{ fontSize: 22 }}>{withBirthday}</b> <span className="muted">{withBirthday === 1 ? "birthday shows" : "birthdays show"} every year, as far ahead as you scroll</span></span>
+        <span>
+          <b style={{ fontSize: 22 }}>{withBirthday}</b>{" "}
+          <span className="muted">{withBirthday === 1 ? "birthday shows" : "birthdays show"} every year, as far ahead as you scroll</span>
+        </span>
         {!s.settings.pages.calendar.showBirthdays && (
-          <button className="btn sm primary" onClick={() => s.updateSettings((st) => void (st.pages.calendar.showBirthdays = true))}>Show birthdays on the calendar</button>
+          <button className="btn sm primary" onClick={() => s.updateSettings((st) => void (st.pages.calendar.showBirthdays = true))}>
+            Show birthdays on the calendar
+          </button>
         )}
       </div>
       <div className="row">
         {googleSignInAvailable() && (
-          <button className="btn" disabled={busy || !googleConfigured()} onClick={fromGoogle} title={googleConfigured() ? "" : "Add your Google client ID in Settings first"}>
+          <button
+            className="btn"
+            disabled={busy || !googleConfigured()}
+            onClick={fromGoogle}
+            title={googleConfigured() ? "" : "Add your Google client ID in Settings first"}
+          >
             {busy ? "Reading Google Contacts…" : "Get birthdays from Google Contacts"}
           </button>
         )}
-        <label className="btn">Import from phone contacts (.vcf)<input type="file" accept=".vcf,text/vcard" hidden onChange={(e) => e.target.files?.[0] && importVcf(e.target.files[0])} /></label>
+        <label className="btn">
+          Import from phone contacts (.vcf)
+          <input type="file" accept=".vcf,text/vcard" hidden onChange={(e) => e.target.files?.[0] && importVcf(e.target.files[0])} />
+        </label>
       </div>
       {upcoming.length > 0 && (
         <div>
-          <div className="eyebrow" style={{ marginBottom: 6 }}>Coming up</div>
-          <div className="row">{upcoming.map(({ c, date, age }) => <span key={c.id} className="chip">{c.name} · {format(date, "d MMM")}{age ? ` · ${age}` : ""}</span>)}</div>
+          <div className="eyebrow" style={{ marginBottom: 6 }}>
+            Coming up
+          </div>
+          <div className="row">
+            {upcoming.map(({ c, date, age }) => (
+              <span key={c.id} className="chip">
+                {c.name} · {format(date, "d MMM")}
+                {age ? ` · ${age}` : ""}
+              </span>
+            ))}
+          </div>
         </div>
       )}
       {without.length > 0 && (
         <div>
           <div className="row" style={{ justifyContent: "space-between", marginBottom: 6 }}>
             <span className="eyebrow">No birthday yet · {without.length}</span>
-            <input className="input" style={{ maxWidth: 220 }} placeholder="Find a person" value={filter} onChange={(e) => setFilter(e.target.value)} aria-label="Find a person" />
+            <input
+              className="input"
+              style={{ maxWidth: 220 }}
+              placeholder="Find a person"
+              value={filter}
+              onChange={(e) => setFilter(e.target.value)}
+              aria-label="Find a person"
+            />
           </div>
           <div className="list">
             {missing.map((c) => (
               <div key={c.id} className="row" style={{ justifyContent: "space-between" }}>
                 <span>{c.name}</span>
-                <input type="date" className="input" style={{ width: 160 }} aria-label={`Birthday for ${c.name}`} onChange={(e) => e.target.value && s.upsert("contacts", { id: c.id, birthday: e.target.value })} />
+                <input
+                  type="date"
+                  className="input"
+                  style={{ width: 160 }}
+                  aria-label={`Birthday for ${c.name}`}
+                  onChange={(e) => e.target.value && s.upsert("contacts", { id: c.id, birthday: e.target.value })}
+                />
               </div>
             ))}
           </div>
-          <div className="faint" style={{ fontSize: 12.5, marginTop: 6 }}>Don't know the year? Pick any year; it only affects the age shown.</div>
+          <div className="faint" style={{ fontSize: 12.5, marginTop: 6 }}>
+            Don't know the year? Pick any year; it only affects the age shown.
+          </div>
         </div>
       )}
     </Modal>

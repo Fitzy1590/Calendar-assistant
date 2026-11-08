@@ -27,7 +27,18 @@ import { dailyBackups } from "./lib/backup";
 import { googleConnected, quietly, SCOPES, syncGoogleCalendar } from "./lib/google";
 import { checkTrackedPrices } from "./lib/shopping";
 
-const PAGES = { home: Home, calendar: Calendar, tasks: Tasks, notes: Notes, shopping: Shopping, contacts: Contacts, reminders: Reminders, news: News, sports: Sports, settings: Settings };
+const PAGES = {
+  home: Home,
+  calendar: Calendar,
+  tasks: Tasks,
+  notes: Notes,
+  shopping: Shopping,
+  contacts: Contacts,
+  reminders: Reminders,
+  news: News,
+  sports: Sports,
+  settings: Settings,
+};
 
 function useTheme() {
   const { theme, accent, density, fontScale } = useStore((s) => s.settings);
@@ -57,7 +68,10 @@ function useBackground() {
     };
     const tickSync = () => {
       const sh = useStore.getState().settings.shopping;
-      if (sh.checkPricesDaily) checkTrackedPrices().then((n) => sh.notifyDrops && n.forEach((m) => notify("Price drop", m))).catch(() => {});
+      if (sh.checkPricesDaily)
+        checkTrackedPrices()
+          .then((n) => sh.notifyDrops && n.forEach((m) => notify("Price drop", m)))
+          .catch(() => {});
       const g = useStore.getState().settings.google;
       if (g.calendarSync && googleConnected(SCOPES.calendar)) quietly(syncGoogleCalendar).catch(() => {});
       dailyBackups();
@@ -85,8 +99,16 @@ export default function App() {
         <div className="topbar">
           <CommandBar />
           <span style={{ flex: 1 }} />
-          <button className="btn ghost" onClick={() => s.setUi({ emailImportOpen: true })} title="Import events from email or Google Calendar"><IMail /> <span className="hide-sm">Import</span></button>
-          <button className="btn ghost" onClick={() => s.setUi({ feedbackOpen: true })} title="Suggestions & feedback"><IIdea /> <span className="hide-sm">Feedback</span></button>
+          <button
+            className="btn ghost"
+            onClick={() => s.setUi({ emailImportOpen: true })}
+            title="Import events from email or Google Calendar"
+          >
+            <IMail /> <span className="hide-sm">Import</span>
+          </button>
+          <button className="btn ghost" onClick={() => s.setUi({ feedbackOpen: true })} title="Suggestions & feedback">
+            <IIdea /> <span className="hide-sm">Feedback</span>
+          </button>
         </div>
         <BrowserModeBanner />
         <div className="content">
@@ -103,7 +125,11 @@ export default function App() {
       <CarryOver />
       <UpdatePrompt />
       <ErrorAlert />
-      {s.toast && <div className="toast" role="status">{s.toast}</div>}
+      {s.toast && (
+        <div className="toast" role="status">
+          {s.toast}
+        </div>
+      )}
     </div>
   );
 }

@@ -48,7 +48,9 @@ export function backupJson() {
 export function restoreBackup(json: string, opts: { settings: boolean }): string {
   const b = JSON.parse(json) as Backup;
   if (b.app !== "calendar-assistant") throw new Error("That file isn't a Calendar Assistant backup.");
-  const changes: Change[] = COLLECTIONS.flatMap((c) => ((b.data[c] ?? []) as Change["record"][]).map((record) => ({ collection: c, record })));
+  const changes: Change[] = COLLECTIONS.flatMap((c) =>
+    ((b.data[c] ?? []) as Change["record"][]).map((record) => ({ collection: c, record })),
+  );
   const st = useStore.getState();
   st.applyRemote(changes);
   if (opts.settings && b.settings) {
@@ -87,13 +89,21 @@ export function exportIcs() {
   const days = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"];
   const lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Calendar Assistant//EN"];
   for (const e of live(s.events)) {
-    lines.push("BEGIN:VEVENT", `UID:${e.id}@calendar-assistant`, `DTSTAMP:${format(new Date(), "yyyyMMdd'T'HHmmss")}`,
-      `DTSTART${dt(e.start, e.allDay)}`, `DTEND${dt(e.end, e.allDay)}`, `SUMMARY:${esc(e.title)}`);
+    lines.push(
+      "BEGIN:VEVENT",
+      `UID:${e.id}@calendar-assistant`,
+      `DTSTAMP:${format(new Date(), "yyyyMMdd'T'HHmmss")}`,
+      `DTSTART${dt(e.start, e.allDay)}`,
+      `DTEND${dt(e.end, e.allDay)}`,
+      `SUMMARY:${esc(e.title)}`,
+    );
     if (e.location) lines.push(`LOCATION:${esc(e.location)}`);
     if (e.notes) lines.push(`DESCRIPTION:${esc(e.notes)}`);
     if (e.recurrence) {
       const r = e.recurrence;
-      lines.push(`RRULE:FREQ=${r.freq.toUpperCase()};INTERVAL=${r.interval}${r.byWeekday?.length ? ";BYDAY=" + r.byWeekday.map((d) => days[d]).join(",") : ""}${r.until ? ";UNTIL=" + r.until.replace(/-/g, "") : ""}${r.count ? ";COUNT=" + r.count : ""}`);
+      lines.push(
+        `RRULE:FREQ=${r.freq.toUpperCase()};INTERVAL=${r.interval}${r.byWeekday?.length ? ";BYDAY=" + r.byWeekday.map((d) => days[d]).join(",") : ""}${r.until ? ";UNTIL=" + r.until.replace(/-/g, "") : ""}${r.count ? ";COUNT=" + r.count : ""}`,
+      );
       for (const x of e.exceptions ?? []) lines.push(`EXDATE${dt(x + e.start.slice(10), e.allDay)}`);
     }
     lines.push("END:VEVENT");
@@ -103,15 +113,25 @@ export function exportIcs() {
 }
 
 export function exportCsvTasks() {
-  const rows = [["title", "due", "time", "priority", "done", "notes"], ...live(useStore.getState().tasks).map((t) => [t.title, t.due ?? "", t.time ?? "", t.priority, String(t.done), t.notes ?? ""])];
-  download(`tasks-${format(new Date(), "yyyy-MM-dd")}.csv`, rows.map((r) => r.map((c) => `"${c.replace(/"/g, '""')}"`).join(",")).join("\n"), "text/csv");
+  const rows = [
+    ["title", "due", "time", "priority", "done", "notes"],
+    ...live(useStore.getState().tasks).map((t) => [t.title, t.due ?? "", t.time ?? "", t.priority, String(t.done), t.notes ?? ""]),
+  ];
+  download(
+    `tasks-${format(new Date(), "yyyy-MM-dd")}.csv`,
+    rows.map((r) => r.map((c) => `"${c.replace(/"/g, '""')}"`).join(",")).join("\n"),
+    "text/csv",
+  );
 }
 
 /* ---- rolling local snapshots ---- */
 
 export function listSnapshots(): { at: string; size: number }[] {
   try {
-    return (JSON.parse(localStorage.getItem(SNAP_KEY) || "[]") as { at: string; json: string }[]).map((s) => ({ at: s.at, size: s.json.length }));
+    return (JSON.parse(localStorage.getItem(SNAP_KEY) || "[]") as { at: string; json: string }[]).map((s) => ({
+      at: s.at,
+      size: s.json.length,
+    }));
   } catch {
     return [];
   }

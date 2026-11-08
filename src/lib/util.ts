@@ -23,5 +23,7 @@ export function cx(...parts: (string | false | null | undefined)[]) {
 export function pairingCode() {
   const alphabet = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
   const bytes = crypto.getRandomValues(new Uint8Array(10));
-  return Array.from(bytes, (b) => alphabet[b % alphabet.length]).join("").replace(/(.{5})/, "$1-");
+  return Array.from(bytes, (b) => alphabet[b % alphabet.length])
+    .join("")
+    .replace(/(.{5})/, "$1-");
 }

@@ -58,7 +58,14 @@ export function addEvent(a: {
 }
 
 export function addTask(a: { title: string; due?: string; time?: string; priority?: Priority; notes?: string }): ActionResult {
-  const task = st().upsert("tasks", { title: a.title, due: a.due, time: a.time, priority: a.priority ?? "med", done: false, notes: a.notes });
+  const task = st().upsert("tasks", {
+    title: a.title,
+    due: a.due,
+    time: a.time,
+    priority: a.priority ?? "med",
+    done: false,
+    notes: a.notes,
+  });
   return { text: `Added task "${task.title}"${task.due ? ` for ${format(fromYmd(task.due), "EEEE d MMM")}` : ""}.` };
 }
 
@@ -97,14 +104,18 @@ export function deleteEvent(q: string, date?: string): ActionResult {
 export function agenda(from: Date, to: Date, query?: string): ActionResult {
   const s = st();
   let occ = occurrencesInRange(calendarEvents(s), from, to);
-  if (query) occ = occ.filter((o) => (o.event.title + " " + (o.event.location ?? "") + " " + (o.event.notes ?? "")).toLowerCase().includes(query.toLowerCase()));
+  if (query)
+    occ = occ.filter((o) =>
+      (o.event.title + " " + (o.event.location ?? "") + " " + (o.event.notes ?? "")).toLowerCase().includes(query.toLowerCase()),
+    );
   const fromK = ymd(from);
   const toK = ymd(addDays(to, -1));
-  const tasks = query
-    ? []
-    : live(s.tasks).filter((x) => !x.done && x.due && x.due >= fromK && x.due <= toK);
+  const tasks = query ? [] : live(s.tasks).filter((x) => !x.done && x.due && x.due >= fromK && x.due <= toK);
   const items = [
-    ...occ.map((o) => `${format(o.start, "EEE d MMM")}${o.event.allDay ? "" : " " + t(o.start)} — ${o.event.title}${o.event.location ? ` (${o.event.location})` : ""}`),
+    ...occ.map(
+      (o) =>
+        `${format(o.start, "EEE d MMM")}${o.event.allDay ? "" : " " + t(o.start)} — ${o.event.title}${o.event.location ? ` (${o.event.location})` : ""}`,
+    ),
     ...tasks.map((x) => `${format(fromYmd(x.due!), "EEE d MMM")} — task: ${x.title}`),
   ];
   const span = differenceLabel(from, to);
@@ -154,10 +165,29 @@ export function addContact(a: { name: string; phone?: string; email?: string; bi
 }
 
 const PAGE_WORDS: Record<string, PageId> = {
-  home: "home", dashboard: "home", calendar: "calendar", diary: "calendar", tasks: "tasks", todo: "tasks", "to-do": "tasks",
-  contacts: "contacts", people: "contacts", birthdays: "contacts", reminders: "reminders", news: "news", headlines: "news",
-  sport: "sports", sports: "sports", settings: "settings", preferences: "settings", notes: "notes", note: "notes", "sticky notes": "notes",
-  shopping: "shopping", "shopping list": "shopping", shop: "shopping",
+  home: "home",
+  dashboard: "home",
+  calendar: "calendar",
+  diary: "calendar",
+  tasks: "tasks",
+  todo: "tasks",
+  "to-do": "tasks",
+  contacts: "contacts",
+  people: "contacts",
+  birthdays: "contacts",
+  reminders: "reminders",
+  news: "news",
+  headlines: "news",
+  sport: "sports",
+  sports: "sports",
+  settings: "settings",
+  preferences: "settings",
+  notes: "notes",
+  note: "notes",
+  "sticky notes": "notes",
+  shopping: "shopping",
+  "shopping list": "shopping",
+  shop: "shopping",
 };
 export function navigate(word: string): ActionResult {
   const page = PAGE_WORDS[word.toLowerCase()] ?? (word as PageId);
@@ -217,7 +247,10 @@ export function findNotes(q: string): ActionResult {
   st().setPage("notes");
   window.dispatchEvent(new CustomEvent("notes-search", { detail: q }));
   if (!hits.length) return { text: `No notes mention "${q}".` };
-  return { text: `${hits.length} note${hits.length > 1 ? "s" : ""} about "${q}":`, items: hits.slice(0, 6).map((n) => n.title || n.body.split("\n")[0].slice(0, 80)) };
+  return {
+    text: `${hits.length} note${hits.length > 1 ? "s" : ""} about "${q}":`,
+    items: hits.slice(0, 6).map((n) => n.title || n.body.split("\n")[0].slice(0, 80)),
+  };
 }
 
 /* ---- shopping ---- */
@@ -230,7 +263,10 @@ export function shopFor(product: string): ActionResult {
 }
 
 export function addShopping(names: string): ActionResult {
-  const list = names.split(/,|\band\b/).map((x) => x.trim()).filter(Boolean);
+  const list = names
+    .split(/,|\band\b/)
+    .map((x) => x.trim())
+    .filter(Boolean);
   for (const name of list) shopLib.addToList({ name: name.charAt(0).toUpperCase() + name.slice(1) });
   return { text: `Added ${list.join(", ")} to your shopping list.` };
 }
@@ -238,16 +274,27 @@ export function addShopping(names: string): ActionResult {
 export function listShopping(): ActionResult {
   const items = live(st().shopping).filter((i) => !i.done);
   if (!items.length) return { text: "Your shopping list is empty." };
-  return { text: `${items.length} thing${items.length > 1 ? "s" : ""} on your shopping list:`, items: items.map((i) => i.name + (i.store?.name ? ` (${i.store.name})` : "")) };
+  return {
+    text: `${items.length} thing${items.length > 1 ? "s" : ""} on your shopping list:`,
+    items: items.map((i) => i.name + (i.store?.name ? ` (${i.store.name})` : "")),
+  };
 }
 
 /* ---- invites ---- */
 
-export async function invite(people: string[], ev: { title: string; date: string; time?: string; durationMins?: number; location?: string }): Promise<ActionResult> {
+export async function invite(
+  people: string[],
+  ev: { title: string; date: string; time?: string; durationMins?: number; location?: string },
+): Promise<ActionResult> {
   const r = addEvent(ev);
   const created = Object.values(st().events).sort((a, b) => b.updatedAt - a.updatedAt)[0];
   const attendees = people.map((p) => invitesLib.attendeeFromText(p));
-  st().upsert("events", { id: created.id, attendees, host: st().settings.displayName || undefined, tz: Intl.DateTimeFormat().resolvedOptions().timeZone } as Partial<CalEvent>);
+  st().upsert("events", {
+    id: created.id,
+    attendees,
+    host: st().settings.displayName || undefined,
+    tz: Intl.DateTimeFormat().resolvedOptions().timeZone,
+  } as Partial<CalEvent>);
   const missing = attendees.filter((a) => !a.phone && !a.email).map((a) => a.name);
   const sent: string[] = [];
   if (st().settings.invites.channel !== "ask") {

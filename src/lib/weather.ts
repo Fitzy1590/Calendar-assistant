@@ -96,14 +96,10 @@ export async function searchPlaces(q: string): Promise<Place[]> {
 
 /** Reverse-lookup the device position to the nearest named place (best effort). */
 export async function placeFromDevice(): Promise<Place> {
-  const pos = await new Promise<GeolocationPosition>((ok, err) =>
-    navigator.geolocation.getCurrentPosition(ok, err, { timeout: 10000 }),
-  );
+  const pos = await new Promise<GeolocationPosition>((ok, err) => navigator.geolocation.getCurrentPosition(ok, err, { timeout: 10000 }));
   const { latitude: lat, longitude: lon } = pos.coords;
   try {
-    const j = await getJson<any>(
-      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=14`,
-    );
+    const j = await getJson<any>(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=14`);
     const a = j.address ?? {};
     return {
       name: a.suburb || a.town || a.village || a.city_district || a.city || "My location",

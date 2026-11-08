@@ -30,10 +30,16 @@ export function DayPanel() {
   return (
     <aside className="drawer" aria-label="Day details">
       <header>
-        <button className="btn ghost icon" onClick={() => move(-1)} aria-label="Previous day"><ILeft /></button>
+        <button className="btn ghost icon" onClick={() => move(-1)} aria-label="Previous day">
+          <ILeft />
+        </button>
         <h3>{format(date, "EEEE d MMMM")}</h3>
-        <button className="btn ghost icon" onClick={() => move(1)} aria-label="Next day"><IRight /></button>
-        <button className="btn ghost icon" onClick={() => s.selectDay(null)} aria-label="Close"><IX /></button>
+        <button className="btn ghost icon" onClick={() => move(1)} aria-label="Next day">
+          <IRight />
+        </button>
+        <button className="btn ghost icon" onClick={() => s.selectDay(null)} aria-label="Close">
+          <IX />
+        </button>
       </header>
       <div className="body">
         <section>
@@ -42,12 +48,22 @@ export function DayPanel() {
             <div className="row" style={{ gap: 16, marginTop: 8 }}>
               <WeatherIcon sky={skyOf(w.code).sky} size={44} />
               <div>
-                <div style={{ font: "500 30px var(--font-display)" }}>{Math.round(w.max)}{tempUnit(s.settings.units)} <span className="muted" style={{ fontSize: 18 }}>/ {Math.round(w.min)}°</span></div>
-                <div className="muted">{skyOf(w.code).label} · rain {w.rainChance}% · UV {Math.round(w.uv)} · wind {Math.round(w.wind)}</div>
+                <div style={{ font: "500 30px var(--font-display)" }}>
+                  {Math.round(w.max)}
+                  {tempUnit(s.settings.units)}{" "}
+                  <span className="muted" style={{ fontSize: 18 }}>
+                    / {Math.round(w.min)}°
+                  </span>
+                </div>
+                <div className="muted">
+                  {skyOf(w.code).label} · rain {w.rainChance}% · UV {Math.round(w.uv)} · wind {Math.round(w.wind)}
+                </div>
               </div>
             </div>
           ) : (
-            <div className="empty">{loc ? (wx.loading ? "Loading forecast…" : "No forecast this far ahead (16-day limit).") : "Set a location in Settings."}</div>
+            <div className="empty">
+              {loc ? (wx.loading ? "Loading forecast…" : "No forecast this far ahead (16-day limit).") : "Set a location in Settings."}
+            </div>
           )}
           {hourly.length > 0 && (
             <div className="row" style={{ marginTop: 10, justifyContent: "space-between" }}>
@@ -63,20 +79,40 @@ export function DayPanel() {
         </section>
 
         <section>
-          <div className="card-title">Your plans <span className="spacer" />
-            <button className="btn sm" onClick={() => setEdit({ ev: { start: localIso(new Date(date.getTime() + 9 * 3600e3)), end: localIso(new Date(date.getTime() + 10 * 3600e3)) } })}><IPlus size={14} /> Event</button>
+          <div className="card-title">
+            Your plans <span className="spacer" />
+            <button
+              className="btn sm"
+              onClick={() =>
+                setEdit({
+                  ev: { start: localIso(new Date(date.getTime() + 9 * 3600e3)), end: localIso(new Date(date.getTime() + 10 * 3600e3)) },
+                })
+              }
+            >
+              <IPlus size={14} /> Event
+            </button>
           </div>
           <div className="list">
             {occ.map((o) => (
-              <div key={o.key} className="agenda-item" style={{ cursor: "pointer" }} onClick={() => (isBirthdayEvent(o.event) ? s.setPage("contacts") : setEdit({ ev: o.event, occ: day }))}>
+              <div
+                key={o.key}
+                className="agenda-item"
+                style={{ cursor: "pointer" }}
+                onClick={() => (isBirthdayEvent(o.event) ? s.setPage("contacts") : setEdit({ ev: o.event, occ: day }))}
+              >
                 <span className="when">{o.event.allDay ? "all day" : fmtTime(o.start, s.settings.clock24)}</span>
-                <span><span className="what">{o.event.title}</span>{o.event.location && <div className="where">{o.event.location}</div>}</span>
+                <span>
+                  <span className="what">{o.event.title}</span>
+                  {o.event.location && <div className="where">{o.event.location}</div>}
+                </span>
               </div>
             ))}
             {tasks.map((t) => (
               <div key={t.id} className="agenda-item">
                 <span className="when">task</span>
-                <span className={t.done ? "faint" : ""} style={{ textDecoration: t.done ? "line-through" : undefined }}>{t.title}</span>
+                <span className={t.done ? "faint" : ""} style={{ textDecoration: t.done ? "line-through" : undefined }}>
+                  {t.title}
+                </span>
               </div>
             ))}
             {!occ.length && !tasks.length && <div className="empty">Nothing planned.</div>}
@@ -85,19 +121,40 @@ export function DayPanel() {
 
         {loc && (
           <section>
-            <div className="card-title">Around {loc.name}{loc.city && loc.city !== loc.name ? ` & ${loc.city}` : ""}</div>
+            <div className="card-title">
+              Around {loc.name}
+              {loc.city && loc.city !== loc.name ? ` & ${loc.city}` : ""}
+            </div>
             <div className="list">
               {(local.data ?? []).map((e) => (
-                <a key={e.id} href={e.url} onClick={(ev) => { ev.preventDefault(); openUrl(e.url); }} className="agenda-item" style={{ textDecoration: "none" }}>
+                <a
+                  key={e.id}
+                  href={e.url}
+                  onClick={(ev) => {
+                    ev.preventDefault();
+                    openUrl(e.url);
+                  }}
+                  className="agenda-item"
+                  style={{ textDecoration: "none" }}
+                >
                   <span className="when">{e.start.length > 10 ? e.start.slice(11, 16) : ""}</span>
-                  <span><span className="what">{e.name}</span><div className="where">{[e.venue, e.category].filter(Boolean).join(" · ")}</div></span>
+                  <span>
+                    <span className="what">{e.name}</span>
+                    <div className="where">{[e.venue, e.category].filter(Boolean).join(" · ")}</div>
+                  </span>
                 </a>
               ))}
-              {!s.settings.localEventsApiKey && <div className="faint" style={{ fontSize: 12.5 }}>Add a free Ticketmaster key in Settings → Local events to list events here.</div>}
+              {!s.settings.localEventsApiKey && (
+                <div className="faint" style={{ fontSize: 12.5 }}>
+                  Add a free Ticketmaster key in Settings → Local events to list events here.
+                </div>
+              )}
             </div>
             <div className="row" style={{ marginTop: 8 }}>
               {localSearchLinks(loc, format(date, "d MMMM yyyy")).map((l) => (
-                <button key={l.url} className="btn sm" onClick={() => openUrl(l.url)}>{l.label} <IExternal size={13} /></button>
+                <button key={l.url} className="btn sm" onClick={() => openUrl(l.url)}>
+                  {l.label} <IExternal size={13} />
+                </button>
               ))}
             </div>
           </section>

@@ -42,9 +42,7 @@ export function planWeek(now = new Date()): PlanItem[] {
   const todayKey = ymd(today);
   for (const t of tasks) if (t.due && t.due >= todayKey && load.has(t.due)) load.set(t.due, load.get(t.due)! + (t.estimateMins ?? 30));
 
-  const toPlace = tasks
-    .filter((t) => !t.due || t.due < todayKey)
-    .sort((a, b) => rank(b) - rank(a));
+  const toPlace = tasks.filter((t) => !t.due || t.due < todayKey).sort((a, b) => rank(b) - rank(a));
   const plan: PlanItem[] = [];
   for (const t of toPlace) {
     // weekends weigh a little heavier so chores don't all land on Saturday

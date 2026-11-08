@@ -71,13 +71,15 @@ async function ensurePorcupine() {
   const keyword =
     v.keyword === "custom" && v.customKeyword
       ? { label: v.customKeyword.label, base64: v.customKeyword.base64, sensitivity: v.sensitivity }
-      : { builtin: (BuiltInKeyword as Record<string, string>)[v.keyword === "custom" ? "Computer" : v.keyword] as never, sensitivity: v.sensitivity };
-  porcupine = await PorcupineWorker.create(
-    v.picovoiceKey,
-    keyword,
-    () => wakeDetected(),
-    { publicPath: MODELS.porcupine, customWritePath: "porcupine_v4", version: 1 },
-  );
+      : {
+          builtin: (BuiltInKeyword as Record<string, string>)[v.keyword === "custom" ? "Computer" : v.keyword] as never,
+          sensitivity: v.sensitivity,
+        };
+  porcupine = await PorcupineWorker.create(v.picovoiceKey, keyword, () => wakeDetected(), {
+    publicPath: MODELS.porcupine,
+    customWritePath: "porcupine_v4",
+    version: 1,
+  });
   return porcupine;
 }
 
@@ -95,7 +97,16 @@ async function ensureCheetah() {
 }
 
 /* ---------------- browser engine ---------------- */
-type Rec = { lang: string; interimResults: boolean; continuous: boolean; onresult: (e: any) => void; onend: () => void; onerror: (e: any) => void; start: () => void; stop: () => void };
+type Rec = {
+  lang: string;
+  interimResults: boolean;
+  continuous: boolean;
+  onresult: (e: any) => void;
+  onend: () => void;
+  onerror: (e: any) => void;
+  start: () => void;
+  stop: () => void;
+};
 const RecCtor = () => (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
 export const browserSpeechAvailable = () => !!RecCtor() && !isTauri();
 let wakeRec: Rec | null = null;
@@ -256,7 +267,8 @@ export function unsupportedMessage() {
 
 function friendly(e: unknown) {
   const m = String((e as Error)?.message ?? e);
-  if (/AccessKey|ACTIVATION|KEY_ERROR|INVALID_ARGUMENT/i.test(m)) return "Picovoice didn't accept the AccessKey. Check it in Settings → Assistant & voice.";
+  if (/AccessKey|ACTIVATION|KEY_ERROR|INVALID_ARGUMENT/i.test(m))
+    return "Picovoice didn't accept the AccessKey. Check it in Settings → Assistant & voice.";
   if (/NotAllowed|Permission|denied/i.test(m)) return "Microphone access was blocked. Allow it for Calendar Assistant and try again.";
   if (/fetch|network|Failed to load/i.test(m)) return "Couldn't download the voice model. Check the internet connection (needed once).";
   return m;

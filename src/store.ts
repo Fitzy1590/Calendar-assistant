@@ -29,13 +29,17 @@ export const DEFAULT_SETTINGS: Settings = {
     desktopNotifications: true,
   },
   invites: {
-    template:
-      "Hi {name}, want to catch up? {title} on {when}{where}.\n{rsvp}{maps}\n– {from}",
+    template: "Hi {name}, want to catch up? {title} on {when}{where}.\n{rsvp}{maps}\n– {from}",
     channel: "ask",
     rsvpLinks: true,
     notifyReplies: true,
   },
-  shopping: { radiusKm: 10, onlineStores: ["Amazon AU", "Officeworks", "Bunnings", "eBay AU", "JB Hi-Fi", "Kmart"], checkPricesDaily: true, notifyDrops: true },
+  shopping: {
+    radiusKm: 10,
+    onlineStores: ["Amazon AU", "Officeworks", "Bunnings", "eBay AU", "JB Hi-Fi", "Kmart"],
+    checkPricesDaily: true,
+    notifyDrops: true,
+  },
   updates: { checkOnLaunch: true, installAutomatically: false },
   sync: { shareSettings: true, enabled: false, serverUrl: "", pairingCode: pairingCode(), deviceName: "" },
   phone: { route: "companion" },
@@ -45,15 +49,17 @@ export const DEFAULT_SETTINGS: Settings = {
   localEventsApiKey: "",
   google: { calendarSync: false, calendarId: "primary", driveBackup: false },
   backup: { autoLocal: true },
-  sidebar: (["home", "calendar", "tasks", "notes", "shopping", "reminders", "contacts", "news", "sports", "settings"] as PageId[]).map((id) => ({
-    id,
-    visible: true,
-  })),
+  sidebar: (["home", "calendar", "tasks", "notes", "shopping", "reminders", "contacts", "news", "sports", "settings"] as PageId[]).map(
+    (id) => ({
+      id,
+      visible: true,
+    }),
+  ),
   pages: {
     home: {
-      widgets: (["weather", "clock", "minical", "agenda", "tasks", "notes", "localEvents", "birthdays", "headlines", "sports"] as const).map(
-        (id) => ({ id, visible: true }),
-      ),
+      widgets: (
+        ["weather", "clock", "minical", "agenda", "tasks", "notes", "localEvents", "birthdays", "headlines", "sports"] as const
+      ).map((id) => ({ id, visible: true })),
     },
     calendar: { view: "week", showTasks: true, showBirthdays: true, dayStartHour: 7 },
     tasks: { showDone: false, groupBy: "day" },
@@ -213,7 +219,8 @@ export const useStore = create<State>()(
         const p = persisted as Partial<State>;
         const settings = deepMerge(DEFAULT_SETTINGS, p.settings ?? {}) as Settings;
         // pages and widgets added in later versions are appended to saved lists
-        for (const d of DEFAULT_SETTINGS.sidebar) if (!settings.sidebar.some((x) => x.id === d.id)) settings.sidebar.splice(-1, 0, { ...d });
+        for (const d of DEFAULT_SETTINGS.sidebar)
+          if (!settings.sidebar.some((x) => x.id === d.id)) settings.sidebar.splice(-1, 0, { ...d });
         for (const d of DEFAULT_SETTINGS.pages.home.widgets)
           if (!settings.pages.home.widgets.some((x) => x.id === d.id)) settings.pages.home.widgets.push({ ...d });
         return { ...current, ...p, notes: p.notes ?? {}, shopping: p.shopping ?? {}, prefs: p.prefs ?? {}, settings };

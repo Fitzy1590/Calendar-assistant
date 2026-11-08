@@ -60,7 +60,10 @@ export async function scanGmail(): Promise<Candidate[]> {
   const token = await googleToken([SCOPES.gmail]);
   const H = { Authorization: `Bearer ${token}` };
   const list = await (
-    await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=40&q=${encodeURIComponent(`newer_than:45d ${KEYWORDS}`)}`, { headers: H })
+    await fetch(
+      `https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=40&q=${encodeURIComponent(`newer_than:45d ${KEYWORDS}`)}`,
+      { headers: H },
+    )
   ).json();
   const msgs = await Promise.all(
     (list.messages ?? []).map(async (m: { id: string }) =>
@@ -108,7 +111,10 @@ function icsPart(p: any): string {
 async function pkce() {
   const verifier = Array.from(crypto.getRandomValues(new Uint8Array(32)), (b) => b.toString(16).padStart(2, "0")).join("");
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(verifier));
-  const challenge = btoa(String.fromCharCode(...new Uint8Array(digest))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  const challenge = btoa(String.fromCharCode(...new Uint8Array(digest)))
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
   return { verifier, challenge };
 }
 
@@ -126,7 +132,14 @@ export async function scanOutlook(clientId: string): Promise<Candidate[]> {
     await fetch("https://login.microsoftonline.com/common/oauth2/v2.0/token", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({ client_id: clientId, grant_type: "authorization_code", code, redirect_uri: redirectUri(), code_verifier: verifier, scope }),
+      body: new URLSearchParams({
+        client_id: clientId,
+        grant_type: "authorization_code",
+        code,
+        redirect_uri: redirectUri(),
+        code_verifier: verifier,
+        scope,
+      }),
     })
   ).json();
   if (!tok.access_token) throw new Error(tok.error_description || "Token exchange failed");
@@ -150,7 +163,10 @@ export async function scanOutlook(clientId: string): Promise<Candidate[]> {
     }),
   );
   const mail = await (
-    await fetch(`https://graph.microsoft.com/v1.0/me/messages?$top=40&$select=id,subject,bodyPreview&$search=${encodeURIComponent(`"${KEYWORDS.replace(/[()]/g, "")}"`)}`, { headers: H })
+    await fetch(
+      `https://graph.microsoft.com/v1.0/me/messages?$top=40&$select=id,subject,bodyPreview&$search=${encodeURIComponent(`"${KEYWORDS.replace(/[()]/g, "")}"`)}`,
+      { headers: H },
+    )
   ).json();
   const fromMail = (mail.value ?? []).flatMap((m: any) => extract(`outlookmail:${m.id}`, m.subject, m.bodyPreview, "Outlook mail"));
   return [...fromCal, ...fromMail];
@@ -169,7 +185,13 @@ export function extract(id: string, subject: string, body: string, source: strin
   return [
     withConflicts({
       id,
-      title: cleanTitle(subject.replace(/^(re|fw|fwd):\s*/i, "").replace(/\b(confirmation|confirmed|reminder)\b:?/gi, "").trim()) || "Event from email",
+      title:
+        cleanTitle(
+          subject
+            .replace(/^(re|fw|fwd):\s*/i, "")
+            .replace(/\b(confirmation|confirmed|reminder)\b:?/gi, "")
+            .trim(),
+        ) || "Event from email",
       start,
       end: allDay ? addDays(start, 1) : addMinutes(start, w.durationMins ?? 60),
       allDay,
@@ -182,26 +204,29 @@ export function extract(id: string, subject: string, body: string, source: strin
 
 export function parseIcs(ics: string, source = ".ics file"): Candidate[] {
   const unfolded = ics.replace(/\r?\n[ \t]/g, "");
-  return unfolded.split("BEGIN:VEVENT").slice(1).flatMap((block, i) => {
-    const get = (k: string) => block.match(new RegExp(`^${k}[^:\\n]*:(.*)$`, "m"))?.[1]?.trim();
-    const ds = get("DTSTART");
-    if (!ds) return [];
-    const start = icsDate(ds);
-    const de = get("DTEND");
-    const allDay = /^\d{8}$/.test(ds);
-    const end = de ? icsDate(de) : allDay ? addDays(start, 1) : addMinutes(start, 60);
-    return [
-      withConflicts({
-        id: `ics:${get("UID") ?? i}`,
-        title: (get("SUMMARY") ?? "Untitled").replace(/\\,/g, ",").replace(/\\n/g, " "),
-        start,
-        end,
-        allDay,
-        location: get("LOCATION")?.replace(/\\,/g, ","),
-        source,
-      }),
-    ];
-  });
+  return unfolded
+    .split("BEGIN:VEVENT")
+    .slice(1)
+    .flatMap((block, i) => {
+      const get = (k: string) => block.match(new RegExp(`^${k}[^:\\n]*:(.*)$`, "m"))?.[1]?.trim();
+      const ds = get("DTSTART");
+      if (!ds) return [];
+      const start = icsDate(ds);
+      const de = get("DTEND");
+      const allDay = /^\d{8}$/.test(ds);
+      const end = de ? icsDate(de) : allDay ? addDays(start, 1) : addMinutes(start, 60);
+      return [
+        withConflicts({
+          id: `ics:${get("UID") ?? i}`,
+          title: (get("SUMMARY") ?? "Untitled").replace(/\\,/g, ",").replace(/\\n/g, " "),
+          start,
+          end,
+          allDay,
+          location: get("LOCATION")?.replace(/\\,/g, ","),
+          source,
+        }),
+      ];
+    });
 }
 
 function icsDate(v: string) {

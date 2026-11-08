@@ -53,13 +53,25 @@ export interface Store {
 
 /** What kinds of shop sell a product, as OpenStreetMap shop tags. */
 const CATEGORIES: [RegExp, string[]][] = [
-  [/paint|primer|brush|roller|drill|screw|nail|timber|tool|hardware|glue|sandpaper|tile|plumb|light ?bulb|hinge|bolt/i, ["doityourself", "hardware", "paint", "trade", "building_materials"]],
-  [/milk|bread|egg|fruit|veg|grocer|meat|chicken|cheese|coffee|tea|cereal|snack|drink|nappies|toilet paper/i, ["supermarket", "convenience", "greengrocer", "butcher", "bakery"]],
-  [/laptop|phone|charger|cable|tv|headphone|computer|monitor|keyboard|mouse|camera|console|usb|hdmi|battery/i, ["electronics", "computer", "mobile_phone", "department_store"]],
+  [
+    /paint|primer|brush|roller|drill|screw|nail|timber|tool|hardware|glue|sandpaper|tile|plumb|light ?bulb|hinge|bolt/i,
+    ["doityourself", "hardware", "paint", "trade", "building_materials"],
+  ],
+  [
+    /milk|bread|egg|fruit|veg|grocer|meat|chicken|cheese|coffee|tea|cereal|snack|drink|nappies|toilet paper/i,
+    ["supermarket", "convenience", "greengrocer", "butcher", "bakery"],
+  ],
+  [
+    /laptop|phone|charger|cable|tv|headphone|computer|monitor|keyboard|mouse|camera|console|usb|hdmi|battery/i,
+    ["electronics", "computer", "mobile_phone", "department_store"],
+  ],
   [/paper|pen|printer|ink|toner|stationery|folder|notebook|office|desk|chair/i, ["stationery", "office_supplies", "department_store"]],
   [/medicine|panadol|vitamin|pharmac|bandaid|sunscreen|chemist/i, ["chemist", "pharmacy"]],
   [/shirt|pants|jeans|dress|shoe|sneaker|jacket|clothes|socks/i, ["clothes", "shoes", "department_store"]],
-  [/sofa|couch|bed|mattress|table|shelf|lamp|rug|furniture|cushion/i, ["furniture", "houseware", "interior_decoration", "department_store"]],
+  [
+    /sofa|couch|bed|mattress|table|shelf|lamp|rug|furniture|cushion/i,
+    ["furniture", "houseware", "interior_decoration", "department_store"],
+  ],
   [/plant|soil|seed|garden|mulch|fertili[sz]er|pot/i, ["garden_centre", "doityourself", "florist"]],
   [/book|novel/i, ["books"]],
   [/toy|lego|game/i, ["toys", "games", "department_store"]],
@@ -90,7 +102,9 @@ export async function findStores(product: string, here: Here, radiusKm: number):
       const lat = e.lat ?? e.center?.lat;
       const lon = e.lon ?? e.center?.lon;
       if (!t.name || lat == null) return null;
-      const address = [[t["addr:housenumber"], t["addr:street"]].filter(Boolean).join(" "), t["addr:suburb"] || t["addr:city"]].filter(Boolean).join(", ");
+      const address = [[t["addr:housenumber"], t["addr:street"]].filter(Boolean).join(" "), t["addr:suburb"] || t["addr:city"]]
+        .filter(Boolean)
+        .join(", ");
       return {
         id: `${e.type}/${e.id}`,
         name: t.name,
@@ -114,7 +128,10 @@ export async function findStores(product: string, here: Here, radiusKm: number):
 /* ------------------------------------------------------------------ maps & retailer links */
 
 /** Opens Google Maps with directions; on Android this launches the Maps app and starts navigating. */
-export function navigateUrl(dest: { lat?: number; lon?: number; name?: string; address?: string }, mode: "driving" | "walking" | "transit" = "driving") {
+export function navigateUrl(
+  dest: { lat?: number; lon?: number; name?: string; address?: string },
+  mode: "driving" | "walking" | "transit" = "driving",
+) {
   const destination = dest.lat != null ? `${dest.lat},${dest.lon}` : [dest.name, dest.address].filter(Boolean).join(", ");
   return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destination)}&travelmode=${mode}&dir_action=navigate`;
 }
@@ -178,7 +195,10 @@ export async function comparePrices(product: string, stores: Store[], here: Here
     messages: [{ role: "user", content: prompt }],
   } as never)) as unknown as Anthropic.Message;
   if (res.stop_reason === "refusal") throw new Error("Claude couldn't search for that.");
-  const text = res.content.filter((b): b is Anthropic.TextBlock => b.type === "text").map((b) => b.text).join("");
+  const text = res.content
+    .filter((b): b is Anthropic.TextBlock => b.type === "text")
+    .map((b) => b.text)
+    .join("");
   return parsePriceJson(text);
 }
 
@@ -223,7 +243,11 @@ export function extractPrice(html: string): { price: number; currency: string } 
     html.match(new RegExp(`<meta[^>]+(?:property|name|itemprop)=["']${prop}["'][^>]+content=["']([^"']+)["']`, "i"))?.[1] ??
     html.match(new RegExp(`<meta[^>]+content=["']([^"']+)["'][^>]+(?:property|name|itemprop)=["']${prop}["']`, "i"))?.[1];
   const amount = meta("product:price:amount") ?? meta("og:price:amount") ?? meta("price");
-  if (amount && !isNaN(parseFloat(amount))) return { price: parseFloat(amount), currency: meta("product:price:currency") ?? meta("og:price:currency") ?? meta("priceCurrency") ?? "AUD" };
+  if (amount && !isNaN(parseFloat(amount)))
+    return {
+      price: parseFloat(amount),
+      currency: meta("product:price:currency") ?? meta("og:price:currency") ?? meta("priceCurrency") ?? "AUD",
+    };
   const ip = html.match(/itemprop=["']price["'][^>]*content=["']([\d.,]+)["']/i)?.[1];
   if (ip) return { price: parseFloat(ip.replace(/,/g, "")), currency: "AUD" };
   return null;
@@ -250,7 +274,9 @@ function findOffer(node: any): { price: number; currency: string } | null {
 
 async function fetchPage(url: string): Promise<string> {
   if (isTauri()) {
-    const r = await httpGet(url, { headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) CalendarAssistant/0.1", Accept: "text/html" } });
+    const r = await httpGet(url, {
+      headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) CalendarAssistant/0.1", Accept: "text/html" },
+    });
     return r.text();
   }
   // browser build: the sync server fetches it (only for paired devices, public addresses only)
@@ -308,11 +334,22 @@ export async function checkTrackedPrices(force = false): Promise<string[]> {
       const point = await checkPrice(item);
       const before = trend(item.track.history).current;
       const history = [...item.track.history, point].slice(-180);
-      useStore.getState().upsert("shopping", { id: item.id, price: point.price, currency: point.currency, track: { ...item.track, history, lastChecked: Date.now(), lastError: undefined } });
-      if (before != null && point.price < before) notices.push(`${item.name} dropped to $${point.price.toFixed(2)} (was $${before.toFixed(2)})`);
-      else if (item.track.targetPrice && point.price <= item.track.targetPrice) notices.push(`${item.name} is $${point.price.toFixed(2)}, at or under your target`);
+      useStore
+        .getState()
+        .upsert("shopping", {
+          id: item.id,
+          price: point.price,
+          currency: point.currency,
+          track: { ...item.track, history, lastChecked: Date.now(), lastError: undefined },
+        });
+      if (before != null && point.price < before)
+        notices.push(`${item.name} dropped to $${point.price.toFixed(2)} (was $${before.toFixed(2)})`);
+      else if (item.track.targetPrice && point.price <= item.track.targetPrice)
+        notices.push(`${item.name} is $${point.price.toFixed(2)}, at or under your target`);
     } catch (e) {
-      useStore.getState().upsert("shopping", { id: item.id, track: { ...item.track, lastChecked: Date.now(), lastError: (e as Error).message } });
+      useStore
+        .getState()
+        .upsert("shopping", { id: item.id, track: { ...item.track, lastChecked: Date.now(), lastError: (e as Error).message } });
     }
   }
   return notices;

@@ -1,6 +1,4 @@
-import {
-  addDays, addMonths, addWeeks, addYears, differenceInMinutes, getDay, isAfter, isBefore, startOfDay, startOfWeek,
-} from "date-fns";
+import { addDays, addMonths, addWeeks, addYears, differenceInMinutes, getDay, isAfter, isBefore, startOfDay, startOfWeek } from "date-fns";
 import type { CalEvent } from "../types";
 import { fromYmd, localIso, ymd } from "./util";
 

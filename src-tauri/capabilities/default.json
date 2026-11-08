@@ -1,0 +1,69 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Permissions for the main window on Windows and Android",
+  "windows": [
+    "main"
+  ],
+  "permissions": [
+    "core:default",
+    "notification:default",
+    "oauth:allow-start",
+    "oauth:allow-cancel",
+    {
+      "identifier": "opener:allow-open-url",
+      "allow": [
+        {
+          "url": "https://*"
+        },
+        {
+          "url": "tel:*"
+        },
+        {
+          "url": "sms:*"
+        },
+        {
+          "url": "mailto:*"
+        }
+      ]
+    },
+    {
+      "identifier": "http:default",
+      "allow": [
+        {
+          "url": "https://news.google.com/*"
+        },
+        {
+          "url": "https://www.thesportsdb.com/*"
+        },
+        {
+          "url": "https://app.ticketmaster.com/*"
+        },
+        {
+          "url": "https://api.open-meteo.com/*"
+        },
+        {
+          "url": "https://geocoding-api.open-meteo.com/*"
+        },
+        {
+          "url": "https://nominatim.openstreetmap.org/*"
+        },
+        {
+          "url": "https://oauth2.googleapis.com/*"
+        },
+        {
+          "url": "https://raw.githubusercontent.com/Picovoice/*"
+        },
+        {
+          "url": "https://overpass-api.de/*"
+        },
+        {
+          "url": "https://people.googleapis.com/*"
+        },
+        {
+          "url": "https://*"
+        }
+      ]
+    }
+  ]
+}

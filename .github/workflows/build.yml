@@ -63,6 +63,7 @@ jobs:
           SDKMANAGER=$(ls -d "$ANDROID_HOME"/cmdline-tools/*/bin | sort -V | tail -n1)/sdkmanager
           yes | "$SDKMANAGER" --licenses > /dev/null || true
           "$SDKMANAGER" "ndk;${NDK_VERSION}" "build-tools;34.0.0" "platforms;android-34" > /dev/null
+          echo "NDK_HOME=$ANDROID_HOME/ndk/$NDK_VERSION" >> "$GITHUB_ENV"
           ls "$ANDROID_HOME/ndk"
       - uses: dtolnay/rust-toolchain@stable
         with:
@@ -72,14 +73,10 @@ jobs:
         if: env.IS_RELEASE == 'true'
         run: node scripts/set-version.mjs "${GITHUB_REF_NAME#v}"
       - name: Generate the Android project
-        env:
-          NDK_HOME: ${{ env.ANDROID_HOME }}/ndk/${{ env.NDK_VERSION }}
         run: npx tauri android init --ci
       - name: Microphone, location and phone permissions
         run: node scripts/android-permissions.mjs
       - name: Build the APK
-        env:
-          NDK_HOME: ${{ env.ANDROID_HOME }}/ndk/${{ env.NDK_VERSION }}
         run: npx tauri android build --apk --target aarch64 --target armv7
       - name: Sign the APK
         env:

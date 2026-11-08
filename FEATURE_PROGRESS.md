@@ -7,8 +7,8 @@ Package manager is **npm** (`package-lock.json`, CI runs `npm ci`); commands bel
 - `B1` `npx tsc --noEmit` exits 0
 - `B2` `npm test`, all suites pass (currently 31 tests in 5 files)
 - `B3` `npm run build` succeeds
-- `B5` `npx prettier --check "src/**/*.{ts,tsx}"` clean
 - `B4` Rust touched: `rustfmt --edition 2021 --check src-tauri/src/*.rs`, plus a green GitHub `build` run (check, windows, android jobs)
+- `B5` `npx prettier --check "src/**/*.{ts,tsx}"` clean
 
 ---
 
@@ -94,7 +94,7 @@ Package manager is **npm** (`package-lock.json`, CI runs `npm ci`); commands bel
 ---
 
 ## 4. Definition of done (every item)
-1. B1–B3 pass locally; B4 if Rust or CI changed.
+1. B1–B3 and B5 pass locally; B4 if Rust or CI changed.
 2. New logic has unit tests next to it (`src/lib/*.test.ts`); count in this file updated.
 3. UI change checked in `npm run dev` at desktop and 412 px width, light and dark.
 4. Item ticked here and README updated if user-visible.

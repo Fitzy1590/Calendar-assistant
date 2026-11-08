@@ -30,6 +30,7 @@ jobs:
         with: { node-version: 22, cache: npm }
       - run: npm ci
       - run: npx tsc --noEmit
+      - run: npx prettier --check "src/**/*.{ts,tsx}"
       - run: npx vitest run
       - run: npx vite build
       - run: node --check server/sync-server.mjs

@@ -11,6 +11,7 @@ npm install                # deps
 npm run dev                # browser preview, http://localhost:1420
 npm test                   # vitest (unit tests live next to the code: src/lib/*.test.ts)
 npx tsc --noEmit           # type check (must be clean before finishing)
+npx prettier --check "src/**/*.{ts,tsx}"   # formatting (Claude hook auto-formats edited files)
 npm run build              # tsc + vite build -> dist/
 npm run sync-server        # sync relay + RSVP pages on :8787
 npm run win:dev / win:build             # Tauri desktop (needs Rust; builds on Windows)
@@ -88,7 +89,7 @@ scripts/ docs/ .github/workflows/build.yml   versioning, setup guides, CI + rele
 
 ## Before finishing a change
 
-1. `npx tsc --noEmit` clean, `npm test` passing, `npm run build` succeeds.
+1. `npx tsc --noEmit` clean, `npm test` passing, `npm run build` succeeds, Prettier check clean.
 2. UI change: run the app (`npm run dev`) and look at it at desktop and phone width.
 3. Rust change: `rustfmt`, standalone `cargo test` for pure modules, then watch the GitHub `build` run.
 4. Update `FEATURE_PROGRESS.md` and the README if behaviour users see changed.

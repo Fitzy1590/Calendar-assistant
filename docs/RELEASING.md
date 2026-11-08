@@ -4,10 +4,14 @@ Every push builds a Windows installer and an Android APK (Actions tab → the ru
 
 ## Publish a release
 
-```bash
-git tag v0.2.0
-git push origin v0.2.0
-```
+Either:
+
+* **From GitHub:** Actions → **build** → **Run workflow** → type the version (e.g. `0.2.0`) → **Run workflow**.
+* **From a terminal:**
+  ```bash
+  git tag v0.2.0
+  git push origin v0.2.0
+  ```
 
 The `build` workflow stamps that version into the app, builds both, and publishes a GitHub Release with
 the installer, the APK, install notes (`docs/release-notes.md`) and a list of changes since the last tag.

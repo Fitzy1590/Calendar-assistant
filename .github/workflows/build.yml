@@ -1,16 +1,23 @@
 name: build
 
 # Every push: checks, Windows installer and Android APK as downloadable build artifacts.
-# Pushing a version tag (v1.2.3): the same builds, stamped with that version, published as a GitHub Release.
+# A release: push a version tag (v1.2.3), or run this workflow from the Actions tab with a version number.
+# Both build everything stamped with that version and publish a GitHub Release.
 on:
   push:
     branches: ["**"]
     tags: ["v*"]
   pull_request:
   workflow_dispatch:
+    inputs:
+      release_version:
+        description: "Publish a release with this version (e.g. 0.2.0). Leave empty for a plain build."
+        required: false
+        default: ""
 
 env:
-  IS_RELEASE: ${{ startsWith(github.ref, 'refs/tags/v') }}
+  IS_RELEASE: ${{ startsWith(github.ref, 'refs/tags/v') || inputs.release_version != '' }}
+  VERSION: ${{ inputs.release_version || (startsWith(github.ref, 'refs/tags/v') && github.ref_name) || '' }}
 
 jobs:
   check:
@@ -37,7 +44,7 @@ jobs:
       - name: Stamp the version from the tag
         if: env.IS_RELEASE == 'true'
         shell: bash
-        run: node scripts/set-version.mjs "${GITHUB_REF_NAME#v}"
+        run: node scripts/set-version.mjs "${VERSION#v}"
       - name: Turn on signed in-app updates (release builds with an updater key)
         if: env.IS_RELEASE == 'true'
         shell: bash
@@ -88,7 +95,7 @@ jobs:
       - run: npm ci
       - name: Stamp the version from the tag
         if: env.IS_RELEASE == 'true'
-        run: node scripts/set-version.mjs "${GITHUB_REF_NAME#v}"
+        run: node scripts/set-version.mjs "${VERSION#v}"
       - name: Generate the Android project
         run: npx tauri android init --ci
       - name: Microphone, location and phone permissions
@@ -128,7 +135,7 @@ jobs:
           path: out/*.apk
 
   release:
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: startsWith(github.ref, 'refs/tags/v') || inputs.release_version != ''
     needs: [windows, android]
     runs-on: ubuntu-latest
     permissions:
@@ -140,11 +147,16 @@ jobs:
       - name: Update manifest for the in-app updater
         env:
           NOTES_FILE: docs/release-notes.md
-        run: node scripts/latest-json.mjs dist-release "${GITHUB_REF_NAME}"
+        run: node scripts/latest-json.mjs dist-release "v${VERSION#v}"
       - run: ls -la dist-release
+      - name: Release tag
+        id: tag
+        run: echo "tag=v${VERSION#v}" >> "$GITHUB_OUTPUT"
       - uses: softprops/action-gh-release@v2
         with:
-          name: Calendar Assistant ${{ github.ref_name }}
+          tag_name: ${{ steps.tag.outputs.tag }}
+          target_commitish: ${{ github.sha }}
+          name: Calendar Assistant ${{ steps.tag.outputs.tag }}
           body_path: docs/release-notes.md
           generate_release_notes: true
           files: dist-release/*

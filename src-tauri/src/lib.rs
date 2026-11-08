@@ -61,7 +61,15 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![set_close_to_tray])
         .setup(|_app| {
             #[cfg(desktop)]
-            setup_tray(_app)?;
+            {
+                setup_tray(_app)?;
+                _app.handle().plugin(tauri_plugin_process::init())?;
+                // The updater needs the release public key in tauri.conf.json. Release builds get it from the
+                // TAURI_UPDATER_PUBKEY repository variable; other builds leave it out and skip the updater.
+                if _app.config().plugins.0.contains_key("updater") {
+                    _app.handle().plugin(tauri_plugin_updater::Builder::new().build())?;
+                }
+            }
             Ok(())
         })
         .on_window_event(|window, event| {

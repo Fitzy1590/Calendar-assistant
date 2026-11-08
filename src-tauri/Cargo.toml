@@ -19,3 +19,8 @@ tauri-plugin-http = "2"
 tauri-plugin-oauth = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+
+# desktop-only: in-app updates and relaunch
+[target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
+tauri-plugin-updater = "2"
+tauri-plugin-process = "2"

@@ -6,6 +6,7 @@ import { DayPanel } from "./components/DayPanel";
 import { FeedbackModal } from "./components/Feedback";
 import { CarryOver } from "./components/CarryOver";
 import { EmailImport } from "./components/EmailImport";
+import { UpdatePrompt } from "./components/Updates";
 import { IIdea, IMail } from "./components/Icons";
 import { Home } from "./pages/Home";
 import { Calendar } from "./pages/Calendar";
@@ -91,6 +92,7 @@ export default function App() {
       {s.feedbackOpen && <FeedbackModal />}
       {s.emailImportOpen && <EmailImport />}
       <CarryOver />
+      <UpdatePrompt />
       {s.toast && <div className="toast" role="status">{s.toast}</div>}
     </div>
   );

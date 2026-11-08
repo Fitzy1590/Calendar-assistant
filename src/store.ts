@@ -36,6 +36,7 @@ export const DEFAULT_SETTINGS: Settings = {
     notifyReplies: true,
   },
   shopping: { radiusKm: 10, onlineStores: ["Amazon AU", "Officeworks", "Bunnings", "eBay AU", "JB Hi-Fi", "Kmart"], checkPricesDaily: true, notifyDrops: true },
+  updates: { checkOnLaunch: true, installAutomatically: false },
   sync: { shareSettings: true, enabled: false, serverUrl: "", pairingCode: pairingCode(), deviceName: "" },
   phone: { route: "companion" },
   assistant: { provider: "local", apiKey: "", voiceLang: "en-AU", speakReplies: false },

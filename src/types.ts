@@ -213,6 +213,12 @@ export interface Settings {
     checkPricesDaily: boolean;
     notifyDrops: boolean;
   };
+  updates: {
+    checkOnLaunch: boolean;
+    installAutomatically: boolean; // Windows: download, install and restart without asking
+    skipVersion?: string; // "Skip this version"
+    lastChecked?: number;
+  };
   sync: {
     shareSettings: boolean; // keep news, sports, reminders, invites and shopping preferences the same on every device
     enabled: boolean;

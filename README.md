@@ -28,6 +28,7 @@ and an **Android app** ([Tauri 2](https://tauri.app)), and the two stay in sync 
 | **Backup** | Full JSON backup/restore (merges, never overwrites newer data), `.ics` and `.csv` export, 14 daily on-device snapshots, Drive backup. |
 | **Settings** | Search box that filters every setting by keyword; everything you customise is remembered. |
 | **Setup wizard** | Theme, location, formats, news, sports, reminders, phone sync, Google, assistant. Skip any step or the whole thing; skipped steps wait on the home page under "Finish setting up". Restore from a backup on the first screen. |
+| **Updates** | Checks for a new version on launch: Windows installs it and restarts (automatically if you like); Android downloads the new APK and asks to install. **Settings → Updates → Check for updates now** forces a check. |
 | **Feedback** | Suggestions button in the sidebar and top bar; saves notes and can open a prefilled GitHub issue. |
 
 ## How it fits together

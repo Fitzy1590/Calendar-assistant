@@ -6,6 +6,7 @@ import { exportCsvTasks, exportIcs, exportJsonFile, listSnapshots, restoreBackup
 import { AssistantSetup, FormatPicker, GoogleSetup, InviteSetup, ShoppingSetup, LocalEventsSetup, LocationPicker, NewsPicker, RemindersPicker, SyncSetup, ThemePicker } from "../components/SetupParts";
 import { FollowPanel } from "./Sports";
 import { UpdateSettings } from "../components/Updates";
+import { Diagnostics } from "../components/Errors";
 import { ISearch } from "../components/Icons";
 import { Field, PageHead, Toggle } from "../components/ui";
 
@@ -49,6 +50,7 @@ export function Settings() {
     { id: "google", section: "Email, Google & Outlook", label: "Google Calendar, Google Drive, Gmail and Outlook", keywords: "google calendar sync import gmail outlook microsoft email scan drive backup oauth client id", wide: true, render: () => <GoogleSetup /> },
     { id: "backup", section: "Backup & restore", label: "Backup, import and export", help: "Nothing is lost: keep file backups, daily on-device snapshots and an optional Google Drive copy.", keywords: "backup restore import export json ics csv snapshot data lost recover google drive", wide: true, render: () => <BackupPanel /> },
     { id: "updates", section: "Updates", label: "App updates", help: "Check on launch, install automatically, or check now.", keywords: "update upgrade version new release download install force check latest restart", wide: true, render: () => <UpdateSettings /> },
+    { id: "diagnostics", section: "Help & diagnostics", label: "System check and problem reports", help: "Checks this device has what the app needs, and lists recent errors with a one-click report.", keywords: "diagnostics system check error crash problem report bug webview2 runtime dependencies microphone notifications storage help troubleshoot", wide: true, render: () => <Diagnostics /> },
     { id: "wizard", section: "Backup & restore", label: "Run the setup wizard again", keywords: "setup wizard onboarding first run start again", render: () => <button className="btn" onClick={() => s.updateSettings((st) => void (st.onboarded = false))}>Open setup wizard</button> },
   ], [s]);
 

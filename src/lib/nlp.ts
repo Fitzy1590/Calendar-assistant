@@ -153,6 +153,15 @@ function mkDate(day: number, month: number, year: string | undefined, today: Dat
 /** "every day", "every 2 weeks", "every monday and thursday", "weekdays", "monthly", "every year" */
 export function parseRecurrence(input: string): { recurrence?: Recurrence; rest: string } {
   let s = " " + input.toLowerCase() + " ";
+  // match on lower case, cut the same spans from the original so the title keeps its capitals
+  let orig = " " + input + " ";
+  if (orig.length !== s.length) orig = s;
+  const cut = (m: RegExpMatchArray) => {
+    const a = m.index ?? s.indexOf(m[0]);
+    const b = a + m[0].length;
+    s = s.slice(0, a) + " " + s.slice(b);
+    orig = orig.slice(0, a) + " " + orig.slice(b);
+  };
   let recurrence: Recurrence | undefined;
   const m1 = s.match(/\b(?:every|each) (other |\d+ )?(day|week|month|year|fortnight)s?\b/);
   if (m1) {
@@ -162,18 +171,19 @@ export function parseRecurrence(input: string): { recurrence?: Recurrence; rest:
       unit === "fortnight"
         ? { freq: "weekly", interval: 2 }
         : { freq: ({ day: "daily", week: "weekly", month: "monthly", year: "yearly" } as const)[unit as "day"], interval: n };
-    s = s.replace(m1[0], " ");
+    cut(m1);
   }
   const days = new RegExp(`\\b(?:every|each|on) ((?:${WD_RE}(?:s)?(?:,? (?:and )?)?)+)`);
   const m2 = s.match(days);
   if (m2 && (!recurrence || recurrence.freq === "weekly") && /every|each/.test(m2[0])) {
     const list = m2[1].match(new RegExp(WD_RE, "g")) ?? [];
     recurrence = { freq: "weekly", interval: recurrence?.interval ?? 1, byWeekday: list.map(wdIndex) };
-    s = s.replace(m2[0], " ");
+    cut(m2);
   }
   if (!recurrence && /\b(weekdays|every weekday)\b/.test(s)) {
     recurrence = { freq: "weekly", interval: 1, byWeekday: [1, 2, 3, 4, 5] };
-    s = s.replace(/\b(on )?(every )?weekdays?\b/, " ");
+    const wm = s.match(/\b(on )?(every )?weekdays?\b/);
+    if (wm) cut(wm);
   }
   if (!recurrence) {
     const m3 = s.match(/\b(daily|weekly|monthly|yearly|annually|fortnightly)\b/);
@@ -187,7 +197,7 @@ export function parseRecurrence(input: string): { recurrence?: Recurrence; rest:
         annually: { freq: "yearly", interval: 1 },
       };
       recurrence = map[m3[1]];
-      s = s.replace(m3[0], " ");
+      cut(m3);
     }
   }
   const until = s.match(/\buntil (.+?)$/);
@@ -195,10 +205,10 @@ export function parseRecurrence(input: string): { recurrence?: Recurrence; rest:
     const w = parseWhen(until[1]);
     if (w.date) {
       recurrence.until = `${w.date.getFullYear()}-${String(w.date.getMonth() + 1).padStart(2, "0")}-${String(w.date.getDate()).padStart(2, "0")}`;
-      s = s.replace(until[0], " ");
+      cut(until);
     }
   }
-  return { recurrence, rest: s.replace(/\s+/g, " ").trim() };
+  return { recurrence, rest: orig.replace(/\s+/g, " ").trim() };
 }
 
 /** Strip filler words so "add a dentist appointment" becomes "Dentist appointment". */

@@ -4,11 +4,11 @@ import {
 } from "date-fns";
 import { calendarEvents, isBirthdayEvent } from "../lib/birthdays";
 import { BirthdaySync } from "../components/BirthdaySync";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { CalEvent, Task } from "../types";
 import { live, useStore } from "../store";
 import { occurrencesInRange, type Occurrence } from "../lib/recurrence";
-import { useForecast } from "../lib/hooks";
+import { useForecast, useNow } from "../lib/hooks";
 import { cx, fmtTime, localIso, ymd } from "../lib/util";
 import { skyOf } from "../lib/weather";
 import { EventEditor } from "../components/EventEditor";
@@ -25,6 +25,7 @@ export function Calendar() {
   const view = cfg.view;
   const setView = (v: View) => s.updateSettings((st) => void (st.pages.calendar.view = v));
   const [cursor, setCursor] = useState(new Date());
+  const [jump, setJump] = useState(0); // bumping it re-scrolls the day/week grid to now
   const [edit, setEdit] = useState<{ ev: Partial<CalEvent>; occ?: string } | null>(null);
   const [custom, setCustom] = useState(false);
   const ws = s.settings.weekStartsOn;
@@ -85,7 +86,7 @@ export function Calendar() {
         }
       />
       <div className="cal-toolbar">
-        <button className="btn" onClick={() => setCursor(new Date())}>Today</button>
+        <button className="btn" onClick={() => (setCursor(new Date()), setJump((n) => n + 1))}>Today</button>
         <button className="btn ghost icon" onClick={() => step(-1)} aria-label="Previous"><ILeft /></button>
         <button className="btn ghost icon" onClick={() => step(1)} aria-label="Next"><IRight /></button>
         <div className="cal-title">{title}</div>
@@ -93,7 +94,7 @@ export function Calendar() {
         <Seg value={view} onChange={setView} options={[{ value: "day", label: "Day" }, { value: "week", label: "Week" }, { value: "month", label: "Month" }, { value: "year", label: "Year" }]} />
       </div>
       {view === "month" && <MonthView cursor={cursor} onNew={(d) => newAt(d, true)} onOpen={openOcc} />}
-      {(view === "week" || view === "day") && <TimeGrid days={view === "day" ? [startOfDay(cursor)] : Array.from({ length: 7 }, (_, i) => addDays(startOfWeek(cursor, { weekStartsOn: ws }), i))} onNew={newAt} onOpen={openOcc} />}
+      {(view === "week" || view === "day") && <TimeGrid jump={jump} days={view === "day" ? [startOfDay(cursor)] : Array.from({ length: 7 }, (_, i) => addDays(startOfWeek(cursor, { weekStartsOn: ws }), i))} onNew={newAt} onOpen={openOcc} />}
       {view === "year" && (
         <div className="year">
           {Array.from({ length: 12 }, (_, m) => addMonths(startOfYear(cursor), m)).map((m) => (
@@ -172,24 +173,39 @@ function MonthView({ cursor, onNew, onOpen }: { cursor: Date; onNew: (d: Date) =
   );
 }
 
-function TimeGrid({ days, onNew, onOpen }: { days: Date[]; onNew: (d: Date) => void; onOpen: (o: Occurrence) => void }) {
+function TimeGrid({ days, onNew, onOpen, jump }: { days: Date[]; onNew: (d: Date) => void; onOpen: (o: Occurrence) => void; jump: number }) {
   const s = useStore();
   const data = useRange(days[0], addDays(days[days.length - 1], 1));
   const scroller = useRef<HTMLDivElement>(null);
+  const firstCol = useRef<HTMLDivElement>(null);
   const startHour = s.settings.pages.calendar.dayStartHour;
-  useEffect(() => {
-    // wait a frame so the grid has its full height before scrolling to the start of the day
-    const id = requestAnimationFrame(() => {
-      scroller.current?.closest(".content")?.scrollTo({ top: startHour * HOUR_PX + 40 });
-    });
-    return () => cancelAnimationFrame(id);
-  }, [startHour, days.length]);
+  useNow(60_000); // keeps the red "now" line moving
+
+  // Like other calendars: open at the current time (a third of the way down) when today is shown;
+  // otherwise at the first event of the period, or the "day starts at" hour. Only when the period
+  // changes or Today is pressed, so it never fights your own scrolling.
+  useLayoutEffect(() => {
+    const el = scroller.current;
+    const col = firstCol.current;
+    if (!el || !col) return;
+    const now = new Date();
+    let hour: number;
+    if (days.some((d) => isSameDay(d, now))) hour = now.getHours() + now.getMinutes() / 60;
+    else {
+      const starts = days.flatMap((d) => (data.get(ymd(d))?.occ ?? []).filter((o) => !o.event.allDay && isSameDay(o.start, d)).map((o) => o.start.getHours() + o.start.getMinutes() / 60));
+      hour = starts.length ? Math.max(Math.min(...starts) - 0.5, 0) : startHour;
+    }
+    const visible = el.clientHeight - col.offsetTop; // height below the pinned day headers and all-day row
+    const third = days.some((d) => isSameDay(d, now)) ? visible / 3 : 0;
+    el.scrollTop = Math.max(0, hour * HOUR_PX - third);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [days[0].getTime(), days.length, jump]);
   const now = new Date();
   const wx = useForecast();
   const wxBy = new Map((wx.data?.daily ?? []).map((d) => [d.date, d]));
   return (
     <div ref={scroller} className="timegrid" style={{ ["--days" as string]: days.length }}>
-      <div style={{ position: "sticky", top: 0, background: "var(--bg)", zIndex: 2, borderBottom: "1px solid var(--line)" }} />
+      <div className="corner" />
       {days.map((d) => {
         const w = wxBy.get(ymd(d));
         return (
@@ -202,7 +218,7 @@ function TimeGrid({ days, onNew, onOpen }: { days: Date[]; onNew: (d: Date) => v
           </div>
         );
       })}
-      <div className="hours faint" style={{ fontSize: 10, paddingTop: 6 }}>all day</div>
+      <div className="hours faint allday-label" style={{ fontSize: 10, paddingTop: 6 }}>all day</div>
       {days.map((d) => {
         const cell = data.get(ymd(d));
         return (
@@ -213,11 +229,11 @@ function TimeGrid({ days, onNew, onOpen }: { days: Date[]; onNew: (d: Date) => v
         );
       })}
       <div className="hours">{Array.from({ length: 24 }, (_, h) => <div key={h}>{h === 0 ? "" : s.settings.clock24 ? `${h}:00` : format(new Date(2000, 0, 1, h), "h a")}</div>)}</div>
-      {days.map((d) => {
+      {days.map((d, i) => {
         const timed = (data.get(ymd(d))?.occ ?? []).filter((o) => !o.event.allDay);
         const lanes = layout(timed);
         return (
-          <div key={"c" + d.toISOString()} className="col" style={{ height: 24 * HOUR_PX }}
+          <div key={"c" + d.toISOString()} ref={i === 0 ? firstCol : undefined} className="col" style={{ height: 24 * HOUR_PX }}
             onClick={(e) => {
               if (e.target !== e.currentTarget) return;
               const y = e.nativeEvent.offsetY;

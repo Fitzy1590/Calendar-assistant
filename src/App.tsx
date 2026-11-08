@@ -7,6 +7,7 @@ import { FeedbackModal } from "./components/Feedback";
 import { CarryOver } from "./components/CarryOver";
 import { EmailImport } from "./components/EmailImport";
 import { UpdatePrompt } from "./components/Updates";
+import { ErrorAlert, ErrorBoundary, useFirstRunCheck } from "./components/Errors";
 import { IIdea, IMail } from "./components/Icons";
 import { Home } from "./pages/Home";
 import { Calendar } from "./pages/Calendar";
@@ -72,6 +73,7 @@ export default function App() {
   const s = useStore();
   useTheme();
   useBackground();
+  useFirstRunCheck();
   if (!s.settings.onboarded) return <Wizard />;
   if (s.wizardSteps) return <WizardOverlay steps={s.wizardSteps} />;
   const Page = PAGES[s.page] ?? Home;
@@ -85,7 +87,12 @@ export default function App() {
           <button className="btn ghost" onClick={() => s.setUi({ emailImportOpen: true })} title="Import events from email or Google Calendar"><IMail /> <span className="hide-sm">Import</span></button>
           <button className="btn ghost" onClick={() => s.setUi({ feedbackOpen: true })} title="Suggestions & feedback"><IIdea /> <span className="hide-sm">Feedback</span></button>
         </div>
-        <div className="content"><Page /></div>
+        <div className="content">
+          {/* a crash in one page shows a recovery screen there; the menu keeps working */}
+          <ErrorBoundary key={s.page} where={s.page}>
+            <Page />
+          </ErrorBoundary>
+        </div>
       </main>
       {s.selectedDay && !s.assistantOpen && <DayPanel />}
       {s.assistantOpen && <AssistantDrawer />}
@@ -93,6 +100,7 @@ export default function App() {
       {s.emailImportOpen && <EmailImport />}
       <CarryOver />
       <UpdatePrompt />
+      <ErrorAlert />
       {s.toast && <div className="toast" role="status">{s.toast}</div>}
     </div>
   );

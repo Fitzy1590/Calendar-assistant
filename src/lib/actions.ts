@@ -1,4 +1,5 @@
 import { addDays, addMinutes, format, startOfDay } from "date-fns";
+import { calendarEvents } from "./birthdays";
 import type { CalEvent, PageId, Priority, Recurrence, ThemeName } from "../types";
 import { findContact, live, useStore } from "../store";
 import { conflictsForEvent, planWeek } from "./planner";
@@ -7,6 +8,8 @@ import { fromYmd, localIso, todayYmd, ymd } from "./util";
 import { describeDay, getForecast } from "./weather";
 import { placeCall, sendSms } from "./phone";
 import * as notesLib from "./notes";
+import * as shopLib from "./shopping";
+import * as invitesLib from "./invites";
 
 /**
  * The one command surface every input path uses: buttons, the local intent parser and Claude tool calls.
@@ -93,7 +96,7 @@ export function deleteEvent(q: string, date?: string): ActionResult {
 
 export function agenda(from: Date, to: Date, query?: string): ActionResult {
   const s = st();
-  let occ = occurrencesInRange(live(s.events), from, to);
+  let occ = occurrencesInRange(calendarEvents(s), from, to);
   if (query) occ = occ.filter((o) => (o.event.title + " " + (o.event.location ?? "") + " " + (o.event.notes ?? "")).toLowerCase().includes(query.toLowerCase()));
   const fromK = ymd(from);
   const toK = ymd(addDays(to, -1));
@@ -154,6 +157,7 @@ const PAGE_WORDS: Record<string, PageId> = {
   home: "home", dashboard: "home", calendar: "calendar", diary: "calendar", tasks: "tasks", todo: "tasks", "to-do": "tasks",
   contacts: "contacts", people: "contacts", birthdays: "contacts", reminders: "reminders", news: "news", headlines: "news",
   sport: "sports", sports: "sports", settings: "settings", preferences: "settings", notes: "notes", note: "notes", "sticky notes": "notes",
+  shopping: "shopping", "shopping list": "shopping", shop: "shopping",
 };
 export function navigate(word: string): ActionResult {
   const page = PAGE_WORDS[word.toLowerCase()] ?? (word as PageId);
@@ -214,4 +218,47 @@ export function findNotes(q: string): ActionResult {
   window.dispatchEvent(new CustomEvent("notes-search", { detail: q }));
   if (!hits.length) return { text: `No notes mention "${q}".` };
   return { text: `${hits.length} note${hits.length > 1 ? "s" : ""} about "${q}":`, items: hits.slice(0, 6).map((n) => n.title || n.body.split("\n")[0].slice(0, 80)) };
+}
+
+/* ---- shopping ---- */
+
+export function shopFor(product: string): ActionResult {
+  const q = product.replace(/^(some|a|an|the)\s+/i, "").trim();
+  st().setPage("shopping");
+  if (typeof window !== "undefined") setTimeout(() => window.dispatchEvent(new CustomEvent("shopping-search", { detail: q })), 0);
+  return { text: `Looking for ${q} near you and comparing prices.` };
+}
+
+export function addShopping(names: string): ActionResult {
+  const list = names.split(/,|\band\b/).map((x) => x.trim()).filter(Boolean);
+  for (const name of list) shopLib.addToList({ name: name.charAt(0).toUpperCase() + name.slice(1) });
+  return { text: `Added ${list.join(", ")} to your shopping list.` };
+}
+
+export function listShopping(): ActionResult {
+  const items = live(st().shopping).filter((i) => !i.done);
+  if (!items.length) return { text: "Your shopping list is empty." };
+  return { text: `${items.length} thing${items.length > 1 ? "s" : ""} on your shopping list:`, items: items.map((i) => i.name + (i.store?.name ? ` (${i.store.name})` : "")) };
+}
+
+/* ---- invites ---- */
+
+export async function invite(people: string[], ev: { title: string; date: string; time?: string; durationMins?: number; location?: string }): Promise<ActionResult> {
+  const r = addEvent(ev);
+  const created = Object.values(st().events).sort((a, b) => b.updatedAt - a.updatedAt)[0];
+  const attendees = people.map((p) => invitesLib.attendeeFromText(p));
+  st().upsert("events", { id: created.id, attendees, host: st().settings.displayName || undefined, tz: Intl.DateTimeFormat().resolvedOptions().timeZone } as Partial<CalEvent>);
+  const missing = attendees.filter((a) => !a.phone && !a.email).map((a) => a.name);
+  const sent: string[] = [];
+  if (st().settings.invites.channel !== "ask") {
+    for (const a of attendees.filter((x) => x.phone || x.email)) {
+      await invitesLib.sendInvite(created.id, a.id, invitesLib.defaultChannel(a));
+      sent.push(a.name);
+    }
+  }
+  let text = r.text.replace(/\.$/, "") + ` with ${attendees.map((a) => a.name).join(", ")}.`;
+  if (sent.length) text += ` Invites are ready to send to ${sent.join(", ")}.`;
+  else text += " Open the event to send the invites by text or email.";
+  if (missing.length) text += ` I don't have a number or email for ${missing.join(", ")}.`;
+  return { text };
 }

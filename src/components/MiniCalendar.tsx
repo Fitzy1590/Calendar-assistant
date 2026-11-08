@@ -1,4 +1,5 @@
 import { addDays, addMonths, format, isSameDay, isSameMonth, startOfMonth, startOfWeek } from "date-fns";
+import { calendarEvents } from "../lib/birthdays";
 import { useMemo, useState } from "react";
 import { live, useStore } from "../store";
 import { occurrencesInRange } from "../lib/recurrence";
@@ -11,15 +12,17 @@ export function MiniCalendar({ month: initial, onPick, selected, heat, hideNav }
   const [month, setMonth] = useState(startOfMonth(initial ?? new Date()));
   const weekStartsOn = useStore((s) => s.settings.weekStartsOn);
   const events = useStore((s) => s.events);
+  const contacts = useStore((s) => s.contacts);
+  const showB = useStore((s) => s.settings.pages.calendar.showBirthdays);
   const tasks = useStore((s) => s.tasks);
   const start = startOfWeek(month, { weekStartsOn });
   const days = Array.from({ length: 42 }, (_, i) => addDays(start, i));
   const counts = useMemo(() => {
     const m = new Map<string, number>();
-    for (const o of occurrencesInRange(live(events), start, addDays(start, 42))) m.set(ymd(o.start), (m.get(ymd(o.start)) ?? 0) + 1);
+    for (const o of occurrencesInRange(calendarEvents(useStore.getState()), start, addDays(start, 42))) m.set(ymd(o.start), (m.get(ymd(o.start)) ?? 0) + 1);
     for (const t of live(tasks)) if (t.due && !t.done) m.set(t.due, (m.get(t.due) ?? 0) + 1);
     return m;
-  }, [events, tasks, start.getTime()]);
+  }, [events, tasks, contacts, showB, start.getTime()]);
   const today = new Date();
   const heads = Array.from({ length: 7 }, (_, i) => format(addDays(start, i), "EEEEE"));
   return (

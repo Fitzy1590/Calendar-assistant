@@ -29,13 +29,19 @@ function wdIndex(token: string) {
 
 export function parseWhen(input: string, now = new Date()): When {
   let s = " " + input.toLowerCase() + " ";
+  // matching runs on lower case; the same spans are cut from the original so titles keep their capitals
+  let orig = " " + input + " ";
+  if (orig.length !== s.length) orig = s; // rare letters whose lower case changes length: fall back
   const res: When = { rest: input };
   const today = startOfDay(now);
   const take = (re: RegExp, fn: (m: RegExpMatchArray) => void) => {
     const m = s.match(re);
-    if (m) {
+    if (m && m.index !== undefined) {
       fn(m);
-      s = s.replace(m[0], " ");
+      const a = m.index;
+      const b = a + m[0].length;
+      s = s.slice(0, a) + " " + s.slice(b);
+      orig = orig.slice(0, a) + " " + orig.slice(b);
     }
     return !!m;
   };
@@ -128,7 +134,7 @@ export function parseWhen(input: string, now = new Date()): When {
     res.date = t < now ? addDays(today, 1) : today;
   }
 
-  res.rest = s.replace(/\s+/g, " ").replace(/\b(on|at|for|from)\s*$/, "").trim();
+  res.rest = orig.replace(/\s+/g, " ").replace(/\b(on|at|for|from)\s*$/i, "").trim();
   return res;
 }
 

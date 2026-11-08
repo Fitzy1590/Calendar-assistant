@@ -6,13 +6,15 @@ import { startSync } from "./lib/sync";
 import { startPhoneBridge } from "./lib/phone";
 import { setWakeHandler, startVoice } from "./lib/wake";
 import { handleWake } from "./components/Assistant";
-import { startTraySetting } from "./lib/platform";
+import { notify, startTraySetting } from "./lib/platform";
+import { startReplyWatcher } from "./lib/invites";
 
 startSync();
 startPhoneBridge();
 setWakeHandler(handleWake);
 startVoice();
 startTraySetting();
+startReplyWatcher(notify);
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

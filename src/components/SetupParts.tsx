@@ -7,7 +7,7 @@ import { NEWS_REGIONS, NEWS_TOPICS } from "../lib/news";
 import { pairingCode } from "../lib/util";
 import { backupToDrive, googleConfigured, googleConnected, googleDisconnect, googleSignInAvailable, googleToken, restoreFromDrive, SCOPES, syncGoogleCalendar, usesLoopback } from "../lib/google";
 import { backupJson, restoreBackup } from "../lib/backup";
-import { onSyncStatus } from "../lib/sync";
+import { forceSync, onSyncStatus } from "../lib/sync";
 import { BUILT_IN_WORDS, browserSpeechAvailable, dictate, useVoice, voiceReady } from "../lib/wake";
 import { isAndroid, isTauri } from "../lib/platform";
 import { IPin } from "./Icons";
@@ -162,7 +162,11 @@ export function SyncSetup() {
           </select>
         </Field>
       </div>
-      <span className="row"><Toggle checked={sy.enabled} onChange={(v) => set({ enabled: v })} label="Sync on" /> Sync is {sy.enabled ? "on" : "off"} · <span className={"dot " + (status === "online" ? "ok" : status === "offline" ? "bad" : "")} /> {status}{peers.length ? ` · linked: ${peers.join(", ")}` : ""}</span>
+      <span className="row"><Toggle checked={sy.enabled} onChange={(v) => set({ enabled: v })} label="Sync on" /> Sync is {sy.enabled ? "on" : "off"} · <span className={"dot " + (status === "online" ? "ok" : status === "offline" ? "bad" : "")} /> {status}{peers.length ? ` · linked: ${peers.join(", ")}` : ""}
+        {sy.enabled && <button className="btn sm" onClick={() => (forceSync(), toast("Syncing everything…"))}>Sync now</button>}
+      </span>
+      <span className="row"><Toggle checked={sy.shareSettings} onChange={(v) => set({ shareSettings: v })} label="Share preferences" /> Keep news, sports, reminders, invite and shopping preferences the same on all devices</span>
+      <div className="faint" style={{ fontSize: 12.5 }}>Everything you add or change (events, tasks, notes, contacts, shopping) syncs automatically within a second while both apps are open, and catches up as soon as an app reopens. Theme and layout stay per device.</div>
     </div>
   );
 }
@@ -337,5 +341,50 @@ export function LocalEventsSetup() {
     <Field label="Ticketmaster Discovery API key (free, optional) for local event listings">
       <input className="input mono" value={s.settings.localEventsApiKey} onChange={(e) => s.updateSettings((st) => void (st.localEventsApiKey = e.target.value.trim()))} placeholder="Leave blank to use search links" />
     </Field>
+  );
+}
+
+export function InviteSetup() {
+  const s = useStore();
+  const v = s.settings.invites;
+  const set = (p: Partial<typeof v>) => s.updateSettings((st) => void Object.assign(st.invites, p));
+  return (
+    <div className="stack">
+      <Field label="Your standard invite message">
+        <textarea className="input" rows={4} value={v.template} onChange={(e) => set({ template: e.target.value })} />
+      </Field>
+      <div className="faint" style={{ fontSize: 12.5 }}>Fill-ins: {"{name}"} first name · {"{title}"} · {"{when}"} · {"{where}"} · {"{maps}"} map link · {"{rsvp}"} accept link · {"{from}"} your name</div>
+      <div className="row" style={{ gap: 20 }}>
+        <label className="row">Send invites by
+          <select className="input" style={{ width: 170 }} value={v.channel} onChange={(e) => set({ channel: e.target.value as typeof v.channel })}>
+            <option value="ask">Ask each time</option><option value="sms">Text when possible</option><option value="email">Email when possible</option>
+          </select>
+        </label>
+        <span className="row"><Toggle checked={v.rsvpLinks} onChange={(x) => set({ rsvpLinks: x })} label="Accept links" /> Include an Accept link</span>
+        <span className="row"><Toggle checked={v.notifyReplies} onChange={(x) => set({ notifyReplies: x })} label="Reply alerts" /> Tell me when people reply</span>
+      </div>
+    </div>
+  );
+}
+
+export function ShoppingSetup() {
+  const s = useStore();
+  const v = s.settings.shopping;
+  const set = (p: Partial<typeof v>) => s.updateSettings((st) => void Object.assign(st.shopping, p));
+  const all = ["Amazon AU", "Officeworks", "Bunnings", "eBay AU", "JB Hi-Fi", "Kmart", "Big W", "Woolworths", "Coles"];
+  return (
+    <div className="stack">
+      <div><div className="eyebrow" style={{ marginBottom: 6 }}>Online stores to compare</div>
+        <div className="row">{all.map((n) => <button key={n} className="chip" aria-pressed={v.onlineStores.includes(n)} onClick={() => set({ onlineStores: v.onlineStores.includes(n) ? v.onlineStores.filter((x) => x !== n) : [...v.onlineStores, n] })}>{n}</button>)}</div>
+      </div>
+      <div className="row" style={{ gap: 20 }}>
+        <label className="row">Search within
+          <select className="input" style={{ width: 100 }} value={v.radiusKm} onChange={(e) => set({ radiusKm: +e.target.value })}>{[2, 5, 10, 20, 40].map((r) => <option key={r} value={r}>{r} km</option>)}</select>
+        </label>
+        <span className="row"><Toggle checked={v.checkPricesDaily} onChange={(x) => set({ checkPricesDaily: x })} label="Daily checks" /> Check tracked prices daily</span>
+        <span className="row"><Toggle checked={v.notifyDrops} onChange={(x) => set({ notifyDrops: x })} label="Drop alerts" /> Tell me when a price drops</span>
+      </div>
+      <div className="faint" style={{ fontSize: 12.5 }}>Live price comparison uses Claude (Settings → Assistant & voice). Nearby stores come from OpenStreetMap and work without it.</div>
+    </div>
   );
 }

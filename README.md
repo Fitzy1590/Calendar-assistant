@@ -16,6 +16,9 @@ and an **Android app** ([Tauri 2](https://tauri.app)), and the two stay in sync 
 | **Reminders** | Events, birthdays (N days before) and tasks; each kind on/off; snooze, ignore once, or turn off per item; desktop/phone notifications. |
 | **Notes** | Sticky-note board: colours, pin, drag to reorder, `[ ]` checklists, `#tags`, search, dictation, archive, undo delete, turn a note into a task or event. "Take a note: gate code is 4821". |
 | **"Hey Planner"** | Wake word while the app is open (and in the Windows tray when the window is closed): chime, then speak a command, a question or a note. On-device with Picovoice; nothing leaves the device while it waits. |
+| **Invites** | Add people to any event (contacts, emails or numbers) and send by text or email from your own phone/mail app. Each guest gets your standard message (or one written for that event) with the time, place, a Google Maps link and a personal **Accept / Maybe / Can't make it** link with room for a note and "add to my calendar (with reminder)". Replies appear on the event on both devices with an alert. "Invite Luke and Sam to dinner Friday 7pm at Mama's Kitchen". |
+| **Birthdays on the calendar** | Every contact's birthday shows as a yearly all-day event, generated from Contacts, so every future year is always there (plan December in January). **Sync birthdays** shows who's missing a date and pulls dates from Google Contacts or a phone export. |
+| **Shopping** | "I need to buy paint": nearby stores that sell it (OpenStreetMap, sorted by distance, hours, call), live online prices cheapest-first with the source page (via Claude web search), one-tap searches on Amazon AU, Officeworks, Bunnings and more. Every result offers **Go now** (Google Maps navigation), **Calendar**, **Task**, **Shopping list**, **Open item**. A shopping list grouped by store, and **price tracking** with daily checks, trend, lowest price, target-price alerts. |
 | **Contacts** | Birthdays, favourites, `.vcf` import, **Call** / **Text** from Windows through your Android phone. |
 | **Assistant** | Command bar on every page (Ctrl+K) + mic. "Dentist Tuesday 3pm", "Soccer every Wednesday at 6pm", "Call Luke", "Text Mum saying running late", "What's on this week?", "Weather Saturday", "Plan my week", "Dark theme". Runs on-device, or switch to Claude for free-form requests. |
 | **News** | Google News headlines by category and edition, followed topics, search. |
@@ -41,9 +44,24 @@ and an **Android app** ([Tauri 2](https://tauri.app)), and the two stay in sync 
 ```
 
 * **Local-first.** Data lives on each device (works offline). Changes are queued and sent when online.
-* **Sync relay** (`server/sync-server.mjs`): a ~150-line Node server. Each pairing code is a private room;
-  records merge last-writer-wins; deletes are tombstones. It also relays call/SMS commands and offers a
-  small CORS proxy for the browser build.
+* **Sync relay** (`server/sync-server.mjs`): a small Node server. Each pairing code is a private room;
+  records merge last-writer-wins; deletes are tombstones. It also relays call/SMS commands, hosts the
+  RSVP pages guests open from invites, and offers a small CORS proxy for the browser build.
+
+### How sync behaves
+
+* **Automatic and live.** Every change (events, tasks, notes, contacts, shopping, invite replies) is sent
+  the moment you make it. While both apps are open the other device shows it within about a second.
+* **Offline-safe.** Changes made offline are queued on the device and sent when the connection returns.
+  Each app reconnects on its own, and catches up as soon as it comes back on screen (phone unlocked,
+  laptop woken, network back). A heartbeat every 25 s notices a dead connection.
+* **Conflicts.** If the same item is edited on both devices before they sync, the most recent edit wins
+  for that item. Different items never overwrite each other.
+* **Sync now.** Click the sync status in the sidebar for devices online, last sync and waiting changes.
+  **Sync now** does a full two-way catch-up: it pulls everything from the server and re-sends
+  everything on the device.
+* **Preferences.** News, sports, reminders, invite and shopping preferences can be shared across devices
+  (on by default). Theme, layout, keys and the device name stay per device.
 * **Calls from Windows**: either through this app on your phone (route "companion", via sync) or through
   Microsoft **Phone Link** (`tel:` links), chosen in Settings.
 
@@ -107,6 +125,15 @@ npm run android:build  # APK/AAB
   `src-tauri/gen/android/app/src/main/AndroidManifest.xml`.
 * **Calling from Android** opens the dialer with the number filled in (one tap to call). Auto-dialling
   needs the `CALL_PHONE` permission and a small native plugin.
+* **Invite Accept links** need the sync server reachable from the internet (HTTPS). On a home-only
+  address the app warns you and invites simply ask people to reply.
+* **Prices.** No free API covers Australian retailers, so live prices use Claude's web search (your
+  Anthropic key) and are only as fresh as the shop's page. Price tracking reads the price shops publish
+  in their page data; a few big sites (e.g. Amazon) block automated reads, so track another retailer's
+  link for those items.
+* **Location on Android**: after `npm run android:init`, add
+  `<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />` to the manifest for
+  "near me" searches (otherwise your home suburb is used).
 * **Google sign-in** works in the installed Windows app (browser + loopback, stays signed in). Outlook
   scanning from the installed app still needs the same change; see the doc.
 * **News in a plain browser** needs the sync server's proxy (Google News blocks cross-site requests);

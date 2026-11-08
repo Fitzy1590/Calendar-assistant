@@ -53,6 +53,15 @@
         },
         {
           "url": "https://raw.githubusercontent.com/Picovoice/*"
+        },
+        {
+          "url": "https://overpass-api.de/*"
+        },
+        {
+          "url": "https://people.googleapis.com/*"
+        },
+        {
+          "url": "https://*"
         }
       ]
     }

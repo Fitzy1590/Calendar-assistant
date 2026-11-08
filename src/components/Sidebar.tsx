@@ -3,15 +3,17 @@ import { useEffect, useState } from "react";
 import type { PageId } from "../types";
 import { live, useStore } from "../store";
 import { onSyncStatus } from "../lib/sync";
+import { SyncPanel } from "./SyncPanel";
 import { upcomingReminders } from "../lib/reminders";
 import { todayYmd } from "../lib/util";
-import { IBell, ICal, IChat, ICog, IDown, IHome, IIdea, INews, INote, IPeople, IRight, ISport, ITasks } from "./Icons";
+import { IBell, ICal, ICart, IChat, ICog, IDown, IHome, IIdea, INews, INote, IPeople, IRight, ISport, ITasks } from "./Icons";
 
 const META: Record<PageId, { label: string; icon: (p: { size?: number }) => React.JSX.Element }> = {
   home: { label: "Home", icon: IHome },
   calendar: { label: "Calendar", icon: ICal },
   tasks: { label: "Tasks", icon: ITasks },
   notes: { label: "Notes", icon: INote },
+  shopping: { label: "Shopping", icon: ICart },
   reminders: { label: "Reminders", icon: IBell },
   contacts: { label: "Contacts", icon: IPeople },
   news: { label: "News", icon: INews },
@@ -22,6 +24,7 @@ const META: Record<PageId, { label: string; icon: (p: { size?: number }) => Reac
 export function Sidebar() {
   const s = useStore();
   const [sportsOpen, setSportsOpen] = useState(true);
+  const [syncOpen, setSyncOpen] = useState(false);
   const [sync, setSync] = useState<{ status: string; peers: string[] }>({ status: "off", peers: [] });
   useEffect(() => {
     const off = onSyncStatus((status, peers) => setSync({ status, peers }));
@@ -66,11 +69,12 @@ export function Sidebar() {
       <div className="side-foot">
         <button className="nav-item" onClick={() => s.setUi({ assistantOpen: !s.assistantOpen })}><IChat size={18} /> Assistant</button>
         <button className="nav-item" onClick={() => s.setUi({ feedbackOpen: true })}><IIdea size={18} /> Suggestions & feedback</button>
-        <button className="nav-item" onClick={() => go("settings")} title={sync.peers.join(", ")}>
+        <button className="nav-item" onClick={() => setSyncOpen(true)} title={sync.peers.join(", ")}>
           <span className={"dot " + (sync.status === "online" ? "ok" : sync.status === "connecting" ? "warn" : sync.status === "offline" ? "bad" : "")} style={{ margin: "0 5px" }} />
           {sync.status === "online" ? `Synced · ${sync.peers.length} device${sync.peers.length === 1 ? "" : "s"}` : sync.status === "off" ? "Sync off" : sync.status === "connecting" ? "Connecting…" : "Offline · changes queued"}
         </button>
       </div>
+      {syncOpen && <SyncPanel onClose={() => setSyncOpen(false)} />}
     </nav>
   );
 }

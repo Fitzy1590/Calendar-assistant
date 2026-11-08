@@ -17,6 +17,22 @@ export interface Recurrence {
   count?: number;
 }
 
+export type RsvpStatus = "pending" | "accepted" | "maybe" | "declined";
+
+export interface Attendee {
+  id: string;
+  name: string;
+  contactId?: string;
+  email?: string;
+  phone?: string;
+  status: RsvpStatus;
+  note?: string; // message they left with their reply
+  token: string; // secret in their RSVP link
+  sentAt?: number;
+  sentVia?: "email" | "sms" | "share" | "copy";
+  respondedAt?: number;
+}
+
 export interface CalEvent extends Synced {
   title: string;
   start: string; // ISO local datetime "2026-11-07T09:00"
@@ -29,6 +45,10 @@ export interface CalEvent extends Synced {
   exceptions?: string[]; // yyyy-mm-dd dates skipped in a series
   reminderMins?: number[];
   source?: "manual" | "email" | "assistant" | "sports" | "google";
+  attendees?: Attendee[];
+  inviteMessage?: string; // per-event message; falls back to the template in Settings
+  tz?: string; // organiser's time zone, shown on the RSVP page
+  host?: string; // organiser's name, shown on the RSVP page
   googleId?: string; // id of the linked Google Calendar event (two-way sync)
   googleEtag?: string;
 }
@@ -69,12 +89,42 @@ export interface Note extends Synced {
   tags?: string[];
 }
 
+export interface PricePoint {
+  at: number;
+  price: number;
+  currency: string;
+}
+
+export interface ShoppingItem extends Synced {
+  name: string;
+  qty?: string;
+  notes?: string;
+  done: boolean;
+  store?: { name: string; address?: string; lat?: number; lon?: number; website?: string };
+  url?: string; // product page
+  price?: number;
+  currency?: string;
+  track?: {
+    url: string;
+    history: PricePoint[];
+    lastChecked?: number;
+    lastError?: string;
+    targetPrice?: number; // alert when it drops to this
+  };
+  order: number;
+}
+
+/** Settings shared between your devices (one synced record). */
+export interface SharedPrefs extends Synced {
+  data: Record<string, unknown>;
+}
+
 export interface Feedback extends Synced {
   kind: "idea" | "bug" | "praise";
   text: string;
 }
 
-export type CollectionName = "events" | "tasks" | "contacts" | "notes" | "feedback";
+export type CollectionName = "events" | "tasks" | "contacts" | "notes" | "shopping" | "prefs" | "feedback";
 export type RecordOf<C extends CollectionName> = C extends "events"
   ? CalEvent
   : C extends "tasks"
@@ -83,7 +133,11 @@ export type RecordOf<C extends CollectionName> = C extends "events"
       ? Contact
       : C extends "notes"
         ? Note
-        : Feedback;
+        : C extends "shopping"
+          ? ShoppingItem
+          : C extends "prefs"
+            ? SharedPrefs
+            : Feedback;
 
 export interface Place {
   name: string; // suburb / locality
@@ -110,6 +164,7 @@ export type PageId =
   | "tasks"
   | "contacts"
   | "notes"
+  | "shopping"
   | "reminders"
   | "news"
   | "sports"
@@ -146,7 +201,20 @@ export interface Settings {
     defaultEventMins: number;
     desktopNotifications: boolean;
   };
+  invites: {
+    template: string; // {name} {title} {when} {where} {maps} {rsvp} {from}
+    channel: "email" | "sms" | "ask";
+    rsvpLinks: boolean; // include an Accept link (needs the sync server)
+    notifyReplies: boolean;
+  };
+  shopping: {
+    radiusKm: number;
+    onlineStores: string[];
+    checkPricesDaily: boolean;
+    notifyDrops: boolean;
+  };
   sync: {
+    shareSettings: boolean; // keep news, sports, reminders, invites and shopping preferences the same on every device
     enabled: boolean;
     serverUrl: string;
     pairingCode: string;
@@ -192,7 +260,7 @@ export interface Settings {
   sidebar: { id: PageId; visible: boolean }[];
   pages: {
     home: { widgets: HomeWidget[] };
-    calendar: { view: "day" | "week" | "month" | "year"; showTasks: boolean; dayStartHour: number };
+    calendar: { view: "day" | "week" | "month" | "year"; showTasks: boolean; showBirthdays: boolean; dayStartHour: number };
     tasks: { showDone: boolean; groupBy: "day" | "priority" };
     news: { layout: "list" | "cards"; showImages: boolean };
     notes: { layout: "board" | "list"; size: "s" | "m" | "l"; showArchived: boolean };

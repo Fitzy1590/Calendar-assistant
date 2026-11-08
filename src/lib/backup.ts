@@ -13,7 +13,7 @@ import { backupToDrive, googleConnected, quietly, SCOPES } from "./google";
  * Import merges record-by-record (newest wins) so restoring never wipes newer changes.
  */
 
-const COLLECTIONS: CollectionName[] = ["events", "tasks", "contacts", "notes", "feedback"];
+const COLLECTIONS: CollectionName[] = ["events", "tasks", "contacts", "notes", "shopping", "feedback"];
 const SNAP_KEY = "snapshots";
 
 export interface Backup {

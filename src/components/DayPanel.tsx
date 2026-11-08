@@ -1,4 +1,5 @@
 import { addDays, format } from "date-fns";
+import { calendarEvents, isBirthdayEvent } from "../lib/birthdays";
 import { useState } from "react";
 import { live, useStore } from "../store";
 import { useAsync, useForecast } from "../lib/hooks";
@@ -18,7 +19,7 @@ export function DayPanel() {
   const date = fromYmd(day);
   const wx = useForecast();
   const w = wx.data?.daily.find((d) => d.date === day);
-  const occ = occurrencesOnDay(live(s.events), date);
+  const occ = occurrencesOnDay(calendarEvents(s), date);
   const tasks = live(s.tasks).filter((t) => t.due === day);
   const loc = s.settings.location;
   const local = useAsync(() => (loc ? localEventsFor(loc, day, s.settings.localEventsApiKey) : Promise.resolve([])), [day, loc?.lat]);
@@ -67,7 +68,7 @@ export function DayPanel() {
           </div>
           <div className="list">
             {occ.map((o) => (
-              <div key={o.key} className="agenda-item" style={{ cursor: "pointer" }} onClick={() => setEdit({ ev: o.event, occ: day })}>
+              <div key={o.key} className="agenda-item" style={{ cursor: "pointer" }} onClick={() => (isBirthdayEvent(o.event) ? s.setPage("contacts") : setEdit({ ev: o.event, occ: day }))}>
                 <span className="when">{o.event.allDay ? "all day" : fmtTime(o.start, s.settings.clock24)}</span>
                 <span><span className="what">{o.event.title}</span>{o.event.location && <div className="where">{o.event.location}</div>}</span>
               </div>

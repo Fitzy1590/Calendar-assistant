@@ -28,7 +28,15 @@ export const DEFAULT_SETTINGS: Settings = {
     defaultEventMins: 30,
     desktopNotifications: true,
   },
-  sync: { enabled: false, serverUrl: "", pairingCode: pairingCode(), deviceName: "" },
+  invites: {
+    template:
+      "Hi {name}, want to catch up? {title} on {when}{where}.\n{rsvp}{maps}\n– {from}",
+    channel: "ask",
+    rsvpLinks: true,
+    notifyReplies: true,
+  },
+  shopping: { radiusKm: 10, onlineStores: ["Amazon AU", "Officeworks", "Bunnings", "eBay AU", "JB Hi-Fi", "Kmart"], checkPricesDaily: true, notifyDrops: true },
+  sync: { shareSettings: true, enabled: false, serverUrl: "", pairingCode: pairingCode(), deviceName: "" },
   phone: { route: "companion" },
   assistant: { provider: "local", apiKey: "", voiceLang: "en-AU", speakReplies: false },
   email: { googleClientId: "", googleDesktopClientId: "", googleDesktopClientSecret: "", microsoftClientId: "" },
@@ -36,7 +44,7 @@ export const DEFAULT_SETTINGS: Settings = {
   localEventsApiKey: "",
   google: { calendarSync: false, calendarId: "primary", driveBackup: false },
   backup: { autoLocal: true },
-  sidebar: (["home", "calendar", "tasks", "notes", "reminders", "contacts", "news", "sports", "settings"] as PageId[]).map((id) => ({
+  sidebar: (["home", "calendar", "tasks", "notes", "shopping", "reminders", "contacts", "news", "sports", "settings"] as PageId[]).map((id) => ({
     id,
     visible: true,
   })),
@@ -46,7 +54,7 @@ export const DEFAULT_SETTINGS: Settings = {
         (id) => ({ id, visible: true }),
       ),
     },
-    calendar: { view: "week", showTasks: true, dayStartHour: 7 },
+    calendar: { view: "week", showTasks: true, showBirthdays: true, dayStartHour: 7 },
     tasks: { showDone: false, groupBy: "day" },
     news: { layout: "list", showImages: false },
     notes: { layout: "board", size: "m", showArchived: false },
@@ -65,6 +73,8 @@ interface State {
   tasks: Coll<"tasks">;
   contacts: Coll<"contacts">;
   notes: Coll<"notes">;
+  shopping: Coll<"shopping">;
+  prefs: Coll<"prefs">;
   feedback: Coll<"feedback">;
   dismissedReminders: Record<string, number>; // reminder key -> dismissed at
   snoozedReminders: Record<string, number>; // reminder key -> snoozed until
@@ -107,6 +117,8 @@ export const useStore = create<State>()(
       tasks: {},
       contacts: {},
       notes: {},
+      shopping: {},
+      prefs: {},
       feedback: {},
       dismissedReminders: {},
       snoozedReminders: {},
@@ -170,6 +182,8 @@ export const useStore = create<State>()(
         tasks: s.tasks,
         contacts: s.contacts,
         notes: s.notes,
+        shopping: s.shopping,
+        prefs: s.prefs,
         feedback: s.feedback,
         dismissedReminders: s.dismissedReminders,
         snoozedReminders: s.snoozedReminders,
@@ -184,7 +198,7 @@ export const useStore = create<State>()(
         for (const d of DEFAULT_SETTINGS.sidebar) if (!settings.sidebar.some((x) => x.id === d.id)) settings.sidebar.splice(-1, 0, { ...d });
         for (const d of DEFAULT_SETTINGS.pages.home.widgets)
           if (!settings.pages.home.widgets.some((x) => x.id === d.id)) settings.pages.home.widgets.push({ ...d });
-        return { ...current, ...p, notes: p.notes ?? {}, settings };
+        return { ...current, ...p, notes: p.notes ?? {}, shopping: p.shopping ?? {}, prefs: p.prefs ?? {}, settings };
       },
     },
   ),

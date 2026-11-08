@@ -22,6 +22,7 @@ export const SCOPES = {
   gmail: "https://www.googleapis.com/auth/gmail.readonly",
   calendar: "https://www.googleapis.com/auth/calendar.events",
   drive: "https://www.googleapis.com/auth/drive.appdata", // hidden per-app folder: can't see your other files
+  contacts: "https://www.googleapis.com/auth/contacts.readonly", // names, numbers and birthdays for "Sync birthdays"
 };
 
 const REFRESH_KEY = "google-refresh"; // device-only: never synced or backed up
@@ -385,3 +386,54 @@ export async function restoreFromDrive(): Promise<string | null> {
   return r.text();
 }
 
+
+/* ---------------- Google Contacts (birthdays) ---------------- */
+
+/**
+ * Pull names, phone numbers, emails and birthdays from Google Contacts. Existing contacts are matched by
+ * name (then phone/email) and only get the fields they are missing; new people with a birthday are added.
+ */
+export async function syncGoogleContacts(): Promise<string> {
+  const st = useStore.getState();
+  const people: any[] = [];
+  let page = "";
+  do {
+    const j = await gfetch(
+      `https://people.googleapis.com/v1/people/me/connections?pageSize=1000&personFields=names,birthdays,phoneNumbers,emailAddresses${page ? `&pageToken=${page}` : ""}`,
+      SCOPES.contacts,
+    );
+    people.push(...(j.connections ?? []));
+    page = j.nextPageToken ?? "";
+  } while (page && people.length < 5000);
+
+  const mine = Object.values(st.contacts).filter((c) => !c.deleted);
+  const norm = (v?: string) => (v ?? "").replace(/[^\d+]/g, "");
+  let added = 0;
+  let updated = 0;
+  for (const p of people) {
+    const name: string | undefined = p.names?.[0]?.displayName;
+    if (!name) continue;
+    const b = p.birthdays?.find((x: any) => x.date?.month && x.date?.day)?.date;
+    const birthday = b ? `${b.year ?? 1900}-${String(b.month).padStart(2, "0")}-${String(b.day).padStart(2, "0")}` : undefined;
+    const phone: string | undefined = p.phoneNumbers?.[0]?.value;
+    const email: string | undefined = p.emailAddresses?.[0]?.value;
+    const match =
+      mine.find((c) => c.name.toLowerCase() === name.toLowerCase()) ||
+      (phone ? mine.find((c) => c.phone && norm(c.phone) === norm(phone)) : undefined) ||
+      (email ? mine.find((c) => c.email?.toLowerCase() === email.toLowerCase()) : undefined);
+    if (match) {
+      const patch: Record<string, string> = {};
+      if (birthday && !match.birthday) patch.birthday = birthday;
+      if (phone && !match.phone) patch.phone = phone;
+      if (email && !match.email) patch.email = email;
+      if (Object.keys(patch).length) {
+        st.upsert("contacts", { id: match.id, ...patch });
+        updated++;
+      }
+    } else if (birthday) {
+      st.upsert("contacts", { name, birthday, phone, email });
+      added++;
+    }
+  }
+  return `Google Contacts: ${added} added, ${updated} updated.`;
+}

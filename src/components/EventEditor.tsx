@@ -6,6 +6,9 @@ import { describeRecurrence } from "../lib/recurrence";
 import { conflictsForEvent } from "../lib/planner";
 import { fromYmd, localIso } from "../lib/util";
 import { Field, Modal, Toggle } from "./ui";
+import { InvitePanel } from "./InvitePanel";
+import { openUrl } from "../lib/platform";
+import { navigateUrl } from "../lib/shopping";
 
 const COLORS = ["", "#2f5d8a", "#4f6b3a", "#b8860b", "#8a3a55", "#50606e"];
 
@@ -26,10 +29,26 @@ export function EventEditor({ initial, onClose, occurrenceDate }: { initial: Par
   const r = ev.recurrence;
   const startDate = fromYmd(ev.start!);
 
+  /** Save without closing; keeps guests' latest replies (they can arrive while this is open). */
+  const persist = (): CalEvent | null => {
+    if (!ev.title?.trim()) {
+      toast("Give it a title first");
+      return null;
+    }
+    const stored = ev.id ? s.events[ev.id] : undefined;
+    const attendees = ev.attendees?.map((a) => {
+      const cur = stored?.attendees?.find((x) => x.id === a.id);
+      return cur ? { ...a, status: cur.status, note: cur.note, respondedAt: cur.respondedAt, sentAt: cur.sentAt ?? a.sentAt, sentVia: cur.sentVia ?? a.sentVia } : a;
+    });
+    const guests = attendees?.length ? { host: s.settings.displayName || undefined, tz: Intl.DateTimeFormat().resolvedOptions().timeZone } : {};
+    const saved = s.upsert("events", { ...ev, ...guests, attendees, source: ev.source ?? "manual" } as CalEvent);
+    setEv(saved);
+    return saved;
+  };
   const save = () => {
-    if (!ev.title?.trim()) return toast("Give it a title first");
-    s.upsert("events", { ...ev, source: ev.source ?? "manual" } as CalEvent);
-    toast(ev.id ? "Event updated" : "Event added");
+    const wasNew = !ev.id;
+    if (!persist()) return;
+    toast(wasNew ? "Event added" : "Event updated");
     onClose();
   };
   const del = (scope: "one" | "all") => {
@@ -105,7 +124,12 @@ export function EventEditor({ initial, onClose, occurrenceDate }: { initial: Par
           <Field label="Summary"><div className="muted" style={{ paddingTop: 8 }}>{describeRecurrence(r)}</div></Field>
         </div>
       )}
-      <Field label="Location"><input className="input" value={ev.location ?? ""} onChange={(e) => set({ location: e.target.value })} /></Field>
+      <Field label="Location">
+        <div className="row" style={{ flexWrap: "nowrap" }}>
+          <input className="input" value={ev.location ?? ""} onChange={(e) => set({ location: e.target.value })} placeholder="Address or place name" />
+          {ev.location && <button type="button" className="btn sm" onClick={() => openUrl(navigateUrl({ name: ev.location }))} title="Directions in Google Maps">Maps</button>}
+        </div>
+      </Field>
       <div className="grid2">
         <Field label="Reminder">
           <select className="input" value={ev.reminderMins?.[0] ?? -1} onChange={(e) => set({ reminderMins: +e.target.value < 0 ? [] : [+e.target.value] })}>
@@ -118,6 +142,8 @@ export function EventEditor({ initial, onClose, occurrenceDate }: { initial: Par
         </Field>
       </div>
       <Field label="Notes"><textarea className="input" rows={3} value={ev.notes ?? ""} onChange={(e) => set({ notes: e.target.value })} /></Field>
+      <div className="hr" />
+      <InvitePanel ev={ev} set={set} persist={persist} />
     </Modal>
   );
 }

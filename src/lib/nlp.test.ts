@@ -69,3 +69,30 @@ describe("notes helpers", () => {
     expect(tagsOf({ title: "Trip", body: "Pack #holiday and #Kids stuff" })).toEqual(["holiday", "kids"]);
   });
 });
+
+import { runLocal } from "./assistant";
+import { useStore } from "../store";
+describe("assistant routing", () => {
+  it("adds to the shopping list", async () => {
+    const r = await runLocal("add milk and bread to my shopping list");
+    expect(r.text).toMatch(/milk, bread/);
+    expect(Object.values(useStore.getState().shopping).map((i) => i.name)).toEqual(expect.arrayContaining(["Milk", "Bread"]));
+  });
+  it("routes buying intents to the shopping finder", async () => {
+    const r = await runLocal("I need to buy paint");
+    expect(r.text).toMatch(/paint near you/);
+  });
+});
+
+describe("casing and invites", () => {
+  it("keeps the original capitals in titles", () => {
+    expect(parseWhen("Lunch with Sam at Cafe Mondo tomorrow 1pm", now).rest).toBe("Lunch with Sam at Cafe Mondo");
+  });
+  it("splits an invite into people, title, time and place", async () => {
+    const r = await runLocal("Invite Luke and Sam to dinner Friday 7pm at Mama's Kitchen, Parramatta");
+    expect(r.text).toMatch(/Added "Dinner" on Friday/);
+    const ev = Object.values(useStore.getState().events).find((e) => e.title === "Dinner")!;
+    expect(ev.location).toBe("Mama's Kitchen, Parramatta");
+    expect(ev.attendees?.map((a) => a.name)).toEqual(["Luke", "Sam"]);
+  });
+});

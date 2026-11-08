@@ -1,4 +1,5 @@
 import type React from "react";
+import { calendarEvents } from "../lib/birthdays";
 import { addDays, format } from "date-fns";
 import { useState } from "react";
 import type { HomeWidget } from "../types";
@@ -156,7 +157,7 @@ function MiniCalWidget() {
 function AgendaWidget() {
   const s = useStore();
   const t0 = new Date(new Date().setHours(0, 0, 0, 0));
-  const occ = occurrencesInRange(live(s.events), new Date(), addDays(t0, 2));
+  const occ = occurrencesInRange(calendarEvents(s), t0, addDays(t0, 2)).filter((o) => o.event.allDay || o.end > new Date());
   return (
     <>
       <h2>Today & tomorrow <span className="spacer" /><button className="btn sm ghost" onClick={() => s.setPage("calendar")}><IPlus size={14} /></button></h2>

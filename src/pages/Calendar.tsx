@@ -2,6 +2,8 @@ import {
   addDays, addMonths, addWeeks, addYears, differenceInMinutes, format, isSameDay, isSameMonth, startOfDay,
   startOfMonth, startOfWeek, startOfYear,
 } from "date-fns";
+import { calendarEvents, isBirthdayEvent } from "../lib/birthdays";
+import { BirthdaySync } from "../components/BirthdaySync";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { CalEvent, Task } from "../types";
 import { live, useStore } from "../store";
@@ -11,7 +13,7 @@ import { cx, fmtTime, localIso, ymd } from "../lib/util";
 import { skyOf } from "../lib/weather";
 import { EventEditor } from "../components/EventEditor";
 import { MiniCalendar } from "../components/MiniCalendar";
-import { ILeft, IMail, IPlus, IRight, WeatherIcon } from "../components/Icons";
+import { ICake, ILeft, IMail, IPlus, IRight, WeatherIcon } from "../components/Icons";
 import { PageHead, Seg, Toggle } from "../components/ui";
 
 type View = "day" | "week" | "month" | "year";
@@ -50,13 +52,18 @@ export function Calendar() {
 
   const newAt = (d: Date, allDay = false) =>
     setEdit({ ev: allDay ? { start: localIso(startOfDay(d)), end: localIso(addDays(startOfDay(d), 1)), allDay: true } : { start: localIso(d), end: localIso(new Date(d.getTime() + 3600e3)) } });
-  const openOcc = (o: Occurrence) => setEdit({ ev: o.event, occ: ymd(o.start) });
+  const openOcc = (o: Occurrence) => {
+    if (isBirthdayEvent(o.event)) return s.setPage("contacts"); // birthdays are edited on the contact
+    setEdit({ ev: o.event, occ: ymd(o.start) });
+  };
+  const [bdays, setBdays] = useState(false);
 
   return (
     <>
       <PageHead
         title="Calendar"
         actions={<>
+          <button className="btn" onClick={() => setBdays(true)} title="Check every birthday is on the calendar"><ICake size={16} /> Sync birthdays</button>
           <button className="btn" onClick={() => s.setUi({ emailImportOpen: true })}><IMail /> Scan email</button>
           <button className="btn primary" onClick={() => newAt(new Date(new Date().setMinutes(0, 0, 0) + 3600e3))}><IPlus /> New event</button>
         </>}
@@ -65,6 +72,7 @@ export function Calendar() {
         customise={
           <div className="row" style={{ gap: 24 }}>
             <span className="row"><Toggle checked={cfg.showTasks} onChange={(v) => s.updateSettings((st) => void (st.pages.calendar.showTasks = v))} label="Show tasks" /> Show tasks on the calendar</span>
+            <span className="row"><Toggle checked={cfg.showBirthdays} onChange={(v) => s.updateSettings((st) => void (st.pages.calendar.showBirthdays = v))} label="Show birthdays" /> Show birthdays</span>
             <label className="row">Day starts at
               <select className="input" style={{ width: 90 }} value={cfg.dayStartHour} onChange={(e) => s.updateSettings((st) => void (st.pages.calendar.dayStartHour = +e.target.value))}>
                 {Array.from({ length: 12 }, (_, h) => <option key={h} value={h}>{h}:00</option>)}
@@ -97,6 +105,7 @@ export function Calendar() {
         </div>
       )}
       {edit && <EventEditor initial={edit.ev} occurrenceDate={edit.occ} onClose={() => setEdit(null)} />}
+      {bdays && <BirthdaySync onClose={() => setBdays(false)} />}
     </>
   );
 }
@@ -104,9 +113,11 @@ export function Calendar() {
 function useRange(from: Date, to: Date) {
   const events = useStore((s) => s.events);
   const tasks = useStore((s) => s.tasks);
+  const contacts = useStore((s) => s.contacts);
   const showTasks = useStore((s) => s.settings.pages.calendar.showTasks);
+  const showB = useStore((s) => s.settings.pages.calendar.showBirthdays);
   return useMemo(() => {
-    const occ = occurrencesInRange(live(events), from, to);
+    const occ = occurrencesInRange(calendarEvents(useStore.getState()), from, to);
     const byDay = new Map<string, { occ: Occurrence[]; tasks: Task[] }>();
     const slot = (k: string) => byDay.get(k) ?? (byDay.set(k, { occ: [], tasks: [] }), byDay.get(k)!);
     for (const o of occ) {
@@ -118,7 +129,7 @@ function useRange(from: Date, to: Date) {
     }
     if (showTasks) for (const t of live(tasks)) if (t.due) slot(t.due).tasks.push(t);
     return byDay;
-  }, [events, tasks, showTasks, from.getTime(), to.getTime()]);
+  }, [events, tasks, contacts, showTasks, showB, from.getTime(), to.getTime()]);
 }
 
 function MonthView({ cursor, onNew, onOpen }: { cursor: Date; onNew: (d: Date) => void; onOpen: (o: Occurrence) => void }) {

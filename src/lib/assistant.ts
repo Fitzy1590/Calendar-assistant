@@ -11,6 +11,8 @@ const pad = (n: number) => String(n).padStart(2, "0");
 const hm = (h?: number, m?: number) => (h === undefined ? undefined : `${pad(h)}:${pad(m ?? 0)}`);
 
 export const EXAMPLES = [
+  "I need to buy paint",
+  "Invite Luke to dinner Friday 7pm at Mama's",
   "Take a note: gate code is 4821",
   "Dentist next Tuesday at 3pm",
   "Soccer every Wednesday at 6pm",
@@ -33,6 +35,17 @@ export async function runLocal(input: string): Promise<A.ActionResult> {
   if ((m = text.match(/^(?:take|make|add|write|jot down)(?: a| me a)? note(?: that| saying| about|:)?\s+(.+)$/i)) || (m = text.match(/^(?:note|remember that|remember)[:,]?\s+(.+)$/i)))
     return A.takeNote(m[1]);
   if ((m = low.match(/^(?:find|search|show|open)(?: my)? notes?(?: for| about| on| with)? (.+)$/))) return A.findNotes(m[1]);
+  if ((m = text.match(/^(?:add|put) (.+?) (?:to|on) (?:my |the )?(?:shopping|grocery) list$/i))) return A.addShopping(m[1]);
+  if (/^(?:what'?s|show|read)(?: is)? (?:on )?(?:my |the )?(?:shopping|grocery) list/.test(low)) return A.listShopping();
+  if ((m = low.match(/^(?:i need to buy|i need|where can i (?:buy|get)|find|cheapest|compare prices (?:for|on)|shop for|buy) (.+?)(?: near me| nearby| cheap| online)?$/)) && !/\b(note|notes|setting|settings|event|meeting)\b/.test(m[1]))
+    return A.shopFor(m[1]);
+  if ((m = text.match(/^invite (.+?) to (.+)$/i))) {
+    const people = m[1].split(/,|\band\b|&/).map((x) => x.trim()).filter(Boolean);
+    const loc = m[2].match(/\s(?:at|@)\s+([A-Z][^]*)$/); // "at Mama's Kitchen, Parramatta" (a capital: a place, not a time)
+    const rest = loc ? m[2].slice(0, loc.index) : m[2];
+    const w = parseWhen(rest);
+    if (w.date) return A.invite(people, { title: cleanTitle(w.rest) || "Catch-up", date: ymd(w.date), time: hm(w.hour, w.minute), durationMins: w.durationMins, location: loc?.[1] });
+  }
   if ((m = low.match(/^(?:call|ring|phone|dial) (.+)$/))) return A.call(m[1]);
   if ((m = text.match(/^(?:text|sms|message) (.+?)(?: (?:saying|that|to say|:)\s*(.+))?$/i))) return A.sms(m[1], m[2]);
 
@@ -135,6 +148,12 @@ const TOOLS: Anthropic.Tool[] = [
   tool("text_contact", "Send an SMS to a contact through the linked Android phone.", { name: { type: "string" }, body: { type: "string" } }, ["name"]),
   tool("add_contact", "Add or update a contact.", { name: { type: "string" }, phone: { type: "string" }, email: { type: "string" }, birthday: { type: "string", description: "yyyy-mm-dd" } }, ["name"]),
   tool("navigate", "Open a page of the app.", { page: { type: "string", enum: ["home", "calendar", "tasks", "notes", "contacts", "reminders", "news", "sports", "settings"] } }, ["page"]),
+  tool("find_product", "Find shops near the user that sell something and compare prices online (opens the Shopping page).", { product: { type: "string" } }, ["product"]),
+  tool("add_shopping_items", "Add things to the shopping list (comma-separated).", { items: { type: "string" } }, ["items"]),
+  tool("list_shopping", "Read the shopping list.", {}, []),
+  tool("invite_people", "Create an event and invite people (names from contacts, emails or numbers).", {
+    people: { type: "array", items: { type: "string" } }, title: { type: "string" }, date: { type: "string" }, time: { type: "string" }, durationMins: { type: "integer" }, location: { type: "string" },
+  }, ["people", "title", "date"]),
   tool("add_note", "Save a sticky note (things to remember, codes, lists; use \"[ ] item\" lines for a checklist).", { text: { type: "string" }, title: { type: "string" } }, ["text"]),
   tool("search_notes", "Find notes mentioning a word or phrase.", { query: { type: "string" } }, ["query"]),
   tool("set_calendar_view", "Switch the calendar view.", { view: { type: "string", enum: ["day", "week", "month", "year"] } }, ["view"]),
@@ -167,12 +186,16 @@ async function runTool(name: string, i: any): Promise<A.ActionResult> {
     case "search_news": return A.openNews(i.query);
     case "search_settings": return A.openSettings(i.query);
     case "add_note": return A.takeNote(i.text, i.title);
+    case "find_product": return A.shopFor(i.product);
+    case "add_shopping_items": return A.addShopping(i.items);
+    case "list_shopping": return A.listShopping();
+    case "invite_people": return A.invite(i.people, i);
     case "search_notes": return A.findNotes(i.query);
     default: return { text: `Unknown tool ${name}` };
   }
 }
 
-const SYSTEM = `You are the assistant inside a personal planner app (calendar, tasks, notes, contacts, reminders, weather, news, sports).
+const SYSTEM = `You are the assistant inside a personal planner app (calendar, tasks, notes, shopping list, invites, contacts, reminders, weather, news, sports).
 Act on requests with the tools; ask one short question only when a required detail is genuinely missing.
 Reply in one or two plain sentences: the user may be listening via text-to-speech. Use the user's local dates and times.`;
 

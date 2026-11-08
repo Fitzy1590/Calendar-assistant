@@ -334,14 +334,12 @@ export async function checkTrackedPrices(force = false): Promise<string[]> {
       const point = await checkPrice(item);
       const before = trend(item.track.history).current;
       const history = [...item.track.history, point].slice(-180);
-      useStore
-        .getState()
-        .upsert("shopping", {
-          id: item.id,
-          price: point.price,
-          currency: point.currency,
-          track: { ...item.track, history, lastChecked: Date.now(), lastError: undefined },
-        });
+      useStore.getState().upsert("shopping", {
+        id: item.id,
+        price: point.price,
+        currency: point.currency,
+        track: { ...item.track, history, lastChecked: Date.now(), lastError: undefined },
+      });
       if (before != null && point.price < before)
         notices.push(`${item.name} dropped to $${point.price.toFixed(2)} (was $${before.toFixed(2)})`);
       else if (item.track.targetPrice && point.price <= item.track.targetPrice)

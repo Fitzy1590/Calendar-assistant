@@ -7,6 +7,7 @@ Package manager is **npm** (`package-lock.json`, CI runs `npm ci`); commands bel
 - `B1` `npx tsc --noEmit` exits 0
 - `B2` `npm test`, all suites pass (currently 31 tests in 5 files)
 - `B3` `npm run build` succeeds
+- `B5` `npx prettier --check "src/**/*.{ts,tsx}"` clean
 - `B4` Rust touched: `rustfmt --edition 2021 --check src-tauri/src/*.rs`, plus a green GitHub `build` run (check, windows, android jobs)
 
 ---
@@ -52,7 +53,7 @@ Package manager is **npm** (`package-lock.json`, CI runs `npm ci`); commands bel
 | [ ] | **Google Calendar sync: recurrence exceptions.** `toGoogle()` sends `RRULE` but not `exceptions` (EXDATE), and pulled cancelled instances aren't mapped back, so a deleted single occurrence reappears in Google | New `google.test.ts`: `toGoogle` emits `EXDATE` for each exception; `fromGoogle` maps cancelled instances to `exceptions`; B1, B2 |
 | [ ] | **Google sync: attendees.** Invite guests aren't sent to / read from Google events | Unit test for mapping `attendees[]` ↔ Google `attendees`; B1, B2 |
 | [ ] | **Real-account verification** of Google Calendar two-way sync (create, edit, delete both sides) | Manual checklist in PR; no duplicates after two `Sync now` runs |
-| [ ] | **Harness setup**: `.claude/settings.json` (deny secrets, prettier hook, tsc Stop hook), `.claude/rules/calendar-ui.md`, `.claude/skills/calendar-api/SKILL.md`. Blocked on: prettier config, secret-file patterns, npm vs pnpm | `python3 -m json.tool .claude/settings.json`; Stop hook exits 2 when a type error is introduced |
+| [x] | **Harness setup**: `.claude/settings.json` (deny `.env`, `.env.local`, `*.key`, `*.jks`, `client_secret*.json`; Prettier PostToolUse hook; `tsc` Stop hook), `.prettierrc.json`, `.claude/rules/calendar-ui.md`, `.claude/skills/calendar-api/SKILL.md` | `jq -e . .claude/settings.json`; `npx prettier --check "src/**/*.{ts,tsx}"`; Stop hook exits 2 on a type error |
 
 ---
 

@@ -1,7 +1,8 @@
 name: build
 
 # Every push: checks, Windows installer and Android APK as downloadable build artifacts.
-# A release: push a version tag (v1.2.3), or run this workflow from the Actions tab with a version number.
+# A release: push a version tag (v1.2.3), push a branch named release/v1.2.3, or run this workflow from the
+# Actions tab with a version number.
 # Both build everything stamped with that version and publish a GitHub Release.
 on:
   push:
@@ -16,8 +17,9 @@ on:
         default: ""
 
 env:
-  IS_RELEASE: ${{ startsWith(github.ref, 'refs/tags/v') || inputs.release_version != '' }}
-  VERSION: ${{ inputs.release_version || (startsWith(github.ref, 'refs/tags/v') && github.ref_name) || '' }}
+  IS_RELEASE: ${{ startsWith(github.ref, 'refs/tags/v') || startsWith(github.ref, 'refs/heads/release/v') || inputs.release_version != '' }}
+  # "v1.2.3", "release/v1.2.3" or "1.2.3"; scripts take the part after the last "/" and drop the "v"
+  VERSION: ${{ inputs.release_version || ((startsWith(github.ref, 'refs/tags/v') || startsWith(github.ref, 'refs/heads/release/v')) && github.ref_name) || '' }}
 
 jobs:
   check:
@@ -44,7 +46,7 @@ jobs:
       - name: Stamp the version from the tag
         if: env.IS_RELEASE == 'true'
         shell: bash
-        run: node scripts/set-version.mjs "${VERSION#v}"
+        run: V="${VERSION##*/}"; node scripts/set-version.mjs "${V#v}"
       - name: Turn on signed in-app updates (release builds with an updater key)
         if: env.IS_RELEASE == 'true'
         shell: bash
@@ -95,7 +97,7 @@ jobs:
       - run: npm ci
       - name: Stamp the version from the tag
         if: env.IS_RELEASE == 'true'
-        run: node scripts/set-version.mjs "${VERSION#v}"
+        run: V="${VERSION##*/}"; node scripts/set-version.mjs "${V#v}"
       - name: Generate the Android project
         run: npx tauri android init --ci
       - name: Microphone, location and phone permissions
@@ -135,7 +137,7 @@ jobs:
           path: out/*.apk
 
   release:
-    if: startsWith(github.ref, 'refs/tags/v') || inputs.release_version != ''
+    if: startsWith(github.ref, 'refs/tags/v') || startsWith(github.ref, 'refs/heads/release/v') || inputs.release_version != ''
     needs: [windows, android]
     runs-on: ubuntu-latest
     permissions:
@@ -147,11 +149,11 @@ jobs:
       - name: Update manifest for the in-app updater
         env:
           NOTES_FILE: docs/release-notes.md
-        run: node scripts/latest-json.mjs dist-release "v${VERSION#v}"
+        run: V="${VERSION##*/}"; node scripts/latest-json.mjs dist-release "v${V#v}"
       - run: ls -la dist-release
       - name: Release tag
         id: tag
-        run: echo "tag=v${VERSION#v}" >> "$GITHUB_OUTPUT"
+        run: V="${VERSION##*/}"; echo "tag=v${V#v}" >> "$GITHUB_OUTPUT"
       - uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.tag.outputs.tag }}

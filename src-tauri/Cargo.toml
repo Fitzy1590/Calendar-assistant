@@ -28,3 +28,6 @@ tauri-plugin-process = "2"
 # Windows: native message box for the crash / "can't start" dialog
 [target.'cfg(windows)'.dependencies]
 windows-sys = { version = "0.59", features = ["Win32_Foundation", "Win32_UI_WindowsAndMessaging"] }
+# browser mode (no WebView2): a tiny local web server with the app's pages built in
+tiny_http = "0.12"
+include_dir = "0.7"

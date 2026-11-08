@@ -8,7 +8,7 @@ import { startSync } from "./lib/sync";
 import { startPhoneBridge } from "./lib/phone";
 import { setWakeHandler, startVoice } from "./lib/wake";
 import { handleWake } from "./components/Assistant";
-import { notify, startTraySetting } from "./lib/platform";
+import { notify, startBrowserModeHeartbeat, startTraySetting } from "./lib/platform";
 import { startReplyWatcher } from "./lib/invites";
 import { startUpdateChecks } from "./lib/updates";
 
@@ -18,6 +18,7 @@ startPhoneBridge();
 setWakeHandler(handleWake);
 startVoice();
 startTraySetting();
+startBrowserModeHeartbeat();
 startReplyWatcher(notify);
 startUpdateChecks();
 

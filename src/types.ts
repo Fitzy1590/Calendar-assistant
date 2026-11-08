@@ -158,17 +158,7 @@ export interface FavTeam {
 }
 
 export type ThemeName = "paper" | "ink" | "slate" | "sand" | "system";
-export type PageId =
-  | "home"
-  | "calendar"
-  | "tasks"
-  | "contacts"
-  | "notes"
-  | "shopping"
-  | "reminders"
-  | "news"
-  | "sports"
-  | "settings";
+export type PageId = "home" | "calendar" | "tasks" | "contacts" | "notes" | "shopping" | "reminders" | "news" | "sports" | "settings";
 
 export interface HomeWidget {
   id: "weather" | "clock" | "minical" | "agenda" | "tasks" | "birthdays" | "headlines" | "sports" | "localEvents" | "notes";

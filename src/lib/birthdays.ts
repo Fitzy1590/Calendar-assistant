@@ -34,7 +34,9 @@ export function birthdayEvent(c: Contact): CalEvent | null {
 }
 
 export function birthdayEvents(contacts = useStore.getState().contacts): CalEvent[] {
-  return live(contacts).map(birthdayEvent).filter((e): e is CalEvent => !!e);
+  return live(contacts)
+    .map(birthdayEvent)
+    .filter((e): e is CalEvent => !!e);
 }
 
 /** Age someone turns on a given occurrence, when their birth year is known. */

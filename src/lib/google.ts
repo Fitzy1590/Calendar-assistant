@@ -99,7 +99,10 @@ async function refresh(sv: Saved) {
 async function pkce() {
   const verifier = Array.from(crypto.getRandomValues(new Uint8Array(32)), (b) => b.toString(16).padStart(2, "0")).join("");
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(verifier));
-  const challenge = btoa(String.fromCharCode(...new Uint8Array(digest))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  const challenge = btoa(String.fromCharCode(...new Uint8Array(digest)))
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
   return { verifier, challenge };
 }
 
@@ -166,7 +169,10 @@ async function popupSignIn(scopes: string): Promise<string> {
       resolve(ev.data);
     };
     window.addEventListener("message", onMsg);
-    const t = setInterval(() => w.closed && (clearInterval(t), window.removeEventListener("message", onMsg), reject(new Error("Sign-in window closed"))), 500);
+    const t = setInterval(
+      () => w.closed && (clearInterval(t), window.removeEventListener("message", onMsg), reject(new Error("Sign-in window closed"))),
+      500,
+    );
   });
   const p = new URLSearchParams(res.hash.slice(1));
   const value = p.get("access_token");
@@ -188,7 +194,10 @@ export async function quietly<T>(fn: () => Promise<T>): Promise<T> {
 
 async function gfetch(url: string, scope: string, init: RequestInit = {}) {
   const t = await googleToken([scope], interactiveCalls);
-  const r = await fetch(url, { ...init, headers: { Authorization: `Bearer ${t}`, "Content-Type": "application/json", ...(init.headers ?? {}) } });
+  const r = await fetch(url, {
+    ...init,
+    headers: { Authorization: `Bearer ${t}`, "Content-Type": "application/json", ...(init.headers ?? {}) },
+  });
   if (r.status === 401) token = null;
   if (!r.ok && r.status !== 204 && r.status !== 410) throw new Error(`Google ${r.status}: ${(await r.text()).slice(0, 200)}`);
   return r.status === 204 || r.status === 410 ? null : r.json();
@@ -201,14 +210,23 @@ const CAL = "https://www.googleapis.com/calendar/v3/calendars";
 function rruleToRecurrence(rules?: string[]): Recurrence | undefined {
   const r = rules?.find((x) => x.startsWith("RRULE:"));
   if (!r) return undefined;
-  const kv = Object.fromEntries(r.slice(6).split(";").map((p) => p.split("=")));
+  const kv = Object.fromEntries(
+    r
+      .slice(6)
+      .split(";")
+      .map((p) => p.split("=")),
+  );
   const freq = ({ DAILY: "daily", WEEKLY: "weekly", MONTHLY: "monthly", YEARLY: "yearly" } as const)[kv.FREQ as "DAILY"];
   if (!freq) return undefined;
   const days = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"];
   return {
     freq,
     interval: Number(kv.INTERVAL || 1),
-    byWeekday: kv.BYDAY ? kv.BYDAY.split(",").map((d: string) => days.indexOf(d.slice(-2))).filter((d: number) => d >= 0) : undefined,
+    byWeekday: kv.BYDAY
+      ? kv.BYDAY.split(",")
+          .map((d: string) => days.indexOf(d.slice(-2)))
+          .filter((d: number) => d >= 0)
+      : undefined,
     until: kv.UNTIL ? `${kv.UNTIL.slice(0, 4)}-${kv.UNTIL.slice(4, 6)}-${kv.UNTIL.slice(6, 8)}` : undefined,
     count: kv.COUNT ? Number(kv.COUNT) : undefined,
   };
@@ -272,7 +290,11 @@ async function listGoogle(calendarId: string, from: Date, to: Date) {
 /** One-off import: show Google events as candidates in the multi-select import dialog. */
 export async function importGoogleCalendar(): Promise<Candidate[]> {
   const { calendarId } = useStore.getState().settings.google;
-  const known = new Set(live(useStore.getState().events).map((e) => e.googleId).filter(Boolean));
+  const known = new Set(
+    live(useStore.getState().events)
+      .map((e) => e.googleId)
+      .filter(Boolean),
+  );
   const items = await listGoogle(calendarId, new Date(), addDays(new Date(), 180));
   return items
     .filter((g) => !known.has(g.id))
@@ -306,7 +328,11 @@ export async function syncGoogleCalendar(): Promise<string> {
   const { calendarId, lastCalendarSync = 0 } = st.settings.google;
   const now = new Date();
   const remote = await listGoogle(calendarId, addDays(now, -60), addDays(now, 365));
-  const byGid = new Map(Object.values(st.events).filter((e) => e.googleId).map((e) => [e.googleId!, e]));
+  const byGid = new Map(
+    Object.values(st.events)
+      .filter((e) => e.googleId)
+      .map((e) => [e.googleId!, e]),
+  );
   let pulled = 0;
   let pushed = 0;
   const seen = new Set<string>();
@@ -359,7 +385,10 @@ const UPLOAD = "https://www.googleapis.com/upload/drive/v3/files";
 const NAME = "calendar-assistant-backup.json";
 
 async function findBackup(): Promise<{ id: string; modifiedTime: string } | undefined> {
-  const j = await gfetch(`${DRIVE}?spaces=appDataFolder&q=${encodeURIComponent(`name='${NAME}'`)}&fields=files(id,modifiedTime)`, SCOPES.drive);
+  const j = await gfetch(
+    `${DRIVE}?spaces=appDataFolder&q=${encodeURIComponent(`name='${NAME}'`)}&fields=files(id,modifiedTime)`,
+    SCOPES.drive,
+  );
   return j.files?.[0];
 }
 
@@ -385,7 +414,6 @@ export async function restoreFromDrive(): Promise<string | null> {
   if (!r.ok) throw new Error(`Drive ${r.status}`);
   return r.text();
 }
-
 
 /* ---------------- Google Contacts (birthdays) ---------------- */
 

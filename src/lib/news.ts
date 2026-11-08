@@ -41,8 +41,7 @@ export function topicUrl(topic: string, region: string) {
   if (topic === "TOP") return `https://news.google.com/rss?${params(region)}`;
   return `https://news.google.com/rss/headlines/section/topic/${topic}?${params(region)}`;
 }
-export const searchUrl = (q: string, region: string) =>
-  `https://news.google.com/rss/search?q=${encodeURIComponent(q)}&${params(region)}`;
+export const searchUrl = (q: string, region: string) => `https://news.google.com/rss/search?q=${encodeURIComponent(q)}&${params(region)}`;
 
 function parseRss(xml: string, topic: string): Headline[] {
   const doc = new DOMParser().parseFromString(xml, "text/xml");

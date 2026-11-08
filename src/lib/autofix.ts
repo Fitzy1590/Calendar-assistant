@@ -40,7 +40,9 @@ export async function autoFix(err: unknown): Promise<string | null> {
       if (navigator.onLine) setTimeout(() => forceSync(), 3000);
       else window.addEventListener("online", () => forceSync(), { once: true });
     }
-    return navigator.onLine ? "Will retry the connection in a moment." : "You're offline. Changes are saved and will sync when you're back online.";
+    return navigator.onLine
+      ? "Will retry the connection in a moment."
+      : "You're offline. Changes are saved and will sync when you're back online.";
   }
 
   // Sync trouble: a full catch-up usually clears it.

@@ -20,7 +20,10 @@ export const TEMPLATE_FIELDS = ["{name}", "{title}", "{when}", "{where}", "{maps
 export function rsvpBase(): string | null {
   const { serverUrl, enabled } = useStore.getState().settings.sync;
   if (!enabled || !serverUrl) return null;
-  return serverUrl.replace(/^ws/, "http").replace(/\/sync\/?$/, "").replace(/\/$/, "");
+  return serverUrl
+    .replace(/^ws/, "http")
+    .replace(/\/sync\/?$/, "")
+    .replace(/\/$/, "");
 }
 
 /** RSVP links only work if guests can reach the server from the internet. */

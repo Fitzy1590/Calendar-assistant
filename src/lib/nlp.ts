@@ -120,8 +120,7 @@ export function parseWhen(input: string, now = new Date()): When {
       res.hour = h;
       res.minute = m[2] ? +m[2] : 0;
     });
-  if (res.hour === undefined)
-    take(/\b([01]?\d|2[0-3]):([0-5]\d)\b/, (m) => ((res.hour = +m[1]), (res.minute = +m[2])));
+  if (res.hour === undefined) take(/\b([01]?\d|2[0-3]):([0-5]\d)\b/, (m) => ((res.hour = +m[1]), (res.minute = +m[2])));
   take(/\b(in the )?(morning|afternoon|evening)\b/, (m) => {
     res.hour ??= m[2] === "morning" ? 9 : m[2] === "afternoon" ? 14 : 18;
     res.minute ??= 0;
@@ -134,7 +133,10 @@ export function parseWhen(input: string, now = new Date()): When {
     res.date = t < now ? addDays(today, 1) : today;
   }
 
-  res.rest = orig.replace(/\s+/g, " ").replace(/\b(on|at|for|from)\s*$/i, "").trim();
+  res.rest = orig
+    .replace(/\s+/g, " ")
+    .replace(/\b(on|at|for|from)\s*$/i, "")
+    .trim();
   return res;
 }
 
@@ -215,7 +217,10 @@ export function parseRecurrence(input: string): { recurrence?: Recurrence; rest:
 export function cleanTitle(s: string) {
   const t = s
     .replace(/^(please |can you |could you |hey |ok )+/i, "")
-    .replace(/^(add|create|schedule|book|put|set up|make|new)( an?| the| my)?( (event|appointment|meeting|task|todo|to-do|reminder))?( (for|called|named|titled))?\b/i, "")
+    .replace(
+      /^(add|create|schedule|book|put|set up|make|new)( an?| the| my)?( (event|appointment|meeting|task|todo|to-do|reminder))?( (for|called|named|titled))?\b/i,
+      "",
+    )
     .replace(/\b(to|in|on|into) (my |the )?(calendar|diary|task list|tasks|list)\b/gi, "")
     .replace(/^(remind me to|remember to|i need to|i have to)\b/i, "")
     .replace(/^\s*(an?|the)\s+/i, "")

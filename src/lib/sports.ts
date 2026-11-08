@@ -6,7 +6,19 @@ import { cached, getJson } from "./http";
  */
 const base = (key: string) => `https://www.thesportsdb.com/api/v1/json/${key || "123"}`;
 
-export const SPORTS = ["Soccer", "Australian Football", "Rugby", "Cricket", "Basketball", "American Football", "Baseball", "Ice Hockey", "Motorsport", "Tennis", "Golf"];
+export const SPORTS = [
+  "Soccer",
+  "Australian Football",
+  "Rugby",
+  "Cricket",
+  "Basketball",
+  "American Football",
+  "Baseball",
+  "Ice Hockey",
+  "Motorsport",
+  "Tennis",
+  "Golf",
+];
 
 export interface Team {
   id: string;

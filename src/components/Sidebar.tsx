@@ -38,40 +38,79 @@ export function Sidebar() {
 
   return (
     <nav className="side" aria-label="Main">
-      <div className="brand">Calendar Assistant<small>{s.settings.displayName ? `${s.settings.displayName}'s planner` : "Planner"}</small></div>
-      {s.settings.sidebar.filter((i) => i.visible).map(({ id }) => {
-        const { label, icon: Icon } = META[id];
-        return (
-          <div key={id}>
-            <button className="nav-item" aria-current={s.page === id ? "page" : undefined} onClick={() => go(id)}>
-              <Icon size={18} /> <span className="nav-label-text">{label}</span>
-              {id === "sports" ? (
-                <span className="count" onClick={(e) => (e.stopPropagation(), setSportsOpen(!sportsOpen))} style={{ color: "var(--muted)" }} role="button" aria-label="Toggle sports list">
-                  {sportsOpen ? <IDown size={14} /> : <IRight size={14} />}
-                </span>
-              ) : counts[id] ? <span className="count">{counts[id]}</span> : null}
-            </button>
-            {id === "sports" && sportsOpen && (s.settings.sports.length > 0 || s.settings.teams.length > 0) && (
-              <div className="nav-sub">
-                {s.settings.teams.map((t) => (
-                  <button key={t.id} className="nav-item" aria-current={s.page === "sports" && s.sportFocus?.id === t.id ? "page" : undefined} onClick={() => s.setSportFocus({ kind: "team", id: t.id })}>
-                    {t.badge ? <img src={t.badge} alt="" width={14} height={14} /> : null} {t.name}
-                  </button>
-                ))}
-                {s.settings.sports.map((sp) => (
-                  <button key={sp} className="nav-item" aria-current={s.page === "sports" && s.sportFocus?.id === sp ? "page" : undefined} onClick={() => s.setSportFocus({ kind: "sport", id: sp })}>{sp}</button>
-                ))}
-              </div>
-            )}
-          </div>
-        );
-      })}
+      <div className="brand">
+        Calendar Assistant<small>{s.settings.displayName ? `${s.settings.displayName}'s planner` : "Planner"}</small>
+      </div>
+      {s.settings.sidebar
+        .filter((i) => i.visible)
+        .map(({ id }) => {
+          const { label, icon: Icon } = META[id];
+          return (
+            <div key={id}>
+              <button className="nav-item" aria-current={s.page === id ? "page" : undefined} onClick={() => go(id)}>
+                <Icon size={18} /> <span className="nav-label-text">{label}</span>
+                {id === "sports" ? (
+                  <span
+                    className="count"
+                    onClick={(e) => (e.stopPropagation(), setSportsOpen(!sportsOpen))}
+                    style={{ color: "var(--muted)" }}
+                    role="button"
+                    aria-label="Toggle sports list"
+                  >
+                    {sportsOpen ? <IDown size={14} /> : <IRight size={14} />}
+                  </span>
+                ) : counts[id] ? (
+                  <span className="count">{counts[id]}</span>
+                ) : null}
+              </button>
+              {id === "sports" && sportsOpen && (s.settings.sports.length > 0 || s.settings.teams.length > 0) && (
+                <div className="nav-sub">
+                  {s.settings.teams.map((t) => (
+                    <button
+                      key={t.id}
+                      className="nav-item"
+                      aria-current={s.page === "sports" && s.sportFocus?.id === t.id ? "page" : undefined}
+                      onClick={() => s.setSportFocus({ kind: "team", id: t.id })}
+                    >
+                      {t.badge ? <img src={t.badge} alt="" width={14} height={14} /> : null} {t.name}
+                    </button>
+                  ))}
+                  {s.settings.sports.map((sp) => (
+                    <button
+                      key={sp}
+                      className="nav-item"
+                      aria-current={s.page === "sports" && s.sportFocus?.id === sp ? "page" : undefined}
+                      onClick={() => s.setSportFocus({ kind: "sport", id: sp })}
+                    >
+                      {sp}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
       <div className="side-foot">
-        <button className="nav-item" onClick={() => s.setUi({ assistantOpen: !s.assistantOpen })}><IChat size={18} /> Assistant</button>
-        <button className="nav-item" onClick={() => s.setUi({ feedbackOpen: true })}><IIdea size={18} /> Suggestions & feedback</button>
+        <button className="nav-item" onClick={() => s.setUi({ assistantOpen: !s.assistantOpen })}>
+          <IChat size={18} /> Assistant
+        </button>
+        <button className="nav-item" onClick={() => s.setUi({ feedbackOpen: true })}>
+          <IIdea size={18} /> Suggestions & feedback
+        </button>
         <button className="nav-item" onClick={() => setSyncOpen(true)} title={sync.peers.join(", ")}>
-          <span className={"dot " + (sync.status === "online" ? "ok" : sync.status === "connecting" ? "warn" : sync.status === "offline" ? "bad" : "")} style={{ margin: "0 5px" }} />
-          {sync.status === "online" ? `Synced · ${sync.peers.length} device${sync.peers.length === 1 ? "" : "s"}` : sync.status === "off" ? "Sync off" : sync.status === "connecting" ? "Connecting…" : "Offline · changes queued"}
+          <span
+            className={
+              "dot " + (sync.status === "online" ? "ok" : sync.status === "connecting" ? "warn" : sync.status === "offline" ? "bad" : "")
+            }
+            style={{ margin: "0 5px" }}
+          />
+          {sync.status === "online"
+            ? `Synced · ${sync.peers.length} device${sync.peers.length === 1 ? "" : "s"}`
+            : sync.status === "off"
+              ? "Sync off"
+              : sync.status === "connecting"
+                ? "Connecting…"
+                : "Offline · changes queued"}
         </button>
       </div>
       {syncOpen && <SyncPanel onClose={() => setSyncOpen(false)} />}

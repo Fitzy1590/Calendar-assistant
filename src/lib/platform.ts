@@ -25,7 +25,9 @@ export function startBrowserModeHeartbeat() {
 export async function requestWebViewRepair(): Promise<string> {
   if (isBrowserMode()) {
     const r = await fetch("/__fix-webview", { method: "POST" });
-    return r.ok ? "Windows will ask for permission to repair WebView2. When it's done, the app opens in its own window." : "Couldn't start the repair.";
+    return r.ok
+      ? "Windows will ask for permission to repair WebView2. When it's done, the app opens in its own window."
+      : "Couldn't start the repair.";
   }
   if (isTauri()) {
     const { invoke } = await import("@tauri-apps/api/core");

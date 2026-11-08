@@ -223,7 +223,20 @@ export function startSync() {
 /* ---------------- preferences shared between devices ---------------- */
 
 /** Settings that make sense to keep the same everywhere. Theme, layout, keys and device names stay per device. */
-const SHARED_KEYS = ["displayName", "units", "clock24", "weekStartsOn", "newsCategories", "newsKeywords", "newsRegion", "sports", "teams", "reminders", "invites", "shopping"] as const;
+const SHARED_KEYS = [
+  "displayName",
+  "units",
+  "clock24",
+  "weekStartsOn",
+  "newsCategories",
+  "newsKeywords",
+  "newsRegion",
+  "sports",
+  "teams",
+  "reminders",
+  "invites",
+  "shopping",
+] as const;
 
 function startSharedPrefs() {
   const pick = () => {

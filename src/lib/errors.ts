@@ -115,7 +115,9 @@ export function reportUrl(e: { message: string; stack?: string; where?: string; 
   const body =
     `**What happened**\n${e.title ?? "An error"}${e.where ? ` (${e.where})` : ""}\n\n` +
     `**App version:** ${useUpdates.getState().current}\n**Device:** ${platformName()} · ${navigator.userAgent}\n\n` +
-    "**Details**\n```\n" + `${e.message}\n${e.stack ?? ""}`.slice(0, 3000) + "\n```\n\n_Sent from the app. Add what you were doing when it happened._";
+    "**Details**\n```\n" +
+    `${e.message}\n${e.stack ?? ""}`.slice(0, 3000) +
+    "\n```\n\n_Sent from the app. Add what you were doing when it happened._";
   return `https://github.com/${REPO}/issues/new?labels=bug&title=${encodeURIComponent(`Error: ${e.message.slice(0, 80)}`)}&body=${encodeURIComponent(body)}`;
 }
 

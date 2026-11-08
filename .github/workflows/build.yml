@@ -57,9 +57,13 @@ jobs:
         with: { node-version: 22, cache: npm }
       - uses: actions/setup-java@v4
         with: { distribution: temurin, java-version: 17 }
-      - uses: android-actions/setup-android@v3
+      # the runner image ships the Android SDK (ANDROID_HOME); add only the NDK and build tools we use
       - name: Install the Android NDK and build tools
-        run: sdkmanager "ndk;${NDK_VERSION}" "build-tools;34.0.0" "platforms;android-34"
+        run: |
+          SDKMANAGER=$(ls -d "$ANDROID_HOME"/cmdline-tools/*/bin | sort -V | tail -n1)/sdkmanager
+          yes | "$SDKMANAGER" --licenses > /dev/null || true
+          "$SDKMANAGER" "ndk;${NDK_VERSION}" "build-tools;34.0.0" "platforms;android-34" > /dev/null
+          ls "$ANDROID_HOME/ndk"
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: aarch64-linux-android,armv7-linux-androideabi

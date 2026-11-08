@@ -113,6 +113,22 @@ npm run android:build  # APK/AAB
 | Ticketmaster key | Local event listings per day | Settings → Weather & location |
 | TheSportsDB key | Higher sports API limits | Settings → Sports (free public key used by default) |
 
+## If something goes wrong
+
+* **What Windows needs:** Windows 10 or 11 and Microsoft Edge WebView2 Runtime. The installer checks for
+  WebView2 and installs it when missing (needs internet once). The app no longer needs the Visual C++
+  Redistributable; the C runtime is built in.
+* **If the app can't start or closes on its own**, it shows a plain-English message instead of
+  vanishing, with buttons to get the fix (for example the WebView2 download), report the problem
+  (GitHub with the details filled in), or close. A crash report is saved in
+  `%LOCALAPPDATA%\com.fitzy.calendarassistant\crash-reports`.
+* **Problems while using it** show a short explanation with a fix where there is one; a page that
+  breaks shows a recovery screen (Try again / Restart / Back up my data / Report) while the rest of the
+  app keeps working.
+* **Settings → Help & diagnostics** runs a system check (WebView2, internet, storage, notifications,
+  microphone, location, sync server) with fix links, and lists recent problems with one-click reports.
+  The check also runs quietly on first launch and only speaks up if something needs attention.
+
 ## Current limits / next steps
 
 * **Voice** in the installed apps uses Picovoice (on-device): a free AccessKey from

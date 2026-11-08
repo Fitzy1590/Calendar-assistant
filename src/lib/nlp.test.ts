@@ -96,3 +96,11 @@ describe("casing and invites", () => {
     expect(ev.attendees?.map((a) => a.name)).toEqual(["Luke", "Sam"]);
   });
 });
+
+describe("capitals survive repeat phrases", () => {
+  it("keeps names in recurring and plain titles", async () => {
+    expect(parseRecurrence("Soccer with Luke every Wednesday at 6pm").rest).toBe("Soccer with Luke at 6pm");
+    const r = await runLocal("Lunch with Sam today at 1pm");
+    expect(r.text).toMatch(/"Lunch with Sam"/);
+  });
+});

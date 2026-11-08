@@ -4,6 +4,8 @@
 // and its wake word, can keep running when the window is closed.
 use std::sync::atomic::{AtomicBool, Ordering};
 
+mod crash;
+
 static CLOSE_TO_TRAY: AtomicBool = AtomicBool::new(true);
 
 /// Called by the UI when "Keep running in the tray" changes in Settings.
@@ -32,7 +34,12 @@ fn setup_tray(app: &tauri::App) -> tauri::Result<()> {
             _ => {}
         })
         .on_tray_icon_event(|tray, event| {
-            if let TrayIconEvent::Click { button: MouseButton::Left, button_state: MouseButtonState::Up, .. } = event {
+            if let TrayIconEvent::Click {
+                button: MouseButton::Left,
+                button_state: MouseButtonState::Up,
+                ..
+            } = event
+            {
                 show_main(tray.app_handle());
             }
         });
@@ -53,21 +60,42 @@ fn setup_tray(app: &tauri::App) -> tauri::Result<()> {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    tauri::Builder::default()
+    crash::install_panic_hook();
+
+    // Windows draws the app with Microsoft Edge WebView2. If it's missing, say so and offer the download
+    // instead of failing silently. (The installer normally installs it; this covers copies run without it.)
+    #[cfg(windows)]
+    if let Err(e) = tauri::webview_version() {
+        crash::report(crash::Problem::MissingWebView2(e.to_string()));
+        return;
+    }
+
+    let result = tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_http::init())
         .plugin(tauri_plugin_oauth::init())
         .invoke_handler(tauri::generate_handler![set_close_to_tray])
         .setup(|_app| {
+            // Nice-to-haves never stop the app from opening: if one fails it's logged and skipped.
             #[cfg(desktop)]
             {
-                setup_tray(_app)?;
-                _app.handle().plugin(tauri_plugin_process::init())?;
+                if let Err(e) = setup_tray(_app) {
+                    eprintln!("tray icon unavailable: {e}");
+                    CLOSE_TO_TRAY.store(false, Ordering::Relaxed); // no tray to hide into: closing quits
+                }
+                if let Err(e) = _app.handle().plugin(tauri_plugin_process::init()) {
+                    eprintln!("process plugin unavailable: {e}");
+                }
                 // The updater needs the release public key in tauri.conf.json. Release builds get it from the
                 // TAURI_UPDATER_PUBKEY repository variable; other builds leave it out and skip the updater.
                 if _app.config().plugins.0.contains_key("updater") {
-                    _app.handle().plugin(tauri_plugin_updater::Builder::new().build())?;
+                    if let Err(e) = _app
+                        .handle()
+                        .plugin(tauri_plugin_updater::Builder::new().build())
+                    {
+                        eprintln!("updater unavailable: {e}");
+                    }
                 }
             }
             Ok(())
@@ -81,6 +109,9 @@ pub fn run() {
                 }
             }
         })
-        .run(tauri::generate_context!())
-        .expect("error while running Calendar Assistant");
+        .run(tauri::generate_context!());
+
+    if let Err(e) = result {
+        crash::report(crash::Problem::Startup(e.to_string()));
+    }
 }

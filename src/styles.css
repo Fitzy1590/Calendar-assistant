@@ -246,8 +246,15 @@ label.field > span { font-weight: 500; }
 .pill { font-size: 12px; padding: 1px 6px; border-radius: 4px; background: color-mix(in srgb, var(--c, var(--accent)) 14%, var(--surface)); border-left: 3px solid var(--c, var(--accent)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
 .pill.task { --c: var(--muted); background: transparent; border-left-style: dotted; }
 .pill.done { text-decoration: line-through; opacity: 0.55; }
-.timegrid { display: grid; grid-template-columns: 56px repeat(var(--days), 1fr); border-top: 1px solid var(--line); position: relative; }
-.timegrid .colhead { position: sticky; top: 0; background: var(--bg); z-index: 2; padding: 8px 6px; border-bottom: 1px solid var(--line); border-left: 1px solid var(--line); cursor: pointer; }
+/* The day/week grid scrolls on its own; day headers and the all-day row stay pinned at the top. */
+.timegrid {
+  display: grid; grid-template-columns: 56px repeat(var(--days), 1fr); border-top: 1px solid var(--line); position: relative;
+  max-height: calc(100dvh - 210px); min-height: 360px; overflow-y: auto; overscroll-behavior: contain;
+  --head-h: 60px;
+}
+.timegrid .corner { position: sticky; top: 0; height: var(--head-h); background: var(--bg); z-index: 3; border-bottom: 1px solid var(--line); }
+.timegrid .colhead { position: sticky; top: 0; height: var(--head-h); box-sizing: border-box; background: var(--bg); z-index: 3; padding: 8px 6px; border-bottom: 1px solid var(--line); border-left: 1px solid var(--line); cursor: pointer; }
+.timegrid .allday, .timegrid .allday-label { position: sticky; top: var(--head-h); z-index: 2; background: var(--bg); box-shadow: 0 1px 0 var(--line-strong); }
 .timegrid .colhead .dname { font: 600 11px var(--font-ui); text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
 .timegrid .colhead .dnum { font: 500 20px var(--font-display); }
 .timegrid .colhead.today .dnum { color: var(--accent); }
@@ -358,7 +365,7 @@ mark { color: inherit; border-radius: 2px; }
 @media (max-width: 760px) {
   .drawer { bottom: 58px; border-left: 0; border-bottom: 1px solid var(--line-strong); }
 }
-@media (max-width: 760px) { .month .cell .pill .mono { display: none; } }
+@media (max-width: 760px) { .month .cell .pill .mono { display: none; } .timegrid { max-height: calc(100dvh - 250px); } }
 
 /* ---------- notes (sticky notes) ---------- */
 :root, :root[data-theme="paper"], :root[data-theme="sand"] {

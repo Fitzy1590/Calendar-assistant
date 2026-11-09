@@ -24,7 +24,7 @@ and an **Android app** ([Tauri 2](https://tauri.app)), and the two stay in sync 
 | **News** | Google News headlines by category and edition, followed topics, search. |
 | **Sports** | Sports and favourite teams in the left menu; results, highlights links, upcoming fixtures, add fixtures to your calendar. |
 | **Import** | Scan Gmail or Outlook, import Google Calendar, `.ics` files or pasted emails; multi-select what to add; conflicts with your calendar *and with each other* are flagged. |
-| **Google** | Two-way Google Calendar sync; daily backup of data + settings to Google Drive. |
+| **Google** | One-click two-way Google Calendar sync (Settings → Sync with Google Calendar), automatic every 5–60 minutes and when the app opens; daily backup of data + settings to Google Drive. |
 | **Backup** | Full JSON backup/restore (merges, never overwrites newer data), `.ics` and `.csv` export, 14 daily on-device snapshots, Drive backup. |
 | **Settings** | Search box that filters every setting by keyword; everything you customise is remembered. |
 | **Setup wizard** | Theme, location, formats, news, sports, reminders, phone sync, Google, assistant. Skip any step or the whole thing; skipped steps wait on the home page under "Finish setting up". Restore from a backup on the first screen. |

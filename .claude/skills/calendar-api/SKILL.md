@@ -34,29 +34,39 @@ All requests go through `gfetch(url, scope, init)` (Google) — it gets a token 
 Adding a scope: add to `SCOPES`, update `docs/GOOGLE_AND_OUTLOOK.md` (consent screen list), request it lazily at the
 feature that needs it.
 
-## 2. Two-way Calendar sync (`syncGoogleCalendar`)
-Window: now −60 d … +365 d, `settings.google.calendarId`, watermark `settings.google.lastCalendarSync`.
+## 2. Two-way Calendar sync
+Files: `googleSync.ts` (engine, takes an injected `GoogleApi` so tests use a fake), `googleMap.ts` (pure event/RRULE/EXDATE
+mapping), `googleAuto.ts` (schedule), `google.ts` (`syncGoogleCalendar`, `googleCalendarOneClick`). One run at a time (`inflight`).
+Settings: `settings.google` — `calendarSync`, `syncEveryMins` (default 15), `syncToken`, `lastCalendarSync` (push watermark),
+`lastCalendarSyncAt`, `lastCalendarSyncError`.
 
-Pull (per remote event, matched by `googleId`):
-1. `status === "cancelled"` or no `start` → `fromGoogle` returns null (skip).
-2. Not local → `store.upsert("events", …)` with `source: "google"`, `googleId`, `googleEtag`.
-3. Local exists, not deleted, `googleEtag !== g.etag` and `g.updated > local.updatedAt` → remote wins (LWW).
+Pull = only what changed (`syncToken`; first run / expired token (410) = everything from 60 days ago, `showDeleted=true`):
+1. Whole events and series first, then single occurrences (they need their series).
+2. `status: cancelled` + local match by `googleId` → `store.remove` (tombstone). No match → ignore.
+3. New → `store.upsert`; changed (`etag` differs and Google `updated` newer than local) → merge. Exceptions are a union of local and EXDATE.
+4. Instance (`recurringEventId` + `originalStartTime`): add its original date to the series' `exceptions`; cancelled → done; moved/edited → its own event.
+5. Two local copies of one `googleId`: unlink one (clear `googleId`) *then* remove it, so it never deletes the Google event.
 
-Push (per local event):
-1. `deleted` + `googleId` + `updatedAt > lastCalendarSync` → `DELETE`.
-2. No `googleId` → `POST`, then store returned `id`/`etag` (never re-create: that duplicates).
-3. `updatedAt > lastCalendarSync` and still remote → `PATCH`.
-4. Finally `updateSettings(s => s.google.lastCalendarSync = Date.now())`.
+Push (events changed by this pull are skipped, so nothing is echoed back):
+- deleted + `googleId` + edited after `lastCalendarSync` → `DELETE` (404/410 = already gone).
+- no `googleId` → `POST`, store `googleId`/`etag` (never re-create: that duplicates). Events that ended >60 days ago are not sent.
+- edited after `lastCalendarSync` → `PATCH`; `recurrence` is `null` (not omitted) so a series can be cleared.
+- 404/410 on PATCH = not in this calendar (other account): **unlink**, don't delete; it is created again next run.
+- 401/403 or "sign in" → stop and show the error. Any other per-event failure is counted, the rest continue, and
+  `lastCalendarSync` is not advanced so failures are retried.
+- Disconnecting clears `syncToken` (it belongs to the account).
+
+Automatic: `startGoogleAutoSync()` (from `App.tsx`) checks every minute; syncs on open/focus if the last run is >1 min old,
+else every `syncEveryMins`. Silent (`quietly`); only where Google sign-in exists (not Android: the phone gets changes through app sync).
+Not yet synced: attendees/guests (backlog), Google Meet links, per-event colours.
 
 Rules: never mutate store records (use `store.upsert`); birthdays (`bday:*`) are virtual and never pushed;
 all-day = `start.date`/`end.date` (end exclusive), timed = `dateTime` + local `timeZone`.
 
 ### Recurrence mapping
-- `recurrenceToRrule` → `RRULE:FREQ=…;INTERVAL=…[;BYDAY=…][;UNTIL=…|;COUNT=…]`; `rruleToRecurrence` parses back.
-- **Known gap:** `exceptions` aren't sent as `EXDATE`, and cancelled instances from Google aren't mapped to
-  `exceptions`. Fix: emit `EXDATE;VALUE=DATE:yyyyMMdd` (all-day) or `EXDATE:yyyyMMddTHHmmss` with TZID for timed;
-  on pull, list instances with `showDeleted=true` and add cancelled `originalStartTime` dates to `exceptions`.
-- Never store expanded occurrences; expand with `lib/recurrence.ts`.
+`toRecurrenceLines` → `RRULE:FREQ=…;INTERVAL=…[;BYDAY=…][;UNTIL=…|;COUNT=…]` plus one `EXDATE` line
+(`;VALUE=DATE:` for all-day, `;TZID=<tz>:…T<start time>` for timed); `parseRecurrence` reads RRULE and EXDATE (date, TZID, UTC forms).
+Never store expanded occurrences; expand with `lib/recurrence.ts`.
 
 ## 3. Drive backup (appDataFolder)
 `files?spaces=appDataFolder&q=name='<NAME>'` to find; `upload/drive/v3/files?uploadType=multipart` to create/update.
@@ -74,7 +84,7 @@ Content = `makeBackup()` output (secrets already blanked).
 - Backlog: loopback flow for the installed app.
 
 ## 6. Testing / verification
-- Pure mapping (`toGoogle`, `fromGoogle`, RRULE) → unit tests in `src/lib/google.test.ts`; mock `fetch`, never hit Google.
+- Pure mapping → `src/lib/googleMap.test.ts`. Sync engine → `src/lib/googleSync.test.ts` (fake in-memory Google passed as `GoogleApi`); never hit Google.
 - Token logic: mock token endpoint responses (200, 400 `invalid_grant`).
-- Manual: Settings → Connect Google → Sync now twice → no duplicates; edit/delete on each side propagates.
+- Manual: Settings → Sync with Google Calendar twice (second run "0 in, 0 out") → no duplicates; edit/delete on each side propagates.
 - Then `npx tsc --noEmit`, `npm test`, `npm run build`.

@@ -5,7 +5,7 @@ Package manager is **npm** (`package-lock.json`, CI runs `npm ci`); commands bel
 
 **Baseline checks** (run for every item, in addition to its own check):
 - `B1` `npx tsc --noEmit` exits 0
-- `B2` `npm test`, all suites pass (currently 31 tests in 5 files)
+- `B2` `npm test`, all suites pass (currently 51 tests in 7 files)
 - `B3` `npm run build` succeeds
 - `B4` Rust touched: `rustfmt --edition 2021 --check src-tauri/src/*.rs`, plus a green GitHub `build` run (check, windows, android jobs)
 - `B5` `npx prettier --check "src/**/*.{ts,tsx}"` clean
@@ -29,7 +29,7 @@ Package manager is **npm** (`package-lock.json`, CI runs `npm ci`); commands bel
 |---|---|---|
 | [x] | `weather.ts` (Open-Meteo forecast, geocoding) | B1; manual: Home shows weather after setting a suburb |
 | [x] | `news.ts` (Google News RSS) / `sports.ts` (TheSportsDB) / `localEvents.ts` (Ticketmaster) | B1; manual: pages load in the Windows app |
-| [x] | `google.ts`: loopback OAuth (desktop) + popup (web), Calendar two-way sync, Drive backup, Contacts birthdays | B1; manual: Settings → Connect Google, Sync now |
+| [x] | `google.ts`: loopback OAuth (desktop) + popup (web), Drive backup, Contacts birthdays; `googleSync.ts` Calendar two-way sync engine; `googleMap.ts` event mapping; `googleAuto.ts` automatic sync | B1; manual: Settings → Connect Google, Sync now |
 | [x] | `email.ts`: Gmail, Outlook (Graph), `.ics`/pasted-email extraction, conflict detection | B1; manual: Import dialog lists candidates with conflict tags |
 | [x] | `shopping.ts`: OSM store search, Claude price compare, JSON-LD price extraction, trends | `npx vitest run src/lib/shopping.test.ts` (7) |
 | [x] | `sync.ts` + `server/sync-server.mjs`: LWW relay, offline queue, force sync, heartbeat, shared prefs, RSVP pages | `node --check server/sync-server.mjs`; manual: two devices, change appears on the other |
@@ -50,9 +50,9 @@ Package manager is **npm** (`package-lock.json`, CI runs `npm ci`); commands bel
 
 | | Item | Verification |
 |---|---|---|
-| [ ] | **Google Calendar sync: recurrence exceptions.** `toGoogle()` sends `RRULE` but not `exceptions` (EXDATE), and pulled cancelled instances aren't mapped back, so a deleted single occurrence reappears in Google | New `google.test.ts`: `toGoogle` emits `EXDATE` for each exception; `fromGoogle` maps cancelled instances to `exceptions`; B1, B2 |
+| [x] | **Google Calendar sync: reliable, one-click, automatic.** Incremental sync (sync token; full resync if Google drops it); deletions in Google removed here; deleted/moved single occurrences ↔ `EXDATE` and exceptions; no echo of pulled events; one failed event no longer stops the rest; duplicate copies merged safely; **Sync with Google Calendar** button (sign in + enable + sync); auto sync on open, on focus and every 5/15/30/60 min | `npx vitest run src/lib/googleSync.test.ts` (11, against a fake in-memory Google) and `googleMap.test.ts` (9); B1–B3, B5 |
 | [ ] | **Google sync: attendees.** Invite guests aren't sent to / read from Google events | Unit test for mapping `attendees[]` ↔ Google `attendees`; B1, B2 |
-| [ ] | **Real-account verification** of Google Calendar two-way sync (create, edit, delete both sides) | Manual checklist in PR; no duplicates after two `Sync now` runs |
+| [ ] | **Real-account verification** of Google Calendar sync (create, edit, delete on both sides; delete one occurrence of a repeating event; run **Sync with Google Calendar** twice: no duplicates, second run "0 in, 0 out") | Manual checklist in PR |
 | [x] | **Harness setup**: `.claude/settings.json` (deny `.env`, `.env.local`, `*.key`, `*.jks`, `client_secret*.json`; Prettier PostToolUse hook; `tsc` Stop hook), `.prettierrc.json`, `.claude/rules/calendar-ui.md`, `.claude/skills/calendar-api/SKILL.md` | `jq -e . .claude/settings.json`; `npx prettier --check "src/**/*.{ts,tsx}"`; Stop hook exits 2 on a type error |
 
 ---

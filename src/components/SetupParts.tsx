@@ -9,12 +9,12 @@ import {
   backupToDrive,
   googleConfigured,
   googleConnected,
+  googleCalendarOneClick,
   googleDisconnect,
   googleSignInAvailable,
   googleToken,
   restoreFromDrive,
   SCOPES,
-  syncGoogleCalendar,
   usesLoopback,
 } from "../lib/google";
 import { backupJson, restoreBackup } from "../lib/backup";
@@ -534,21 +534,48 @@ export function GoogleSetup({ compact }: { compact?: boolean }) {
         )}
       </div>
       <div className="row">
-        <Toggle
-          checked={g.calendarSync}
-          onChange={(v) => s.updateSettings((st) => void (st.google.calendarSync = v))}
-          label="Google Calendar sync"
-        />{" "}
-        Two-way sync with Google Calendar
-        <button className="btn sm" disabled={!ready || !!busy} onClick={() => run("cal", syncGoogleCalendar)}>
-          {busy === "cal" ? "Syncing…" : "Sync now"}
+        <button className="btn primary" disabled={!ready || !!busy} onClick={() => run("cal", googleCalendarOneClick)}>
+          {busy === "cal" ? "Syncing…" : googleConnected(SCOPES.calendar) ? "Sync with Google Calendar" : "Connect & sync Google Calendar"}
         </button>
-        {g.lastCalendarSync && (
+        {g.lastCalendarSyncAt && (
           <span className="faint" style={{ fontSize: 12 }}>
-            last {format(g.lastCalendarSync, "d MMM h:mm a")}
+            last synced {format(g.lastCalendarSyncAt, "d MMM h:mm a")}
           </span>
         )}
       </div>
+      {!ready && (
+        <div className="faint" style={{ fontSize: 12.5 }}>
+          Add your Google client ID above first, then this button signs in and syncs in one step.
+        </div>
+      )}
+      <div className="row">
+        <Toggle
+          checked={g.calendarSync}
+          onChange={(v) => s.updateSettings((st) => void (st.google.calendarSync = v))}
+          label="Automatic Google Calendar sync"
+        />{" "}
+        Sync automatically, two ways, every
+        <select
+          className="input"
+          style={{ width: "auto" }}
+          aria-label="How often to sync with Google Calendar"
+          disabled={!g.calendarSync}
+          value={g.syncEveryMins > 0 ? g.syncEveryMins : 15}
+          onChange={(ev) => s.updateSettings((st) => void (st.google.syncEveryMins = Number(ev.target.value)))}
+        >
+          {[5, 15, 30, 60].map((m) => (
+            <option key={m} value={m}>
+              {m === 60 ? "hour" : `${m} minutes`}
+            </option>
+          ))}
+        </select>
+        and whenever the app opens
+      </div>
+      {g.lastCalendarSyncError && (
+        <div role="alert" style={{ fontSize: 12.5, color: "var(--bad)" }}>
+          Last sync stopped: {g.lastCalendarSyncError}
+        </div>
+      )}
       <div className="row">
         <Toggle checked={g.driveBackup} onChange={(v) => s.updateSettings((st) => void (st.google.driveBackup = v))} label="Drive backup" />{" "}
         Back up data & settings to Google Drive daily

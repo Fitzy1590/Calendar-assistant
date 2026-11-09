@@ -1,9 +1,11 @@
 import { addDays, addMinutes } from "date-fns";
-import type { CalEvent, Recurrence } from "../types";
+import type { CalEvent } from "../types";
 import { live, useStore } from "../store";
 import { conflictsFor } from "./planner";
 import type { Candidate } from "./email";
-import { fromYmd, localIso } from "./util";
+import { fromYmd } from "./util";
+import { fromGoogle } from "./googleMap";
+import { CAL, syncCalendarWith } from "./googleSync";
 import { isAndroid, isTauri, openUrl } from "./platform";
 
 /**
@@ -53,6 +55,8 @@ export function googleDisconnect() {
   const r = saved()?.refresh ?? token?.value;
   token = null;
   localStorage.removeItem(REFRESH_KEY);
+  // the sync token belongs to the account: the next one starts with a full sync
+  useStore.getState().updateSettings((s) => void (s.google.syncToken = undefined));
   if (r) fetch(`https://oauth2.googleapis.com/revoke?token=${encodeURIComponent(r)}`, { method: "POST" }).catch(() => {});
 }
 
@@ -205,74 +209,6 @@ async function gfetch(url: string, scope: string, init: RequestInit = {}) {
 
 /* ---------------- Google Calendar ---------------- */
 
-const CAL = "https://www.googleapis.com/calendar/v3/calendars";
-
-function rruleToRecurrence(rules?: string[]): Recurrence | undefined {
-  const r = rules?.find((x) => x.startsWith("RRULE:"));
-  if (!r) return undefined;
-  const kv = Object.fromEntries(
-    r
-      .slice(6)
-      .split(";")
-      .map((p) => p.split("=")),
-  );
-  const freq = ({ DAILY: "daily", WEEKLY: "weekly", MONTHLY: "monthly", YEARLY: "yearly" } as const)[kv.FREQ as "DAILY"];
-  if (!freq) return undefined;
-  const days = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"];
-  return {
-    freq,
-    interval: Number(kv.INTERVAL || 1),
-    byWeekday: kv.BYDAY
-      ? kv.BYDAY.split(",")
-          .map((d: string) => days.indexOf(d.slice(-2)))
-          .filter((d: number) => d >= 0)
-      : undefined,
-    until: kv.UNTIL ? `${kv.UNTIL.slice(0, 4)}-${kv.UNTIL.slice(4, 6)}-${kv.UNTIL.slice(6, 8)}` : undefined,
-    count: kv.COUNT ? Number(kv.COUNT) : undefined,
-  };
-}
-
-function recurrenceToRrule(r?: Recurrence): string[] | undefined {
-  if (!r) return undefined;
-  const days = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"];
-  let s = `RRULE:FREQ=${r.freq.toUpperCase()};INTERVAL=${r.interval}`;
-  if (r.byWeekday?.length) s += `;BYDAY=${r.byWeekday.map((d) => days[d]).join(",")}`;
-  if (r.until) s += `;UNTIL=${r.until.replace(/-/g, "")}T235959Z`;
-  if (r.count) s += `;COUNT=${r.count}`;
-  return [s];
-}
-
-function fromGoogle(g: any): Partial<CalEvent> | null {
-  if (g.status === "cancelled" || !g.start) return null;
-  const allDay = !!g.start.date;
-  const start = allDay ? fromYmd(g.start.date) : new Date(g.start.dateTime);
-  const end = allDay ? fromYmd(g.end.date) : new Date(g.end.dateTime);
-  return {
-    title: g.summary || "(no title)",
-    start: localIso(start),
-    end: localIso(end),
-    allDay,
-    location: g.location,
-    notes: g.description,
-    recurrence: rruleToRecurrence(g.recurrence),
-    googleId: g.id,
-    googleEtag: g.etag,
-    source: "google",
-  };
-}
-
-function toGoogle(e: CalEvent) {
-  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  return {
-    summary: e.title,
-    location: e.location,
-    description: e.notes,
-    start: e.allDay ? { date: e.start.slice(0, 10) } : { dateTime: fromYmd(e.start).toISOString(), timeZone: tz },
-    end: e.allDay ? { date: e.end.slice(0, 10) } : { dateTime: fromYmd(e.end).toISOString(), timeZone: tz },
-    recurrence: recurrenceToRrule(e.recurrence),
-  };
-}
-
 async function listGoogle(calendarId: string, from: Date, to: Date) {
   const out: any[] = [];
   let page = "";
@@ -318,64 +254,14 @@ export async function importGoogleCalendar(): Promise<Candidate[]> {
     });
 }
 
-/**
- * Two-way sync. Pull: Google events in [-60d, +365d] are upserted locally (matched by googleId).
- * Push: local events with no googleId are created in Google; local edits newer than the last
- * sync are patched; local deletions of linked events are deleted in Google.
- */
-export async function syncGoogleCalendar(): Promise<string> {
-  const st = useStore.getState();
-  const { calendarId, lastCalendarSync = 0 } = st.settings.google;
-  const now = new Date();
-  const remote = await listGoogle(calendarId, addDays(now, -60), addDays(now, 365));
-  const byGid = new Map(
-    Object.values(st.events)
-      .filter((e) => e.googleId)
-      .map((e) => [e.googleId!, e]),
-  );
-  let pulled = 0;
-  let pushed = 0;
-  const seen = new Set<string>();
+/** Google Calendar two-way sync: the engine is in googleSync.ts; this connects it to the signed-in Google API. */
+export const syncGoogleCalendar = () => syncCalendarWith((url, init) => gfetch(url, SCOPES.calendar, init));
 
-  for (const g of remote) {
-    seen.add(g.id);
-    const mapped = fromGoogle(g);
-    if (!mapped) continue;
-    const local = byGid.get(g.id);
-    const remoteUpdated = new Date(g.updated).getTime();
-    if (!local) {
-      st.upsert("events", { ...mapped, reminderMins: [st.settings.reminders.defaultEventMins] });
-      pulled++;
-    } else if (!local.deleted && local.googleEtag !== g.etag && remoteUpdated > local.updatedAt) {
-      st.upsert("events", { id: local.id, ...mapped });
-      pulled++;
-    }
-  }
-
-  const base = `${CAL}/${encodeURIComponent(calendarId)}/events`;
-  for (const e of Object.values(useStore.getState().events)) {
-    if (e.source === "google" && !e.googleId) continue;
-    if (e.deleted) {
-      if (e.googleId && e.updatedAt > lastCalendarSync) {
-        await gfetch(`${base}/${e.googleId}`, SCOPES.calendar, { method: "DELETE" });
-        pushed++;
-      }
-      continue;
-    }
-    if (!e.googleId) {
-      if (fromYmd(e.end) < addDays(now, -60)) continue;
-      const g = await gfetch(base, SCOPES.calendar, { method: "POST", body: JSON.stringify(toGoogle(e)) });
-      // upsert (not applyRemote) so the link also syncs to the phone and it doesn't push a duplicate
-      useStore.getState().upsert("events", { id: e.id, googleId: g.id, googleEtag: g.etag });
-      pushed++;
-    } else if (e.updatedAt > lastCalendarSync && seen.has(e.googleId)) {
-      const g = await gfetch(`${base}/${e.googleId}`, SCOPES.calendar, { method: "PATCH", body: JSON.stringify(toGoogle(e)) });
-      useStore.getState().upsert("events", { id: e.id, googleEtag: g.etag });
-      pushed++;
-    }
-  }
-  useStore.getState().updateSettings((s) => void (s.google.lastCalendarSync = Date.now()));
-  return `Google Calendar synced: ${pulled} in, ${pushed} out.`;
+/** One click: sign in if needed, switch automatic sync on, and sync now. */
+export async function googleCalendarOneClick(): Promise<string> {
+  await googleToken([SCOPES.calendar]);
+  useStore.getState().updateSettings((s) => void (s.google.calendarSync = true));
+  return syncGoogleCalendar();
 }
 
 /* ---------------- Google Drive backup (appDataFolder) ---------------- */

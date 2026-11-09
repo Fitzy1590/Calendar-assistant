@@ -24,7 +24,7 @@ import { Wizard } from "./pages/Wizard";
 import { dueNow } from "./lib/reminders";
 import { notify } from "./lib/platform";
 import { dailyBackups } from "./lib/backup";
-import { googleConnected, quietly, SCOPES, syncGoogleCalendar } from "./lib/google";
+import { startGoogleAutoSync } from "./lib/googleAuto";
 import { checkTrackedPrices } from "./lib/shopping";
 
 const PAGES = {
@@ -58,7 +58,7 @@ function useTheme() {
   }, [theme, accent, density, fontScale]);
 }
 
-/** Background jobs: reminder notifications, daily backups, Google Calendar sync. */
+/** Background jobs: reminder notifications, daily backups, price checks, Google Calendar auto sync. */
 function useBackground() {
   useEffect(() => {
     const tickReminders = () => {
@@ -72,15 +72,14 @@ function useBackground() {
         checkTrackedPrices()
           .then((n) => sh.notifyDrops && n.forEach((m) => notify("Price drop", m)))
           .catch(() => {});
-      const g = useStore.getState().settings.google;
-      if (g.calendarSync && googleConnected(SCOPES.calendar)) quietly(syncGoogleCalendar).catch(() => {});
       dailyBackups();
     };
     tickReminders();
     tickSync();
     const a = setInterval(tickReminders, 30_000);
     const b = setInterval(tickSync, 15 * 60_000);
-    return () => (clearInterval(a), clearInterval(b));
+    const stopGoogle = startGoogleAutoSync();
+    return () => (clearInterval(a), clearInterval(b), stopGoogle());
   }, []);
 }
 

@@ -245,7 +245,11 @@ export interface Settings {
   google: {
     calendarSync: boolean; // two-way sync with Google Calendar
     calendarId: string; // usually "primary"
-    lastCalendarSync?: number;
+    lastCalendarSync?: number; // last fully successful sync: local edits after this are pushed
+    lastCalendarSyncAt?: number; // last time a sync finished, even with some failures
+    lastCalendarSyncError?: string; // why the last sync stopped (cleared by the next good one)
+    syncToken?: string; // Google's "changes since" bookmark, so each sync only fetches what changed
+    syncEveryMins: number; // automatic sync interval; 0 = only when you press the button
     driveBackup: boolean; // daily backup of data + settings to Google Drive (hidden app folder)
     lastDriveBackup?: number;
   };

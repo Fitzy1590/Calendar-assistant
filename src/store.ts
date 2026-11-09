@@ -47,7 +47,7 @@ export const DEFAULT_SETTINGS: Settings = {
   email: { googleClientId: "", googleDesktopClientId: "", googleDesktopClientSecret: "", microsoftClientId: "" },
   voice: { wakeWord: false, engine: "picovoice", picovoiceKey: "", keyword: "custom", sensitivity: 0.6, chime: true, closeToTray: true },
   localEventsApiKey: "",
-  google: { calendarSync: false, calendarId: "primary", driveBackup: false },
+  google: { calendarSync: false, calendarId: "primary", driveBackup: false, syncEveryMins: 15 },
   backup: { autoLocal: true },
   sidebar: (["home", "calendar", "tasks", "notes", "shopping", "reminders", "contacts", "news", "sports", "settings"] as PageId[]).map(
     (id) => ({

@@ -55,7 +55,15 @@ jobs:
           TAURI_UPDATER_PUBKEY: ${{ vars.TAURI_UPDATER_PUBKEY }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
         run: node scripts/enable-updater.mjs
-      - run: npx tauri build
+      # downloads Gradle/WiX tools from outside GitHub; those servers time out now and then, so try up to 3 times
+      - name: Build the installers
+        shell: bash
+        run: |
+          for i in 1 2 3; do
+            npx tauri build && exit 0
+            echo "Build attempt $i failed"; sleep $((i * 30))
+          done
+          exit 1
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
@@ -104,7 +112,13 @@ jobs:
       - name: Microphone, location and phone permissions
         run: node scripts/android-permissions.mjs
       - name: Build the APK
-        run: npx tauri android build --apk --target aarch64 --target armv7
+        # Gradle downloads its own distribution and the Kotlin compiler; retry when those downloads time out
+        run: |
+          for i in 1 2 3; do
+            npx tauri android build --apk --target aarch64 --target armv7 && exit 0
+            echo "Build attempt $i failed"; sleep $((i * 30))
+          done
+          exit 1
       - name: Sign the APK
         env:
           KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}

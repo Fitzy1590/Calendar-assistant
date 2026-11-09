@@ -1,13 +1,10 @@
 ---
-paths:
-  - "src/components/**/*.tsx"
-  - "src/pages/**/*.tsx"
-  - "src/styles.css"
+paths: ["src/components/**/*.tsx", "src/views/**/*.tsx"]
 ---
 
 # Calendar UI rules
 
-## Look (no AI slop)
+## Look (no AI slop) and design tokens
 - Use the tokens in `src/styles.css` (`--accent`, `--surface*`, `--text*`, `--font-*`, spacing). No new hex colours, no inline colour styles.
 - No gradients on text, glassmorphism, glow shadows, emoji as icons, or decorative blobs. Flat surfaces, 1px borders, one accent.
 - Copy is plain and specific ("3 events clash on Tue"), not marketing ("Supercharge your day ✨"). Sentence case.

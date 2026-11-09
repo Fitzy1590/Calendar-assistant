@@ -73,3 +73,9 @@ Never commit the `.jks` file.
 
 Unsigned installers show a SmartScreen warning. A code-signing certificate (or Azure Trusted Signing)
 removes it; see Tauri's "Windows code signing" guide. Nothing else in the release process changes.
+
+## Windows-only release
+
+Actions → build → Run workflow, enter the version, and tick **Windows-only release (skip_android)**. The Android
+job is skipped, the release gets the Windows installers only, and its notes say the APK is not included.
+Phones that check for updates are sent to the release page instead of an APK.

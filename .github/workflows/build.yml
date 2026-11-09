@@ -15,6 +15,10 @@ on:
         description: "Publish a release with this version (e.g. 0.2.0). Leave empty for a plain build."
         required: false
         default: ""
+      skip_android:
+        description: "Windows-only release: don't build or publish the Android APK."
+        type: boolean
+        default: false
 
 env:
   IS_RELEASE: ${{ startsWith(github.ref, 'refs/tags/v') || startsWith(github.ref, 'refs/heads/release/v') || inputs.release_version != '' }}
@@ -83,6 +87,7 @@ jobs:
 
   android:
     needs: check
+    if: ${{ inputs.skip_android != true }}
     runs-on: ubuntu-latest
     env:
       NDK_VERSION: 27.2.12479018
@@ -152,7 +157,8 @@ jobs:
           path: out/*.apk
 
   release:
-    if: startsWith(github.ref, 'refs/tags/v') || startsWith(github.ref, 'refs/heads/release/v') || inputs.release_version != ''
+    # android is skipped (not failed) for a Windows-only release
+    if: ${{ !cancelled() && needs.windows.result == 'success' && contains(fromJSON('["success","skipped"]'), needs.android.result) && (startsWith(github.ref, 'refs/tags/v') || startsWith(github.ref, 'refs/heads/release/v') || inputs.release_version != '') }}
     needs: [windows, android]
     runs-on: ubuntu-latest
     permissions:
@@ -165,6 +171,11 @@ jobs:
         env:
           NOTES_FILE: docs/release-notes.md
         run: V="${VERSION##*/}"; node scripts/latest-json.mjs dist-release "v${V#v}"
+      - name: Say so when the release has no Android app
+        run: |
+          if ! ls dist-release/*.apk >/dev/null 2>&1; then
+            printf '\n> **Android:** this release is Windows only. Keep using your current Android app; a later release includes a new APK.\n' >> docs/release-notes.md
+          fi
       - run: ls -la dist-release
       - name: Release tag
         id: tag

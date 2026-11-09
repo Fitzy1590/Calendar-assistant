@@ -7,6 +7,7 @@ import { FeedbackModal } from "./components/Feedback";
 import { CarryOver } from "./components/CarryOver";
 import { EmailImport } from "./components/EmailImport";
 import { UpdatePrompt } from "./components/Updates";
+import { useRecordNewInstallVersion, WhatsNew } from "./components/WhatsNew";
 import { ErrorAlert, ErrorBoundary, useFirstRunCheck } from "./components/Errors";
 import { BrowserModeBanner } from "./components/BrowserModeBanner";
 import { IIdea, IMail } from "./components/Icons";
@@ -88,6 +89,7 @@ export default function App() {
   useTheme();
   useBackground();
   useFirstRunCheck();
+  useRecordNewInstallVersion();
   if (!s.settings.onboarded) return <Wizard />;
   if (s.wizardSteps) return <WizardOverlay steps={s.wizardSteps} />;
   const Page = PAGES[s.page] ?? Home;
@@ -123,6 +125,7 @@ export default function App() {
       {s.emailImportOpen && <EmailImport />}
       <CarryOver />
       <UpdatePrompt />
+      <WhatsNew />
       <ErrorAlert />
       {s.toast && (
         <div className="toast" role="status">

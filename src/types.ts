@@ -208,6 +208,7 @@ export interface Settings {
     installAutomatically: boolean; // Windows: download, install and restart without asking
     skipVersion?: string; // "Skip this version"
     lastChecked?: number;
+    lastSeenVersion?: string; // version whose "What's new" window was last shown or skipped
   };
   sync: {
     shareSettings: boolean; // keep news, sports, reminders, invites and shopping preferences the same on every device

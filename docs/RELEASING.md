@@ -79,3 +79,9 @@ removes it; see Tauri's "Windows code signing" guide. Nothing else in the releas
 Actions → build → Run workflow, enter the version, and tick **Windows-only release (skip_android)**. The Android
 job is skipped, the release gets the Windows installers only, and its notes say the APK is not included.
 Phones that check for updates are sent to the release page instead of an APK.
+
+## "What's new" window
+
+After an update, Windows shows a one-time "What's new" window from `src/lib/whatsNew.ts`. **Add an entry there (newest
+first, at most 3 plain-English points) before every release**, or the window has nothing to say for that version.
+It is bundled with the app, so it works offline; new installs never see it.

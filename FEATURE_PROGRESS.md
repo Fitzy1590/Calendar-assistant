@@ -5,7 +5,7 @@ Package manager is **npm** (`package-lock.json`, CI runs `npm ci`); commands bel
 
 **Baseline checks** (run for every item, in addition to its own check):
 - `B1` `npx tsc --noEmit` exits 0
-- `B2` `npm test`, all suites pass (currently 51 tests in 7 files)
+- `B2` `npm test`, all suites pass (currently 56 tests in 8 files)
 - `B3` `npm run build` succeeds
 - `B4` Rust touched: `rustfmt --edition 2021 --check src-tauri/src/*.rs`, plus a green GitHub `build` run (check, windows, android jobs)
 - `B5` `npx prettier --check "src/**/*.{ts,tsx}"` clean
@@ -42,6 +42,7 @@ Package manager is **npm** (`package-lock.json`, CI runs `npm ci`); commands bel
 | [x] | Calendar: day / week / month / year, own-scroll time grid opening at the current time | B1; manual: Day view shows the red now-line without scrolling |
 | [x] | `EventEditor`, `InvitePanel` (RSVP), `DayPanel`, `MiniCalendar`, `BirthdaySync` | B1; manual flows in README |
 | [x] | Tasks board, Notes, Shopping, Contacts, Reminders, News, Sports, Settings (search), Wizard (skippable) | B1, B3 |
+| [x] | "What's new" window after an update (Windows): `lib/whatsNew.ts` entries, `components/WhatsNew.tsx`; Settings → Updates → What's new reopens it; new installs skip it | `npx vitest run src/lib/whatsNew.test.ts` (5); manual: lower `settings.updates.lastSeenVersion`, restart, window shows once |
 | [x] | Errors: `ErrorBoundary`, `ErrorAlert`, Diagnostics, auto-fix (`autofix.ts`); Rust crash dialog, WebView2 repair, browser mode | B1, B4; manual: corrupt localStorage → restored from snapshot |
 
 ---

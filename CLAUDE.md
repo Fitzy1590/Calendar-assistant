@@ -98,3 +98,4 @@ scripts/ docs/ .github/workflows/build.yml   versioning, setup guides, CI + rele
 
 Merging to `main` then pushing a `release/vX.Y.Z` branch (or Actions → build → Run workflow with a
 version) builds Windows + Android and publishes a GitHub Release. See `docs/RELEASING.md`.
+Before each release add an entry to `src/lib/whatsNew.ts` (the post-update "What's new" window).

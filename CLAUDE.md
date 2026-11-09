@@ -55,6 +55,17 @@ scripts/ docs/ .github/workflows/build.yml   versioning, setup guides, CI + rele
 - **Settings** are per device; a subset (`SHARED_KEYS` in `sync.ts`) syncs as the `prefs/shared` record.
   New settings need a default in `DEFAULT_SETTINGS` (store.ts); `merge` back-fills old saves.
 
+## Email module (in progress: see `SPEC.md`, stages in `FEATURE_PROGRESS.md`)
+
+- Code: `src/lib/mail/` (provider adapters `gmail.ts`, `graph.ts`; `thread.ts` context builder; `classify.ts`; `drafts.ts`
+  Claude/Gemini; `cache.ts` IndexedDB), page `src/pages/Email.tsx`, parts in `src/components/mail/`. Same shape as other services.
+- Mail is **not** a store collection: bodies live in IndexedDB on this device only (never synced, never in backups).
+  Account metadata is in `settings.mail`; **tokens only in the OS secure store** (`lib/secureStore.ts`), never settings or logs.
+- Never mutate a thread or message object; build new ones. Sanitise HTML before rendering. AI drafts are draft-only: nothing is
+  sent without an explicit Send press. Trim and redact a thread locally before it goes to Claude or Gemini.
+- Token hygiene for sessions: keep this file under 200 lines, search the repo with subagents, `/clear` near 80% context and
+  resume from `FEATURE_PROGRESS.md`.
+
 ## Dates and events (immutable)
 
 - Library: **date-fns** only. Local wall-clock strings: `"yyyy-MM-ddTHH:mm"` (`localIso`, `fromYmd`,
@@ -98,4 +109,5 @@ scripts/ docs/ .github/workflows/build.yml   versioning, setup guides, CI + rele
 
 Merging to `main` then pushing a `release/vX.Y.Z` branch (or Actions → build → Run workflow with a
 version) builds Windows + Android and publishes a GitHub Release. See `docs/RELEASING.md`.
+After a feature is fully published to the repo, show the user mock screenshots of it (Playwright, 1280 px and 412 px).
 Before each release add an entry to `src/lib/whatsNew.ts` (the post-update "What's new" window).

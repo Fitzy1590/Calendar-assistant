@@ -12,6 +12,32 @@ Package manager is **npm** (`package-lock.json`, CI runs `npm ci`); commands bel
 
 ---
 
+## 0. Email module (approved vote; design in `SPEC.md`)
+
+Resume here after `/clear`. Work one stage at a time; tick it only when its checks pass. Every stage also needs B1-B3 and B5.
+Open question for you: none blocking. Assumption to confirm: "cache message text" is on by default, with a setting for metadata-only (SPEC §0).
+
+| | Stage | Verification |
+|---|---|---|
+| [ ] | **E1 Themes and density**: `oled`, `forest`, `contrast` themes; `spacious` density; accent contrast helper; Settings pickers | Unit test: every theme's text/background pairs meet AA (`contrast` AAA); Playwright screenshots of Home in each theme at 1280 px and 412 px |
+| [ ] | **E2 Storage checker** (app-wide): usage estimate, 80%/500 MB warning, safe cleanup dialog, 7-day snooze | Unit tests for thresholds and the cleanup plan (never lists events/tasks/notes/contacts/settings); manual: fake a full store, dialog appears, nothing user-made is deleted |
+| [ ] | **E3 Secure store + per-account auth**: Rust `secure_store_*` (Credential Manager), `secureStore.ts` with fallback, `google.ts` per-account tokens, `microsoft.ts` (PKCE loopback) | `cargo test` for the store (standalone) and green Windows CI; unit tests: refresh, `invalid_grant` → needs-reconnect, tokens absent from `localStorage`/backups/error reports |
+| [ ] | **E4 Gmail adapter**: initial sync, history polling, threads, labels, send (injectable API) | Adapter tests against a fake Gmail: history 404 → resync, 429 backoff, send builds correct reply headers |
+| [ ] | **E5 Graph adapter**: folder delta sync, conversation threads, reply/send | Same against a fake Graph: deltaLink resume, expired token, reply threading |
+| [ ] | **E6 Mail cache** (IndexedDB): metadata always, text optional, size cap + eviction, per-account purge | Unit tests with a fake IndexedDB: eviction order, text off keeps metadata only, disconnect purges |
+| [ ] | **E7 Email page**: accounts list, listbox of messages, reader (sanitised HTML, blocked remote images), keyboard + ARIA, density rows | axe-core 0 serious/critical; Playwright keyboard-only walkthrough; XSS test strings render inert; 1280 px and 412 px screenshots |
+| [ ] | **E8 Thread context + summary**: `thread.ts` strip/redact/budget, confirm-before-first-send, summary cache | Unit tests: quotes/signatures stripped, codes/cards redacted, budget keeps newest 3, deadlines match `parseWhen`; confirm dialog shows exact payload |
+| [ ] | **E9 Sorting**: `classify.ts` buckets, user rules, folders, drag-and-drop + "Move to…" menu | Unit tests per bucket and rule precedence; Playwright: drag a message and use the keyboard menu, same result |
+| [ ] | **E10 AI drafts + voice**: Claude and Gemini cards, tones, `[CHECK:]` blocking, dictation into instruction/draft | Fake-provider tests (parallel, cancel, error on one side); test that only the Send button reaches a send API; manual dictation (Picovoice in the app, Web Speech in browser mode) |
+| [ ] | **E11 Send/reply** via Gmail and Graph | Fake-API tests for threading headers; manual: reply to a real thread from each account |
+| [ ] | **E12 Calendar and task actions + automatic hint** | Unit tests: event/task preview from sample emails, hint appears only for date+time+event word; conflict warning shown; nothing created without confirm |
+| [ ] | **E13 Polling and notifications** (1-5 min, on focus, backoff, new-mail notification) | Fake-timer tests; manual: new mail notification arrives while the app is open |
+| [ ] | **E14 Real-account verification** (Gmail and Outlook/Hotmail): connect, read, summarise, draft, send, reconnect after token loss | Manual checklist in the PR; then mock screenshots (see below) |
+
+Backlog, not voted: IMAP/SMTP (needs native Rust), push notifications (needs a server), Whisper dictation, Cyberpunk theme, phone access to mail, LLM-refined sorting.
+
+---
+
 ## 1. Implemented
 
 ### Date / calendar utilities (`src/lib/`)
@@ -99,3 +125,4 @@ Package manager is **npm** (`package-lock.json`, CI runs `npm ci`); commands bel
 2. New logic has unit tests next to it (`src/lib/*.test.ts`); count in this file updated.
 3. UI change checked in `npm run dev` at desktop and 412 px width, light and dark.
 4. Item ticked here and README updated if user-visible.
+5. After a feature is published to the repo, show the user mock screenshots of it (desktop and phone width).

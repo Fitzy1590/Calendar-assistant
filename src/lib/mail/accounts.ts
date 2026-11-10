@@ -5,6 +5,7 @@ import { secretDelete, secretSet } from "../secureStore";
 import { clearAccount } from "./cache";
 import { gmailProfile } from "./gmail";
 import { testImap, type ImapCreds } from "./imap";
+import { explainImapError } from "./imapHelp";
 import { disconnectOutlook } from "./microsoft";
 import { gmailFetch, imapPasswordKey, tauriInvoke } from "./providers";
 import type { MailAccountMeta } from "./types";
@@ -45,7 +46,25 @@ export async function connectImap(address: string, c: ImapCreds): Promise<MailAc
   const addr = address.trim().toLowerCase();
   if (!addr.includes("@")) throw new Error("Type the full email address.");
   if (!c.host.trim() || !c.password) throw new Error("Fill in the server and password.");
-  await testImap(tauriInvoke, { ...c, host: c.host.trim(), user: c.user.trim() || addr });
+  // if the server can't be reached, quietly try the other likely settings for this provider before giving up
+  let use = { ...c, host: c.host.trim(), user: c.user.trim() || addr };
+  try {
+    await testImap(tauriInvoke, use);
+  } catch (first) {
+    const fix = explainImapError(String(first instanceof Error ? first.message : first), addr);
+    let worked = false;
+    for (const alt of fix.kind === "server" ? fix.tryServers : []) {
+      try {
+        await testImap(tauriInvoke, { ...use, host: alt.host, port: alt.port });
+        use = { ...use, host: alt.host, port: alt.port };
+        worked = true;
+        break;
+      } catch {
+        /* try the next one */
+      }
+    }
+    if (!worked) throw first;
+  }
   const existing = useStore.getState().settings.mail.accounts.find((a) => a.provider === "imap" && a.address === addr);
   const id = existing?.id ?? "imap-" + crypto.randomUUID().slice(0, 6);
   await secretSet(imapPasswordKey(id), c.password);
@@ -56,7 +75,7 @@ export async function connectImap(address: string, c: ImapCreds): Promise<MailAc
     name: addr,
     enabled: true,
     status: "ok",
-    imap: { host: c.host.trim(), port: c.port, user: c.user.trim() || addr },
+    imap: { host: use.host, port: use.port, user: use.user },
   };
   save(meta);
   return meta;

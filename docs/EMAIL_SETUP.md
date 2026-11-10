@@ -58,6 +58,19 @@ Settings → Email → **Add other email**. Type the address and password: the s
 - **Junk and subscriptions** (newsletters, mailing lists) never appear on Home or in alerts. They stay in their own folders in the
   Email page. Nothing is deleted, and nothing in Outlook is changed.
 
+## Folders
+
+Right-click an email (or open it and press **Create rule + folder…**) to make a folder and a rule in one step: choose a new or existing folder
+and whether it applies to this sender or everyone at their domain. Mail already in the app is filed straight away, and new mail follows the rule.
+You can also **Move to folder** by hand. Folders appear beside Inbox in Email and are managed under Settings → Email → Folders; a rule can
+also pick a folder in its editor. Folders live in this app only: your real mailbox is never changed. Deleting a folder sends its mail back to the Inbox views.
+
+## If "Add other email" doesn't connect
+
+The form explains what went wrong in plain words (password refused, needs an app password, IMAP switched off, can't reach the server, secure
+connection problem), with steps and, for Yahoo, iCloud, AOL and Fastmail, a button to the page where you create an app password. If the server can't be
+reached the app first tries the other likely server names for your provider by itself. "Technical detail" shows the raw message.
+
 ## Your rules
 
 Settings → Email → **Your rules**, or the buttons under any email, let you change how mail is handled:

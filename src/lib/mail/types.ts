@@ -38,7 +38,9 @@ export interface MailMessage {
   dismissed?: boolean; // seen or dismissed here
   paid?: boolean;
   paidAt?: number;
-  override?: { important?: boolean; bill?: boolean }; // "just this email"
+  override?: { important?: boolean; bill?: boolean; folderId?: string | null }; // "just this email" (folderId null = back to the Inbox)
+  /** The folder this mail is filed in (by a rule or by hand). Folders live in this app only; your mailbox is not changed. */
+  folderId?: string;
   linked?: { eventId?: string; taskId?: string }; // due date already added to Calendar / Tasks
   reminded?: string; // the due date a reminder was already sent for
 }
@@ -55,6 +57,13 @@ export interface MailRule {
   notify: boolean; // always notify
   mute: boolean; // never important, no alerts
   bill: boolean; // send to Bills
+  folderId?: string; // file the mail in this app folder
+}
+
+/** A folder that exists in this app only. */
+export interface MailFolder {
+  id: string;
+  name: string;
 }
 
 /** A message as the provider adapter returns it, before sorting. */
@@ -85,6 +94,7 @@ export interface MailSettings {
   /** How important mail shows up. */
   alerts: { homeCard: boolean; desktop: boolean; badge: boolean; dailySummary: boolean; summaryHour: number };
   rules: MailRule[];
+  folders: MailFolder[];
   bills: { remindDays: number }; // remind this many days before an unpaid bill is due (0 = off)
   /** How often you changed a sender by hand, to suggest making it a rule. */
   suggest: { counts: Record<string, Partial<Record<"important" | "mute" | "bill", number>>>; dismissed: string[] };
@@ -99,6 +109,7 @@ export const DEFAULT_MAIL_SETTINGS: MailSettings = {
   important: { actionUrgent: true, contacts: true, financial: true, everything: false },
   alerts: { homeCard: true, desktop: true, badge: true, dailySummary: true, summaryHour: 8 },
   rules: [],
+  folders: [],
   bills: { remindDays: 2 },
   suggest: { counts: {}, dismissed: [] },
 };

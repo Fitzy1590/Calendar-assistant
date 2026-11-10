@@ -9,8 +9,8 @@ import { classify, type ClassifyContext } from "./classify";
 import { graphProvider, type GraphApi } from "./graph";
 import type { MailProvider } from "./provider";
 import { providerFor } from "./providers";
-import { recordOverride, ruleForSender, type SenderAction } from "./rules";
-import type { MailAccountMeta, MailMessage, MailRule, RawMail } from "./types";
+import { recordOverride, ruleForFolder, ruleForSender, type SenderAction } from "./rules";
+import type { MailAccountMeta, MailFolder, MailMessage, MailRule, RawMail } from "./types";
 
 /** Sync every connected account, sort the mail, and raise alerts for new important mail. Windows app / browser only. */
 
@@ -72,6 +72,7 @@ const ctxFor = (me: string): ClassifyContext => ({
   contacts: contactSet(),
   rules: useStore.getState().settings.mail.important,
   userRules: useStore.getState().settings.mail.rules,
+  folderIds: useStore.getState().settings.mail.folders.map((f) => f.id),
 });
 
 /** Sort a raw message, keeping what only this device knows about it (text, dismissed). */
@@ -206,12 +207,12 @@ export const markPaid = (id: string, paid = true) =>
 /** "Just this email": change how one message is handled. `undefined` clears that setting. */
 export async function setOverride(id: string, patch: { important?: boolean | null; bill?: boolean | null }) {
   const next = await updateOne(id, (m) => {
-    const o = { ...(m.override ?? {}) };
-    for (const [k, v] of Object.entries(patch) as [keyof typeof o, boolean | null][]) {
+    const o: Record<string, unknown> = { ...(m.override ?? {}) };
+    for (const [k, v] of Object.entries(patch) as [string, boolean | null][]) {
       if (v === null) delete o[k];
       else o[k] = v;
     }
-    return resort({ ...m, override: Object.keys(o).length ? o : undefined });
+    return resort({ ...m, override: Object.keys(o).length ? (o as MailMessage["override"]) : undefined });
   });
   if (next) {
     const kind: SenderAction | null =
@@ -241,6 +242,50 @@ export async function addSenderRule(m: MailMessage, action: SenderAction) {
   const res = ruleForSender(mailSettings().rules, m, action);
   await saveRule(res.rule);
   return res;
+}
+
+/* ---------- folders (in this app only; your mailbox is not changed) ---------- */
+
+/** The folder with this name (any capitals), or a new one. */
+export function createFolder(name: string): MailFolder {
+  const clean = name.trim().slice(0, 40);
+  if (!clean) throw new Error("Give the folder a name.");
+  const have = mailSettings().folders.find((f) => f.name.toLowerCase() === clean.toLowerCase());
+  if (have) return have;
+  const folder = { id: crypto.randomUUID().slice(0, 8), name: clean };
+  useStore.getState().updateSettings((s) => void s.mail.folders.push(folder));
+  return folder;
+}
+
+export async function renameFolder(id: string, name: string) {
+  const clean = name.trim().slice(0, 40);
+  if (!clean) return;
+  useStore.getState().updateSettings((s) => {
+    const f = s.mail.folders.find((x) => x.id === id);
+    if (f) f.name = clean;
+  });
+}
+
+/** Delete a folder: its mail goes back to the Inbox views, and rules that filed into it stop filing. Nothing in your mailbox is touched. */
+export async function deleteFolder(id: string) {
+  useStore.getState().updateSettings((s) => {
+    s.mail.folders = s.mail.folders.filter((f) => f.id !== id);
+    for (const r of s.mail.rules) if (r.folderId === id) r.folderId = undefined;
+  });
+  await reclassifyCached();
+}
+
+/** Put one email in a folder by hand (`null` = back to the Inbox). */
+export async function moveToFolder(id: string, folderId: string | null) {
+  return updateOne(id, (m) => resort({ ...m, override: { ...(m.override ?? {}), folderId } }));
+}
+
+/** One step from a right-click: make (or reuse) the folder, add the rule for this sender or domain, and file the mail already here. */
+export async function createRuleAndFolder(m: MailMessage, folderName: string, scope: "sender" | "domain" = "sender") {
+  const folder = createFolder(folderName);
+  const rule = ruleForFolder(mailSettings().rules, m, folder, scope);
+  await saveRule(rule);
+  return { folder, rule };
 }
 
 export const dismissSuggestion = (address: string) =>

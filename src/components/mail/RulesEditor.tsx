@@ -47,6 +47,7 @@ export function RulesEditor() {
 
 function RuleModal({ start, isNew, onClose }: { start: MailRule; isNew: boolean; onClose: () => void }) {
   const [r, setR] = useState(start);
+  const folders = useStore((s) => s.settings.mail.folders);
   const [senders, setSenders] = useState(start.senders.join(", "));
   const [keywords, setKeywords] = useState(start.keywords.join(", "));
   const messages = useMail((m) => m.messages);
@@ -150,6 +151,16 @@ function RuleModal({ start, isNew, onClose }: { start: MailRule; isNew: boolean;
         <span className="row">
           <Toggle checked={r.bill} onChange={(v) => toggle("bill", v)} label="Send to Bills" /> Send to Bills
         </span>
+        <Field label="Move to folder (in this app)">
+          <select className="input" value={r.folderId ?? ""} onChange={(e) => set({ folderId: e.target.value || undefined })}>
+            <option value="">Leave in the Inbox</option>
+            {folders.map((f) => (
+              <option key={f.id} value={f.id}>
+                {f.name}
+              </option>
+            ))}
+          </select>
+        </Field>
         {errors.length > 0 ? (
           <div role="alert" style={{ color: "var(--bad)", fontSize: 13 }}>
             {errors.join(" ")}

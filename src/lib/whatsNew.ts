@@ -13,6 +13,15 @@ export interface WhatsNewEntry {
 
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    version: "0.2.3",
+    title: "Email folders and a connection guide",
+    points: [
+      "Right-click an email to create a rule and a new folder in one step, or move it to a folder. Folders live in this app only; your mailbox is never changed.",
+      "Rules can file mail into a folder, and folders show up beside Inbox in the Email page (manage them in Settings → Email).",
+      "Add other email (Bigpond, Yahoo, iCloud…) now explains what went wrong and how to fix it, and tries other server names for you.",
+    ],
+  },
+  {
     version: "0.2.2",
     title: "Outlook / Hotmail sign-in fixed",
     points: [

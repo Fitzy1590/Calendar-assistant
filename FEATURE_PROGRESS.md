@@ -157,3 +157,5 @@ Windows side and the shared engine first; Android joins next. Every stage also n
 | [x] | **Drag to reorder the left menu** (+ Alt+Up/Down); `lib/order.ts` | `order.test.ts` (3); browser drag test; screenshots |
 | [x] | **Sports fixtures hidden from Tasks** (`taskBoardEvents`) | `taskBoard.test.ts` |
 | [x] | **Keyboard shortcuts**: F toggles full screen; 1-9 and 0 open the matching left-menu item (numbers shown beside each item, follow your order); ignored while typing or in a dialog | `shortcuts.test.ts` (3); browser key test; screenshot |
+| [x] | **Email folders (in-app)**: right-click menu, "Create rule + new folder", move by hand, rules can file into a folder, folder chips, Settings folder manager; mailbox never changed | `rules.test.ts` (4), `classify.test.ts` (3); screenshots (menu, dialog, folder view) |
+| [x] | **IMAP connection guide**: error → plain-English steps and links; tries alternate servers; raw text under "Technical detail" | `imapHelp.test.ts` (5); screenshot |

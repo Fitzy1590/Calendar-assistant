@@ -12,12 +12,16 @@ export interface ClassifyContext {
   contacts: Set<string>; // lower-case addresses of people in Contacts
   rules: MailSettings["important"];
   userRules?: MailRule[]; // your own rules
+  folderIds?: string[]; // folders that exist; a message filed in a deleted folder goes back to the Inbox
 }
 
 /** A raw message plus what this device already knows about it. */
 export type ClassifyInput = RawMail & { override?: MailMessage["override"]; text?: string };
 
-export type Classified = Pick<MailMessage, "bucket" | "important" | "reasons" | "notify" | "muted" | "bill" | "amount" | "dueDate">;
+export type Classified = Pick<
+  MailMessage,
+  "bucket" | "important" | "reasons" | "notify" | "muted" | "bill" | "amount" | "dueDate" | "folderId"
+>;
 
 const NEWSLETTER_SENDER =
   /^(no-?reply|noreply|donotreply|do-not-reply|newsletter|news|marketing|offers|deals|promotions?|mailer|updates?|info|hello|team|notifications?)([._+-]|@)/i;
@@ -121,11 +125,15 @@ export function classify(m: ClassifyInput, ctx: ClassifyContext): Classified {
   }
   if (m.override?.bill !== undefined) bill = m.override.bill;
 
+  // folders: your move by hand wins over a rule; a folder that no longer exists doesn't count
+  let folderId = m.override?.folderId !== undefined ? (m.override.folderId ?? undefined) : fx.folderId;
+  if (folderId && ctx.folderIds && !ctx.folderIds.includes(folderId)) folderId = undefined;
+
   const body = `${m.subject}\n${m.preview}\n${m.text ?? ""}`;
   const amount = bill ? parseAmount(body) : undefined;
   const dueDate = bill ? parseDueDate(body, new Date(m.receivedAt)) : undefined;
   if (bill) reasons.push("Treated as a bill");
-  return { bucket, important, reasons, notify, muted, bill, amount, dueDate };
+  return { bucket, important, reasons, notify, muted, bill, amount, dueDate, folderId };
 }
 
 export const BUCKET_LABEL: Record<MailBucket, string> = {

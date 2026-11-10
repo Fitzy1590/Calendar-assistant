@@ -6,6 +6,7 @@ import {
   newRule,
   parseList,
   recordOverride,
+  ruleForFolder,
   ruleForSender,
   senderMatches,
   suggestion,
@@ -93,5 +94,34 @@ describe("suggestions", () => {
     expect(suggestion(s, [], "SAM@x.com")).toBe("important");
     expect(suggestion(s, [newRule({ senders: ["sam@x.com"], important: true })], "sam@x.com")).toBeNull();
     expect(suggestion({ ...s, dismissed: ["sam@x.com"] }, [], "sam@x.com")).toBeNull();
+  });
+});
+
+describe("rules that file mail in a folder", () => {
+  const folder = { id: "f1", name: "Energy" };
+  it("applyRules reports the folder of the first matching rule that has one", () => {
+    const a = newRule({ senders: ["@energyco.com"], folderId: "f1" });
+    const b = newRule({ senders: ["bills@energyco.com"], folderId: "f2" });
+    expect(applyRules([a, b], m("bills@energyco.com")).folderId).toBe("f1");
+    expect(applyRules([a], m("x@other.com")).folderId).toBeUndefined();
+    expect(applyRules([{ ...a, enabled: false }], m("bills@energyco.com")).folderId).toBeUndefined();
+  });
+  it("makes a rule for the sender or for everyone at the domain", () => {
+    const msg = { from: { name: "Energy Co", address: "Bills@EnergyCo.com" } };
+    const s = ruleForFolder([], msg, folder);
+    expect(s.senders).toEqual(["bills@energyco.com"]);
+    expect(s.folderId).toBe("f1");
+    expect(s.name).toBe("Energy Co → Energy");
+    expect(ruleForFolder([], msg, folder, "domain").senders).toEqual(["@energyco.com"]);
+  });
+  it("updates an existing plain rule for the same sender instead of adding another", () => {
+    const have = newRule({ senders: ["bills@energyco.com"], important: true });
+    const r = ruleForFolder([have], { from: { address: "bills@energyco.com" } }, folder);
+    expect(r.id).toBe(have.id);
+    expect(r.important).toBe(true);
+    expect(r.folderId).toBe("f1");
+  });
+  it("describes the folder in the rule summary", () => {
+    expect(describeRule(newRule({ senders: ["a@b.com"], folderId: "f1" }), [folder])).toContain("Folder “Energy”");
   });
 });

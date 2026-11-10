@@ -3,15 +3,17 @@ import { format, formatDistanceToNowStrict, isToday } from "date-fns";
 import { useStore } from "../store";
 import { PageHead } from "../components/ui";
 import { Bills } from "../components/mail/Bills";
+import { FolderRuleDialog } from "../components/mail/FolderRuleDialog";
 import { HandlePanel } from "../components/mail/HandlePanel";
+import { MailContextMenu } from "../components/mail/MailContextMenu";
 import { BUCKET_LABEL } from "../lib/mail/classify";
 import { dismissMail, needsAttention, refreshMail, syncMail, unpaidBills, useMail } from "../lib/mail/engine";
 import { getMessage, putMessages } from "../lib/mail/cache";
 import { providerFor } from "../lib/mail/providers";
-import type { MailBucket, MailMessage } from "../lib/mail/types";
+import type { MailMessage } from "../lib/mail/types";
 import { isAndroid } from "../lib/platform";
 
-type View = "important" | "inbox" | "action" | MailBucket;
+type View = string; // a built-in view id, or `folder:<id>`
 const VIEWS: { id: View; label: string; match: (m: MailMessage) => boolean }[] = [
   { id: "important", label: "Important", match: (m) => m.important },
   { id: "inbox", label: "Inbox", match: (m) => m.bucket !== "spam" && m.bucket !== "subscriptions" },
@@ -28,6 +30,8 @@ export function Email() {
   const s = useStore();
   const { messages, syncing, error, selectedId, tab } = useMail();
   const [view, setView] = useState<View>("important");
+  const [ctx, setCtx] = useState<{ m: MailMessage; x: number; y: number } | null>(null);
+  const [fileFor, setFileFor] = useState<MailMessage | null>(null);
   const [body, setBody] = useState<{ id: string; text: string; loading: boolean } | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const accounts = s.settings.mail.accounts;
@@ -36,13 +40,27 @@ export function Email() {
     refreshMail().catch(() => {});
   }, []);
 
+  const folders = s.settings.mail.folders;
+  const folderIds = folders.map((f) => f.id);
+  // mail filed in a folder leaves the other views; a folder that was deleted no longer holds any
+  const filed = (m: MailMessage) => !!m.folderId && folderIds.includes(m.folderId);
+  const current = view.startsWith("folder:") ? folders.find((f) => f.id === view.slice(7)) : undefined;
+  const viewLabel = current?.name ?? VIEWS.find((v) => v.id === view)?.label ?? "Mail";
   const rows = useMemo(
-    () => VIEWS.find((v) => v.id === view)!.match && messages.filter(VIEWS.find((v) => v.id === view)!.match),
-    [messages, view],
+    () =>
+      view.startsWith("folder:")
+        ? messages.filter((m) => m.folderId === view.slice(7))
+        : messages.filter((VIEWS.find((v) => v.id === view) ?? VIEWS[0]).match).filter((m) => !filed(m)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [messages, view, folderIds.join(",")],
   );
   const counts = useMemo(
-    () => Object.fromEntries(VIEWS.map((v) => [v.id, messages.filter((m) => v.match(m) && !m.isRead).length])),
-    [messages],
+    () => ({
+      ...Object.fromEntries(VIEWS.map((v) => [v.id, messages.filter((m) => v.match(m) && !m.isRead && !filed(m)).length])),
+      ...Object.fromEntries(folders.map((f) => [`folder:${f.id}`, messages.filter((m) => m.folderId === f.id && !m.isRead).length])),
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [messages, folderIds.join(",")],
   );
   const selected = messages.find((m) => m.id === selectedId);
 
@@ -162,14 +180,14 @@ export function Email() {
               {counts[v.id] ? <span className="mono faint"> {counts[v.id]}</span> : null}
             </button>
           ))}
+          {folders.map((f) => (
+            <button key={f.id} className="chip" aria-pressed={view === `folder:${f.id}`} onClick={() => setView(`folder:${f.id}`)}>
+              {f.name}
+              {counts[`folder:${f.id}`] ? <span className="mono faint"> {counts[`folder:${f.id}`]}</span> : null}
+            </button>
+          ))}
         </nav>
-        <div
-          className="mail-list card"
-          role="listbox"
-          aria-label={`${VIEWS.find((v) => v.id === view)!.label} messages`}
-          ref={listRef}
-          onKeyDown={onKey}
-        >
+        <div className="mail-list card" role="listbox" aria-label={`${viewLabel} messages`} ref={listRef} onKeyDown={onKey}>
           {rows.map((m, i) => (
             <div
               key={m.id}
@@ -181,6 +199,11 @@ export function Email() {
               aria-label={`${m.from.name || m.from.address}, ${m.subject}, ${when(m.receivedAt)}${m.isRead ? "" : ", unread"}${m.important ? ", important" : ""}`}
               onClick={() => useMail.setState({ selectedId: m.id })}
               onKeyDown={(e) => e.key === "Enter" && useMail.setState({ selectedId: m.id })}
+              onContextMenu={(e) => {
+                e.preventDefault();
+                useMail.setState({ selectedId: m.id });
+                setCtx({ m, x: e.clientX, y: e.clientY });
+              }}
             >
               <span className="mail-from ellipsis">{m.from.name || m.from.address}</span>
               <span className="faint mono" style={{ fontSize: 11 }}>
@@ -216,7 +239,7 @@ export function Email() {
               <pre className="mail-body">
                 {body?.id === selected.id ? (body.loading ? "Loading…" : body.text || selected.preview) : selected.preview}
               </pre>
-              <HandlePanel m={selected} />
+              <HandlePanel m={selected} onFile={() => setFileFor(selected)} />
               <div className="faint" style={{ fontSize: 12 }}>
                 Opening a message here only marks it as seen in this app. Your mailbox is not changed.
               </div>
@@ -226,6 +249,15 @@ export function Email() {
           )}
         </article>
       </div>
+      {ctx && (
+        <MailContextMenu
+          {...ctx}
+          onClose={() => setCtx(null)}
+          onFile={() => setFileFor(ctx.m)}
+          onMoved={(id) => id && setView(`folder:${id}`)}
+        />
+      )}
+      {fileFor && <FolderRuleDialog m={fileFor} onClose={() => setFileFor(null)} onDone={(id) => setView(`folder:${id}`)} />}
       <span className="visually-hidden" aria-live="polite">
         {needsAttention(messages).length} important unread
       </span>

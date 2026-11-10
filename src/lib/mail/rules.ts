@@ -1,4 +1,4 @@
-import type { MailMessage, MailRule, MailSettings } from "./types";
+import type { MailFolder, MailMessage, MailRule, MailSettings } from "./types";
 
 /** Your own rules: matching, building one from an email, describing it in words, and suggesting rules. Pure. */
 
@@ -32,6 +32,7 @@ export interface RuleEffect {
   notify: boolean;
   muted: boolean;
   bill: boolean;
+  folderId?: string; // the first matching rule that files mail
   names: string[]; // the rules that matched
 }
 
@@ -44,16 +45,26 @@ export function applyRules(rules: MailRule[], m: Pick<MailMessage, "from" | "sub
     notify: !muted && hits.some((r) => r.notify),
     muted,
     bill: hits.some((r) => r.bill),
+    folderId: hits.find((r) => r.folderId)?.folderId,
     names: hits.map((r) => r.name || describeRule(r)),
   };
 }
 
-export function describeRule(r: MailRule): string {
+export function describeRule(r: MailRule, folders: MailFolder[] = []): string {
   const who = r.senders.filter(Boolean).join(", ");
   const kw = r.keywords.filter(Boolean);
   const words = kw.length ? `subject has ${kw.map((k) => `“${k}”`).join(r.keywordMode === "all" ? " and " : " or ")}` : "";
   const when = [who && `From ${who}`, words].filter(Boolean).join(", ") || "Nothing set yet";
-  const does = [r.mute && "Mute", r.important && "Important", r.notify && "Always notify", r.bill && "Bills"].filter(Boolean).join(" + ");
+  const folder = r.folderId ? folders.find((f) => f.id === r.folderId) : undefined;
+  const does = [
+    r.mute && "Mute",
+    r.important && "Important",
+    r.notify && "Always notify",
+    r.bill && "Bills",
+    folder && `Folder “${folder.name}”`,
+  ]
+    .filter(Boolean)
+    .join(" + ");
   return `${when} → ${does || "no action"}`;
 }
 
@@ -95,6 +106,21 @@ export function ruleForSender(
     }),
     created: true,
   };
+}
+
+/** A rule that files mail from this sender (or everyone at their domain) in a folder. An existing plain rule for the same sender is updated, not duplicated. */
+export function ruleForFolder(
+  existing: MailRule[],
+  m: Pick<MailMessage, "from">,
+  folder: MailFolder,
+  scope: "sender" | "domain" = "sender",
+): MailRule {
+  const addr = lc(m.from.address);
+  const pattern = scope === "domain" ? `@${addr.split("@")[1] ?? addr}` : addr;
+  const have = existing.find((r) => r.senders.length === 1 && lc(r.senders[0]) === pattern && !r.keywords.length);
+  if (have) return { ...have, enabled: true, folderId: folder.id };
+  const who = scope === "domain" ? pattern : m.from.name || m.from.address;
+  return newRule({ name: `${who} → ${folder.name}`, senders: [pattern], folderId: folder.id });
 }
 
 /** Problems with a rule being saved (empty list = fine). */

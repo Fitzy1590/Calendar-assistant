@@ -6,6 +6,7 @@ import { clearAccount } from "./cache";
 import { gmailProfile } from "./gmail";
 import { testImap, type ImapCreds } from "./imap";
 import { explainImapError } from "./imapHelp";
+import { guessImap } from "./imapPresets";
 import { disconnectOutlook } from "./microsoft";
 import { gmailFetch, imapPasswordKey, tauriInvoke } from "./providers";
 import type { MailAccountMeta } from "./types";
@@ -24,7 +25,7 @@ const save = (meta: MailAccountMeta) =>
 /** Sign in to Google with permission to read Gmail (the same Google sign-in as Calendar and Drive), then add the account. */
 export async function connectGmail(): Promise<MailAccountMeta> {
   if (!otherMailAvailable()) throw new Error("Gmail sign-in runs in the installed Windows app.");
-  await googleToken([SCOPES.gmail], true);
+  await googleToken([SCOPES.gmail, SCOPES.gmailSend], true); // read, and send what you write here
   const { address } = await gmailProfile(gmailFetch);
   if (!address) throw new Error("Couldn't read your Gmail address.");
   const existing = useStore.getState().settings.mail.accounts.find((a) => a.provider === "gmail" && a.address === address);
@@ -35,6 +36,7 @@ export async function connectGmail(): Promise<MailAccountMeta> {
     name: address,
     enabled: true,
     status: "ok",
+    canSend: true,
   };
   save(meta);
   return meta;
@@ -65,6 +67,7 @@ export async function connectImap(address: string, c: ImapCreds): Promise<MailAc
     }
     if (!worked) throw first;
   }
+  const guess = guessImap(addr);
   const existing = useStore.getState().settings.mail.accounts.find((a) => a.provider === "imap" && a.address === addr);
   const id = existing?.id ?? "imap-" + crypto.randomUUID().slice(0, 6);
   await secretSet(imapPasswordKey(id), c.password);
@@ -75,7 +78,8 @@ export async function connectImap(address: string, c: ImapCreds): Promise<MailAc
     name: addr,
     enabled: true,
     status: "ok",
-    imap: { host: use.host, port: use.port, user: use.user },
+    imap: { host: use.host, port: use.port, user: use.user, smtpHost: guess.smtpHost, smtpPort: guess.smtpPort },
+    canSend: true,
   };
   save(meta);
   return meta;
@@ -87,4 +91,18 @@ export async function disconnectAccount(a: MailAccountMeta): Promise<void> {
   if (a.provider === "imap") await secretDelete(imapPasswordKey(a.id));
   await clearAccount(a.id);
   useStore.getState().updateSettings((s) => void (s.mail.accounts = s.mail.accounts.filter((x) => x.id !== a.id)));
+}
+
+/** Let an account that was connected before sending existed send mail: Outlook and Gmail ask for the new permission; a password account just starts using its outgoing server. */
+export async function allowSending(a: MailAccountMeta): Promise<void> {
+  if (a.provider === "graph") {
+    const { connectOutlook } = await import("./microsoft");
+    await connectOutlook();
+    return;
+  }
+  if (a.provider === "gmail") await googleToken([SCOPES.gmail, SCOPES.gmailSend], true);
+  useStore.getState().updateSettings((s) => {
+    const x = s.mail.accounts.find((m) => m.id === a.id);
+    if (x) x.canSend = true;
+  });
 }

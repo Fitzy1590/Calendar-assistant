@@ -18,3 +18,8 @@ pub async fn imap_sync(_req: serde_json::Value) -> Result<serde_json::Value, Str
 pub async fn imap_body(_req: serde_json::Value) -> Result<serde_json::Value, String> {
     nope()
 }
+
+#[tauri::command]
+pub async fn smtp_send(_req: serde_json::Value) -> Result<(), String> {
+    nope()
+}

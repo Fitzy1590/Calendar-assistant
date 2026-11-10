@@ -62,6 +62,17 @@ export interface MailRule {
   folderId?: string; // file the mail in this app folder
 }
 
+/** "Remind me if nobody replies": set when you send a message from here. */
+export interface FollowUp {
+  id: string;
+  accountId: string;
+  threadId?: string;
+  to: string[]; // addresses; a message from any of them after `sentAt` counts as a reply
+  subject: string;
+  sentAt: number;
+  due: number;
+}
+
 /** A saved reply. {first name}, {name}, {date}, {time} are filled in. */
 export interface MailTemplate {
   id: string;
@@ -109,6 +120,7 @@ export interface MailSettings {
   /** The right-click menu: the order of its items and the ones you hid. */
   menu: { order: string[]; hidden: string[] };
   templates: MailTemplate[];
+  followUps: FollowUp[];
   signatures: Record<string, string>; // per account id
   undoSeconds: number; // how long Send waits so it can be undone
   aiConfirmed: { claude?: boolean; gemini?: boolean }; // you've seen what gets sent to this AI
@@ -129,6 +141,7 @@ export const DEFAULT_MAIL_SETTINGS: MailSettings = {
   folders: [],
   menu: { order: [], hidden: [] },
   templates: [],
+  followUps: [],
   signatures: {},
   undoSeconds: 10,
   aiConfirmed: {},

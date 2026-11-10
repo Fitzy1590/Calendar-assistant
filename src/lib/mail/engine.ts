@@ -6,9 +6,11 @@ import { isAndroid, notify } from "../platform";
 import { dueLabel, dueState, money } from "./bills";
 import { allMessages, deleteMessages, evictOver, getMessage, getMessages, putMessages } from "./cache";
 import { classify, type ClassifyContext } from "./classify";
+import { checkFollowUps, dueSnoozes, isSnoozed } from "./followups";
 import { graphProvider, type GraphApi } from "./graph";
 import type { MailProvider } from "./provider";
 import { providerFor } from "./providers";
+import { sendDue } from "./sender";
 import { recordOverride, ruleForFolder, ruleForSender, type SenderAction } from "./rules";
 import type { MailAccountMeta, MailFolder, MailMessage, MailRule, RawMail } from "./types";
 
@@ -23,10 +25,12 @@ export const useMail = create<{ messages: MailMessage[]; syncing: boolean; error
 );
 
 /** Important, unread and not dismissed here: what the Home card, the badge and alerts are about. */
-export const needsAttention = (msgs: MailMessage[]) => msgs.filter((m) => m.important && !m.isRead && !m.dismissed && !m.paid && !m.muted);
+export const needsAttention = (msgs: MailMessage[]) =>
+  msgs.filter((m) => m.important && !m.isRead && !m.dismissed && !m.paid && !m.muted && !isSnoozed(m));
 
 /** Worth a desktop notification when it arrives: important, or one of your "always notify" rules. */
-export const shouldAlert = (m: MailMessage) => !m.muted && !m.paid && !m.isRead && !m.dismissed && (m.important || !!m.notify);
+export const shouldAlert = (m: MailMessage) =>
+  !m.muted && !m.paid && !m.isRead && !m.dismissed && !isSnoozed(m) && (m.important || !!m.notify);
 
 /** Unpaid bills, soonest due first (no due date last). */
 export const unpaidBills = (msgs: MailMessage[]) =>
@@ -244,6 +248,34 @@ export async function addSenderRule(m: MailMessage, action: SenderAction) {
   return res;
 }
 
+/* ---------- snooze, follow-ups and the background tick ---------- */
+
+/** Hide an email until `at` (this device only). */
+export const snoozeMail = (id: string, at: number) => updateOne(id, (m) => ({ ...m, snoozedUntil: at }));
+export const unsnoozeMail = (id: string) => updateOne(id, (m) => ({ ...m, snoozedUntil: undefined }));
+
+/** Snoozed mail whose time has come comes back as unread with an alert; follow-ups with no reply raise a reminder. */
+export async function wakeAndRemind(alert: Notifier = notify, now = Date.now()) {
+  const all = await allMessages();
+  const due = dueSnoozes(all, now);
+  if (due.length) {
+    await putMessages(
+      due.map((m) => ({ ...m, snoozedUntil: undefined, isRead: false, dismissed: false })),
+      keepText(),
+    );
+    await refreshMail();
+    for (const m of due.slice(0, 3)) await alert("Snoozed email is back", `${m.from.name || m.from.address}: ${m.subject}`);
+  }
+  const list = mailSettings().followUps;
+  if (list.length) {
+    const { answered, overdue } = checkFollowUps(list, all, now);
+    for (const f of overdue.slice(0, 3))
+      await alert("No reply yet", `${f.subject} (sent ${Math.max(1, Math.round((now - f.sentAt) / 864e5))} days ago)`);
+    const done = new Set([...answered, ...overdue].map((f) => f.id));
+    if (done.size) useStore.getState().updateSettings((s) => void (s.mail.followUps = s.mail.followUps.filter((f) => !done.has(f.id))));
+  }
+}
+
 /* ---------- folders (in this app only; your mailbox is not changed) ---------- */
 
 /** The folder with this name (any capitals), or a new one. */
@@ -388,12 +420,17 @@ export function startMailPolling(): () => void {
   refreshMail().catch(() => {});
   run(true);
   const timer = setInterval(() => run(), 30_000);
+  const tick = setInterval(() => {
+    sendDue().catch(() => {});
+    wakeAndRemind().catch(() => {});
+  }, 5_000);
   const onFocus = () => run(true);
   const onVisible = () => document.visibilityState === "visible" && run(true);
   window.addEventListener("focus", onFocus);
   document.addEventListener("visibilitychange", onVisible);
   return () => {
     clearInterval(timer);
+    clearInterval(tick);
     window.removeEventListener("focus", onFocus);
     document.removeEventListener("visibilitychange", onVisible);
   };

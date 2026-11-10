@@ -5,6 +5,7 @@ import { allMessages } from "./cache";
 import { gmailProvider, type GmailApi } from "./gmail";
 import { graphProvider } from "./graph";
 import { imapProvider, type ImapInvoke } from "./imap";
+import { guessImap } from "./imapPresets";
 import { msApiFor } from "./microsoft";
 import type { MailProvider } from "./provider";
 import type { MailAccountMeta } from "./types";
@@ -25,6 +26,27 @@ export const gmailFetch: GmailApi = async (url, init = {}) => {
   if (!r.ok && r.status !== 204) throw new Error(`Google ${r.status}: ${(await r.text()).slice(0, 200)}`);
   return r.status === 204 ? null : r.json();
 };
+
+/** Gmail calls for sending: the token must carry the send permission. */
+export const gmailSendFetch: GmailApi = async (url, init = {}) => {
+  const t = await googleToken([SCOPES.gmailSend], false);
+  const r = await fetch(url, { ...init, headers: { Authorization: `Bearer ${t}`, ...(init.headers ?? {}) } });
+  if (!r.ok && r.status !== 204) throw new Error(`Google ${r.status}: ${(await r.text()).slice(0, 200)}`);
+  return r.status === 204 ? null : r.json();
+};
+
+/** The outgoing server and password for a password account. */
+export async function smtpCredsFor(a: MailAccountMeta) {
+  const password = await secretGet(imapPasswordKey(a.id));
+  if (!password || !a.imap) throw new Error("LOGIN failed: enter this account's password again in Settings → Email.");
+  const guess = guessImap(a.address);
+  return {
+    host: a.imap.smtpHost || guess.smtpHost || `smtp.${a.address.split("@")[1]}`,
+    port: a.imap.smtpPort || guess.smtpPort || 465,
+    user: a.imap.user,
+    password,
+  };
+}
 
 export function providerFor(a: MailAccountMeta): MailProvider {
   if (a.provider === "gmail") return gmailProvider(gmailFetch);

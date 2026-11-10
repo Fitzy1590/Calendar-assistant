@@ -29,3 +29,8 @@ pub struct BodyOut {
 pub async fn imap_body(req: BodyReq) -> Result<BodyOut, String> {
     blocking(move || imap_core::body(&req).map(|text| BodyOut { text })).await
 }
+
+#[tauri::command]
+pub async fn smtp_send(req: crate::smtp_core::SendReq) -> Result<(), String> {
+    blocking(move || crate::smtp_core::send(&req)).await
+}

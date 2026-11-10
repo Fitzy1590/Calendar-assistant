@@ -15,6 +15,8 @@ mod oauth_proxy;
 mod secure_store;
 mod self_update;
 mod self_update_core;
+#[cfg(not(target_os = "android"))]
+mod smtp_core;
 #[cfg(windows)]
 mod webview_fix;
 
@@ -107,6 +109,7 @@ pub fn run() {
             imap_mail::imap_test,
             imap_mail::imap_sync,
             imap_mail::imap_body,
+            imap_mail::smtp_send,
             self_update::install_update_direct,
             oauth_proxy::ms_token_request
         ])

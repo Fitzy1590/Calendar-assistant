@@ -4,6 +4,7 @@ import type { PageId } from "../types";
 import { live, useStore } from "../store";
 import { onSyncStatus } from "../lib/sync";
 import { moveTo, nudge } from "../lib/order";
+import { shortcutLabel } from "../lib/shortcuts";
 import { needsAttention, useMail } from "../lib/mail/engine";
 import { SyncPanel } from "./SyncPanel";
 import { upcomingReminders } from "../lib/reminders";
@@ -57,8 +58,9 @@ export function Sidebar() {
       </div>
       {s.settings.sidebar
         .filter((i) => i.visible)
-        .map(({ id }) => {
+        .map(({ id }, index) => {
           const { label, icon: Icon } = META[id];
+          const num = shortcutLabel(index);
           return (
             <div
               key={id}
@@ -86,7 +88,7 @@ export function Sidebar() {
                 id={`nav-${id}`}
                 className="nav-item"
                 aria-current={s.page === id ? "page" : undefined}
-                aria-keyshortcuts="Alt+ArrowUp Alt+ArrowDown"
+                aria-keyshortcuts={num ? `${num} Alt+ArrowUp Alt+ArrowDown` : "Alt+ArrowUp Alt+ArrowDown"}
                 onClick={() => go(id)}
                 onKeyDown={(e) => {
                   if (e.altKey && (e.key === "ArrowUp" || e.key === "ArrowDown")) {
@@ -95,6 +97,9 @@ export function Sidebar() {
                   }
                 }}
               >
+                <span className="nav-num" aria-hidden="true">
+                  {num}
+                </span>
                 <Icon size={18} /> <span className="nav-label-text">{label}</span>
                 {id === "sports" ? (
                   <span

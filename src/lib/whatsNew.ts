@@ -16,8 +16,8 @@ export const WHATS_NEW: WhatsNewEntry[] = [
     version: "0.2.1",
     title: "Reorder the menu, better full screen",
     points: [
-      "Drag the left menu items up and down to put them where you want (or Alt+Up / Alt+Down on a focused item).",
-      "Full screen (F11) is reworked: it hides the title bar and the taskbar (turn the taskbar part off in Settings → Looks), and the mouse now lines up on rotated displays.",
+      "The left menu items are numbered: press 1-9 or 0 to jump to one, and drag them (or Alt+Up / Alt+Down) to put them where you want.",
+      "Press F (or F11) for full screen, Esc to leave. It hides the title bar and the taskbar (switch the taskbar part off in Settings → Looks), and the mouse now lines up on rotated displays.",
       "Sports games no longer appear on the Tasks page. They stay in the Calendar.",
     ],
   },

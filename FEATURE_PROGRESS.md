@@ -156,3 +156,4 @@ Windows side and the shared engine first; Android joins next. Every stage also n
 | [x] | **Full screen reworked**: borderless window sized to the monitor (optionally leaving the taskbar), instead of the system full screen mode that misplaced the mouse on a rotated display; Esc/F11 leave, a toast says so | manual on Windows (rotated display); not verifiable here |
 | [x] | **Drag to reorder the left menu** (+ Alt+Up/Down); `lib/order.ts` | `order.test.ts` (3); browser drag test; screenshots |
 | [x] | **Sports fixtures hidden from Tasks** (`taskBoardEvents`) | `taskBoard.test.ts` |
+| [x] | **Keyboard shortcuts**: F toggles full screen; 1-9 and 0 open the matching left-menu item (numbers shown beside each item, follow your order); ignored while typing or in a dialog | `shortcuts.test.ts` (3); browser key test; screenshot |

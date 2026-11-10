@@ -1,5 +1,6 @@
 import { useStore } from "../../store";
 import { pkce } from "../google";
+import { httpGet } from "../http";
 import { isAndroid, isTauri, openUrl } from "../platform";
 import { secretDelete, secretGet, secretSet } from "../secureStore";
 import { clearAccount } from "./cache";
@@ -37,6 +38,23 @@ async function tokenRequest(body: Record<string, string>) {
   const j = await r.json();
   if (!r.ok) throw new Error(j.error === "invalid_grant" ? "invalid_grant" : j.error_description || j.error || `Microsoft ${r.status}`);
   return j as { access_token: string; expires_in: number; refresh_token?: string };
+}
+
+/** Plain-English fixes for the Microsoft sign-in errors people actually hit while setting up their app. Pure. */
+export function explainMicrosoftError(msg: string): string {
+  const code = msg.match(/AADSTS(\d+)/)?.[1];
+  const fixes: Record<string, string> = {
+    "7000218": "In your Microsoft app (Entra → Authentication), turn on “Allow public client flows” and save.",
+    "9002327":
+      "In your Microsoft app (Entra → Authentication), the redirect `http://localhost` must be under “Mobile and desktop applications”, not Web or Single-page.",
+    "50011": "In your Microsoft app (Entra → Authentication), add the redirect `http://localhost` under “Mobile and desktop applications”.",
+    "700016": "Microsoft doesn't know that app ID. Check the Application (client) ID you pasted.",
+    "50020": "Your Microsoft app must allow personal Microsoft accounts: Entra → Authentication → Supported account types.",
+    "700025": "In your Microsoft app (Entra → Authentication), turn on “Allow public client flows” and save.",
+    "65001": "Microsoft needs you to accept the permission. Press the button again and choose Accept.",
+  };
+  const fix = code && fixes[code];
+  return fix ? `${fix} (Microsoft error ${code})` : msg;
 }
 
 /** Open Microsoft's sign-in page, wait for the redirect back, and return the tokens. */
@@ -114,10 +132,13 @@ export function graphApi(getToken: () => Promise<string>, fetchFn: typeof fetch 
   };
 }
 
+/** Graph calls go through the app's own HTTP client, so the web view's cross-origin rules can't block them. */
+const nativeFetch = ((url: RequestInfo | URL, init?: RequestInit) => httpGet(String(url), init)) as typeof fetch;
+
 export const msApiFor = (accountId: string): GraphApi =>
   graphApi(
     () => accessToken(accountId),
-    fetch,
+    nativeFetch,
     () => access.delete(accountId),
   );
 
@@ -125,8 +146,18 @@ export const msApiFor = (accountId: string): GraphApi =>
 export async function connectOutlook(): Promise<MailAccountMeta> {
   if (!msSignInAvailable()) throw new Error("Outlook sign-in runs in the installed Windows app.");
   if (!msConfigured()) throw new Error("Add your Microsoft app (client) ID first: Settings → Email.");
-  const t = await loopbackSignIn();
-  const profile = await fetchProfile(graphApi(async () => t.access));
+  let t: Awaited<ReturnType<typeof loopbackSignIn>>;
+  try {
+    t = await loopbackSignIn();
+  } catch (e) {
+    throw new Error(explainMicrosoftError((e as Error).message));
+  }
+  let profile: { address: string; name: string };
+  try {
+    profile = await fetchProfile(graphApi(async () => t.access, nativeFetch));
+  } catch (e) {
+    throw new Error(`Signed in, but couldn't read your profile from Outlook: ${(e as Error).message.slice(0, 160)}`);
+  }
   if (!profile.address) throw new Error("Couldn't read your address from Outlook.");
   const existing = useStore.getState().settings.mail.accounts.find((a) => a.address === profile.address && a.provider === "graph");
   const id = existing?.id ?? crypto.randomUUID().slice(0, 8);

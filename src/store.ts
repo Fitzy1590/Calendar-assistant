@@ -15,6 +15,7 @@ export const DEFAULT_SETTINGS: Settings = {
   units: "metric",
   clock24: false,
   weekStartsOn: 1,
+  fullscreenCoverTaskbar: false, // the plain mode (title bar hidden, window maximised) is the safest; hiding the taskbar is opt-in
   newsCategories: ["TOP", "NATION", "TECHNOLOGY"],
   newsKeywords: [],
   newsRegion: "AU:en",

@@ -18,13 +18,17 @@ export function EmailSetup() {
   const s = useStore();
   const m = s.settings.mail;
   const [busy, setBusy] = useState("");
+  const [error, setError] = useState(""); // stays on screen until the next try, so a failed sign-in can be read and copied
   const run = async (label: string, fn: () => Promise<string | void>) => {
     setBusy(label);
+    setError("");
     try {
       const msg = await fn();
       if (msg) toast(msg);
     } catch (e) {
-      toast((e as Error).message);
+      const text = typeof e === "string" ? e : ((e as Error).message ?? String(e));
+      setError(text);
+      toast(text);
     } finally {
       setBusy("");
     }
@@ -125,6 +129,11 @@ export function EmailSetup() {
         ))}
         {!m.accounts.length && <div className="muted">No email account connected yet.</div>}
       </div>
+      {error && (
+        <div className="alert bad" role="alert">
+          {error}
+        </div>
+      )}
       <div className="row">
         <button className="btn primary" disabled={!canConnect || !!busy} onClick={connect}>
           {busy === "connect" ? "Waiting for your browser…" : "Add Outlook / Hotmail account"}

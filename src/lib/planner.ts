@@ -4,6 +4,9 @@ import { live, useStore } from "../store";
 import { occurrencesInRange, type Occurrence } from "./recurrence";
 import { fromYmd, ymd } from "./util";
 
+/** Events the Tasks page may show for context. Sports fixtures live in the Calendar only. */
+export const taskBoardEvents = <T extends Pick<CalEvent, "source">>(events: T[]): T[] => events.filter((e) => e.source !== "sports");
+
 /** Occurrences that overlap a proposed slot. Used by the event editor and the email import. */
 export function conflictsFor(start: Date, end: Date, ignoreId?: string): Occurrence[] {
   const evs = live(useStore.getState().events).filter((e) => e.id !== ignoreId);

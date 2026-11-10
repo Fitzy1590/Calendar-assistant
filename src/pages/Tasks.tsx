@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import type { Priority, Task } from "../types";
 import { live, toast, useStore } from "../store";
 import { cleanTitle, parseWhen } from "../lib/nlp";
-import { planWeek, type PlanItem } from "../lib/planner";
+import { planWeek, taskBoardEvents, type PlanItem } from "../lib/planner";
 import { occurrencesOnDay } from "../lib/recurrence";
 import { cx, fromYmd, todayYmd, ymd } from "../lib/util";
 import { ICheck, IPlus, ITrash } from "../components/Icons";
@@ -250,7 +250,7 @@ function WeekBoard({ tasks }: { tasks: Task[] }) {
     const id = e.dataTransfer.getData("text/task");
     if (id) s.upsert("tasks", { id, due: day, ignored: false });
   };
-  const events = live(s.events);
+  const events = taskBoardEvents(live(s.events));
   return (
     <div className="stack">
       <div className="week-board">

@@ -190,6 +190,7 @@ export interface Settings {
   units: "metric" | "imperial";
   clock24: boolean;
   weekStartsOn: 0 | 1;
+  fullscreenCoverTaskbar: boolean; // Windows full screen also hides the taskbar
   newsCategories: string[];
   newsKeywords: string[];
   newsRegion: string; // e.g. "AU:en"

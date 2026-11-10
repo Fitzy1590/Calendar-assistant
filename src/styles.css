@@ -529,3 +529,9 @@ input[type="range"], input[type="checkbox"] { accent-color: var(--accent); }
   .fx-grid.month .fx-time { display: none; }
   .fx-grid.month .fx-chip { padding: 2px 3px; font-size: 10.5px; }
 }
+
+/* Left menu: drag to reorder */
+.nav-drop { box-shadow: inset 0 2px 0 var(--accent); }
+.side [draggable="true"] { cursor: grab; }
+.nav-num { width: 1.2em; margin-right: 2px; text-align: right; font: 500 11.5px var(--font-mono); color: var(--faint); flex: none; }
+@media (max-width: 760px) { .nav-num { display: none; } }

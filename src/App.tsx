@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { isFullscreen, setFullscreen, toggleFullscreen } from "./lib/fullscreen";
+import { isTyping, pageForKey } from "./lib/shortcuts";
 import { isAndroid, isTauri } from "./lib/platform";
 import { useStore } from "./store";
 import { Sidebar } from "./components/Sidebar";
@@ -99,20 +100,39 @@ function useBackground() {
   }, []);
 }
 
-/** F11 toggles full screen (title bar hidden); Esc leaves it. */
-function useFullscreenKeys() {
+/** F or F11 toggles full screen, Esc leaves it, 1-9 / 0 open the matching left-menu item. Never while typing or in a dialog. */
+function useKeyboardShortcuts() {
   useEffect(() => {
-    if (!isTauri()) return () => {}; // a browser already has F11
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "F11") {
-        e.preventDefault();
+      if (e.ctrlKey || e.metaKey || e.altKey || e.repeat) return;
+      if (e.key === "F11" && isTauri()) {
+        e.preventDefault(); // a browser already has its own F11
         toggleFullscreen().catch(() => {});
-      } else if (e.key === "Escape") {
+        return;
+      }
+      if (e.key === "Escape" && isTauri()) {
         isFullscreen()
           .then(async (on) => {
             if (on) await setFullscreen(false);
           })
           .catch(() => {});
+        return;
+      }
+      const st = useStore.getState();
+      if (!st.settings.onboarded || st.wizardSteps) return;
+      if (isTyping(document.activeElement as HTMLElement | null) || document.querySelector('[role="dialog"]')) return;
+      if (e.key === "f" || e.key === "F") {
+        e.preventDefault();
+        toggleFullscreen().catch(() => {});
+        return;
+      }
+      const page = pageForKey(
+        e.key,
+        st.settings.sidebar.filter((x) => x.visible),
+      );
+      if (page) {
+        e.preventDefault();
+        st.setPage(page);
       }
     };
     window.addEventListener("keydown", onKey);
@@ -122,7 +142,7 @@ function useFullscreenKeys() {
 
 export default function App() {
   const s = useStore();
-  useFullscreenKeys();
+  useKeyboardShortcuts();
   useTheme();
   useBackground();
   useFirstRunCheck();

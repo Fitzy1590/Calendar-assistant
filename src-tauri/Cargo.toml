@@ -24,6 +24,10 @@ serde_json = "1"
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 tauri-plugin-updater = "2"
 tauri-plugin-process = "2"
+# other email accounts (IMAP): TLS through the OS (Windows Schannel), mail parsing
+imap = "2.4.1"
+native-tls = "0.2"
+mailparse = "0.15"
 
 # Windows: native message box for the crash / "can't start" dialog
 [target.'cfg(windows)'.dependencies]

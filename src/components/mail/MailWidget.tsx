@@ -19,7 +19,7 @@ export function MailWidget() {
       <h2>Important mail</h2>
       {!accounts.length ? (
         <div className="empty">
-          Connect Outlook to see the emails that need you here.
+          Connect an email account to see the emails that need you here.
           <div style={{ marginTop: 8 }}>
             <button className="btn sm" onClick={() => s.setPage("settings")}>
               Set up email

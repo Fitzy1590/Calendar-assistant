@@ -6,9 +6,10 @@ import { isAndroid, notify } from "../platform";
 import { dueLabel, dueState, money } from "./bills";
 import { allMessages, deleteMessages, evictOver, getMessage, getMessages, putMessages } from "./cache";
 import { classify, type ClassifyContext } from "./classify";
-import { fetchBodyText, syncInbox, type GraphApi } from "./graph";
+import { graphProvider, type GraphApi } from "./graph";
+import type { MailProvider } from "./provider";
+import { providerFor } from "./providers";
 import { recordOverride, ruleForSender, type SenderAction } from "./rules";
-import { msApiFor } from "./microsoft";
 import type { MailAccountMeta, MailMessage, MailRule, RawMail } from "./types";
 
 /** Sync every connected account, sort the mail, and raise alerts for new important mail. Windows app / browser only. */
@@ -88,11 +89,19 @@ export const sortMail = (raw: RawMail, ctx: ClassifyContext, old?: MailMessage):
 
 type Notifier = (title: string, body: string) => void | Promise<void>;
 
-/** Sync one account against `api`. Returns the new important messages that were alerted. Exported for tests. */
-export async function syncAccountWith(api: GraphApi, account: MailAccountMeta, alert: Notifier = notify): Promise<MailMessage[]> {
+/** Graph shortcut kept for tests. */
+export const syncAccountWith = (api: GraphApi, account: MailAccountMeta, alert: Notifier = notify) =>
+  syncAccountWithProvider(graphProvider(api), account, alert);
+
+/** Sync one account through its provider. Returns the new important messages that were alerted. Exported for tests. */
+export async function syncAccountWithProvider(
+  provider: MailProvider,
+  account: MailAccountMeta,
+  alert: Notifier = notify,
+): Promise<MailMessage[]> {
   const settings = useStore.getState().settings.mail;
   try {
-    const r = await syncInbox(api, account);
+    const r = await provider.sync(account);
     const old = await getMessages(r.upserts.map((m) => m.id));
     const ctx = ctxFor(account.address);
     const sorted = r.upserts.map((m) => sortMail(m, ctx, old.get(m.id)));
@@ -101,7 +110,7 @@ export async function syncAccountWith(api: GraphApi, account: MailAccountMeta, a
       if (!m.bill || m.text || (m.amount !== undefined && m.dueDate)) continue;
       if (sorted.slice(0, i).filter((x) => x.bill).length >= 10) break;
       try {
-        const text = await fetchBodyText(api, m.providerId);
+        const text = await provider.bodyText(m.providerId);
         if (text) sorted[i] = sortMail(m, ctx, { ...m, text });
       } catch {
         /* keep going */
@@ -109,6 +118,14 @@ export async function syncAccountWith(api: GraphApi, account: MailAccountMeta, a
     }
     await putMessages(sorted, settings.cacheText);
     await deleteMessages(r.removedIds);
+    if (r.readStates?.length) {
+      const have = await getMessages(r.readStates.map((x) => x.id));
+      const changed = r.readStates.flatMap((x) => {
+        const m = have.get(x.id);
+        return m && m.isRead !== x.isRead ? [{ ...m, isRead: x.isRead }] : [];
+      });
+      if (changed.length) await putMessages(changed, settings.cacheText);
+    }
     await evictOver(settings.cacheMaxMB * 1024 * 1024);
     // alert only for mail that arrived since last time, never for the first sync's backlog or for edits to old mail
     const fresh = r.initial ? [] : sorted.filter((m) => !old.has(m.id)).filter(shouldAlert);
@@ -120,7 +137,8 @@ export async function syncAccountWith(api: GraphApi, account: MailAccountMeta, a
     return fresh;
   } catch (e) {
     const msg = (e as Error).message;
-    const lost = /invalid_grant|Graph 401|AADSTS/i.test(msg);
+    const lost =
+      /invalid_grant|Graph 401|Google 401|AADSTS|AUTHENTICATIONFAILED|Invalid credentials|LOGIN failed|authentication failed/i.test(msg);
     useStore.getState().updateSettings((s) => {
       const a = s.mail.accounts.find((x) => x.id === account.id);
       if (a)
@@ -296,7 +314,7 @@ export function syncMail(): Promise<string> {
     let fresh = 0;
     for (const a of accounts) {
       try {
-        fresh += (await syncAccountWith(msApiFor(a.id), a)).length;
+        fresh += (await syncAccountWithProvider(providerFor(a), a)).length;
       } catch (e) {
         failed++;
         useMail.setState({ error: `${a.address}: ${(e as Error).message.slice(0, 120)}` });

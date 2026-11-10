@@ -19,11 +19,13 @@ import {
   saveRule,
   setOverride,
   syncAccountWith,
+  syncAccountWithProvider,
   unpaidBills,
   useMail,
 } from "./engine";
 import { newRule } from "./rules";
 import type { GraphApi } from "./graph";
+import type { MailProvider } from "./provider";
 import type { MailAccountMeta, MailMessage } from "./types";
 
 const ACC: MailAccountMeta = { id: "acc", provider: "graph", address: "me@outlook.com", name: "Me", enabled: true, status: "ok" };
@@ -325,5 +327,41 @@ describe("bills", () => {
     await refreshMail();
     useStore.getState().updateSettings((s) => void (s.mail.bills.remindDays = 0));
     expect(await maybeBillReminders(vi.fn(), new Date(2026, 10, 10))).toBe(0);
+  });
+});
+
+async function putMessagesForTest() {
+  const { putMessages } = await import("./cache");
+  await putMessages([mm({ id: "acc:1", providerId: "1" }), mm({ id: "acc:9", providerId: "9" })], true);
+}
+
+describe("provider-based sync", () => {
+  it("applies read-state changes and removals reported by a provider (IMAP style)", async () => {
+    await putMessagesForTest();
+    const provider: MailProvider = {
+      sync: async () => ({
+        upserts: [],
+        removedIds: ["acc:9"],
+        readStates: [{ id: "acc:1", isRead: true }],
+        deltaLink: "42",
+        initial: false,
+      }),
+      bodyText: async () => "",
+    };
+    await syncAccountWithProvider(provider, ACC, async () => {});
+    const all = await allMessages();
+    expect(all.find((m) => m.id === "acc:1")?.isRead).toBe(true);
+    expect(all.some((m) => m.id === "acc:9")).toBe(false);
+    expect(useStore.getState().settings.mail.accounts.find((a) => a.id === "acc")?.deltaLink).toBe("42");
+  });
+  it("marks a bad password as needing sign-in", async () => {
+    const provider: MailProvider = {
+      sync: async () => {
+        throw new Error("[AUTHENTICATIONFAILED] Invalid credentials");
+      },
+      bodyText: async () => "",
+    };
+    await expect(syncAccountWithProvider(provider, ACC, async () => {})).rejects.toThrow();
+    expect(useStore.getState().settings.mail.accounts.find((a) => a.id === "acc")?.status).toBe("needs-reconnect");
   });
 });

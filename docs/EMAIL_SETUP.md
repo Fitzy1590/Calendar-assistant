@@ -1,4 +1,4 @@
-# Connect your Outlook / Hotmail email
+# Connect your email (Outlook, Gmail, Bigpond and others)
 
 Calendar Assistant reads your mail with a small free "app registration" that you create once in your own Microsoft account.
 Nothing is shared with anyone else, and the app only asks to **read** your mail (it can't send, move or delete anything yet).
@@ -27,6 +27,27 @@ You do not need a client secret, and you don't need to add permissions by hand: 
 1. Settings → **Email** → paste the client ID into **Microsoft app (client) ID**.
 2. Press **Add Outlook / Hotmail account**. Your browser opens Microsoft's sign-in; approve it, then come back to the app.
 3. The first sync pulls your last 30 days. After that it checks every few minutes (Settings → Email → *Check for new mail*).
+
+## Gmail
+
+1. Do the Google setup first (Settings → Email, Google & Outlook: the in-app guide shows how).
+2. In Google Cloud (same project) enable the **Gmail API**: https://console.cloud.google.com/apis/library/gmail.googleapis.com → Enable.
+3. In the app: Settings → Email → **Add Gmail account**. Google asks to let the app **read** your Gmail. Gmail uses the same Google sign-in as
+   Calendar and Drive, so it is the Google account you signed in with there.
+
+While your Google app is in "Testing" mode, Google asks you to sign in again about every 7 days (Publish app in the consent screen avoids that).
+
+## Bigpond, Yahoo, iCloud and other email (IMAP)
+
+Settings → Email → **Add other email**. Type the address and password: the server is filled in for Telstra / Bigpond
+(`imap.telstra.com`, port 993), Yahoo, iCloud, AOL, Fastmail and Zoho, and guessed (`imap.<domain>`) for others, where you can edit it under
+"Server settings".
+
+* **Telstra / Bigpond:** your Telstra Mail password. If it is refused, create an app password in your Telstra account and use that.
+* **Yahoo, iCloud, AOL, Fastmail, Zoho:** these need an **app password** from the account's security page, not your normal password.
+* Outlook/Hotmail and Gmail don't accept passwords this way: use their own buttons.
+* Read-only. Only the Inbox of the last 30 days is read. The password is stored in Windows Credential Manager, never in settings, backups or sync.
+* Mail you read or delete in another app shows up here at the next sync.
 
 ## What shows up where
 

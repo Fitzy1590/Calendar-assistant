@@ -49,6 +49,7 @@ export const DEFAULT_SETTINGS: Settings = {
   voice: { wakeWord: false, engine: "picovoice", picovoiceKey: "", keyword: "custom", sensitivity: 0.6, chime: true, closeToTray: true },
   localEventsApiKey: "",
   mail: DEFAULT_MAIL_SETTINGS,
+  driveSync: { enabled: false, everyMins: 5, staleMins: 30, meta: { peers: {} } },
   google: { calendarSync: false, calendarId: "primary", driveBackup: false, syncEveryMins: 15 },
   backup: { autoLocal: true },
   sidebar: (

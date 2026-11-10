@@ -166,7 +166,7 @@ export function disconnect() {
 }
 
 /** Every record on this device, for a full re-send. */
-function allLocalChanges(): Change[] {
+export function allLocalChanges(): Change[] {
   const s = useStore.getState();
   return (["events", "tasks", "contacts", "notes", "shopping", "prefs", "feedback"] as const).flatMap((collection) =>
     Object.values(s[collection] as Record<string, Change["record"]>).map((record) => ({ collection, record })),

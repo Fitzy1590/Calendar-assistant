@@ -2,6 +2,7 @@ import { formatDistanceToNowStrict } from "date-fns";
 import { useEffect, useState } from "react";
 import { useStore } from "../store";
 import { forceSync, onSyncStatus, syncInfo } from "../lib/sync";
+import { driveSyncNow } from "../lib/driveSyncApp";
 import { googleConnected, quietly, SCOPES, syncGoogleCalendar } from "../lib/google";
 import { Modal } from "./ui";
 
@@ -20,6 +21,7 @@ export function SyncPanel({ onClose }: { onClose: () => void }) {
     setBusy(true);
     forceSync();
     if (s.settings.google.calendarSync && googleConnected(SCOPES.calendar)) await quietly(syncGoogleCalendar).catch(() => {});
+    if (s.settings.driveSync.enabled) await driveSyncNow().catch(() => {});
     setTimeout(() => setBusy(false), 1500);
   };
   const state =

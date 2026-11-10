@@ -50,6 +50,8 @@ scripts/ docs/ .github/workflows/build.yml   versioning, setup guides, CI + rele
   `runLocal`) and Claude tool calls (`runClaude`) all call these. Add a feature's actions here first.
 - **Platform differences** go through `lib/platform.ts` (`isTauri`, `isAndroid`, `isBrowserMode`,
   `openUrl`, `notify`). Don't branch on user agent elsewhere.
+- **Drive sync** (no server): `lib/driveSync.ts` is the engine (one file per device in Drive's hidden app folder, newest edit wins,
+  injected `DriveApi`/`LocalState` so it is tested with fakes); `lib/driveSyncApp.ts` wires Drive, the store and triggers. See `docs/DRIVE_SYNC.md`.
 - **Sync:** records are `Synced` (`id`, `updatedAt`, `deleted`). Last writer wins per record; deletes are
   tombstones. `store.upsert` / `store.remove` notify `sync.ts`; remote changes arrive via `applyRemote`.
 - **Settings** are per device; a subset (`SHARED_KEYS` in `sync.ts`) syncs as the `prefs/shared` record.

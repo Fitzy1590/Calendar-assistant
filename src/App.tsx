@@ -27,6 +27,8 @@ import { dueNow } from "./lib/reminders";
 import { notify } from "./lib/platform";
 import { dailyBackups } from "./lib/backup";
 import { startGoogleAutoSync } from "./lib/googleAuto";
+import { startDriveSync } from "./lib/driveSyncApp";
+import { StaleBanner } from "./components/DriveSync";
 import { startMailPolling } from "./lib/mail/engine";
 import { accentText, CONTRAST_ACCENT, readableOn } from "./lib/themes";
 import { checkTrackedPrices } from "./lib/shopping";
@@ -90,7 +92,8 @@ function useBackground() {
     const b = setInterval(tickSync, 15 * 60_000);
     const stopGoogle = startGoogleAutoSync();
     const stopMail = startMailPolling();
-    return () => (clearInterval(a), clearInterval(b), stopGoogle(), stopMail());
+    const stopDrive = startDriveSync();
+    return () => (clearInterval(a), clearInterval(b), stopGoogle(), stopMail(), stopDrive());
   }, []);
 }
 
@@ -122,6 +125,7 @@ export default function App() {
           </button>
         </div>
         <BrowserModeBanner />
+        <StaleBanner />
         <div className="content">
           {/* a crash in one page shows a recovery screen there; the menu keeps working */}
           <ErrorBoundary key={s.page} where={s.page}>

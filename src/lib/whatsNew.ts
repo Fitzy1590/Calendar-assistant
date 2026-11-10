@@ -13,6 +13,13 @@ export interface WhatsNewEntry {
 
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    version: "0.2.2",
+    title: "Outlook / Hotmail sign-in fixed",
+    points: [
+      "Fixed the Outlook / Hotmail sign-in error AADSTS90023: the app now makes Microsoft's token request itself, the way a desktop app should.",
+    ],
+  },
+  {
     version: "0.2.1",
     title: "Reorder the menu, better full screen",
     points: [

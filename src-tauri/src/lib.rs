@@ -11,6 +11,7 @@ mod crash;
 mod imap_core;
 #[cfg_attr(target_os = "android", path = "imap_stub.rs")]
 mod imap_mail;
+mod oauth_proxy;
 mod secure_store;
 mod self_update;
 mod self_update_core;
@@ -106,7 +107,8 @@ pub fn run() {
             imap_mail::imap_test,
             imap_mail::imap_sync,
             imap_mail::imap_body,
-            self_update::install_update_direct
+            self_update::install_update_direct,
+            oauth_proxy::ms_token_request
         ])
         .setup(|_app| {
             // Nice-to-haves never stop the app from opening: if one fails it's logged and skipped.

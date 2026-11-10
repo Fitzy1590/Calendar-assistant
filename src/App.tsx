@@ -7,6 +7,7 @@ import { FeedbackModal } from "./components/Feedback";
 import { CarryOver } from "./components/CarryOver";
 import { EmailImport } from "./components/EmailImport";
 import { UpdatePrompt } from "./components/Updates";
+import { useRecordNewInstallVersion, WhatsNew } from "./components/WhatsNew";
 import { ErrorAlert, ErrorBoundary, useFirstRunCheck } from "./components/Errors";
 import { BrowserModeBanner } from "./components/BrowserModeBanner";
 import { IIdea, IMail } from "./components/Icons";
@@ -25,6 +26,7 @@ import { dueNow } from "./lib/reminders";
 import { notify } from "./lib/platform";
 import { dailyBackups } from "./lib/backup";
 import { startGoogleAutoSync } from "./lib/googleAuto";
+import { accentText, CONTRAST_ACCENT, readableOn } from "./lib/themes";
 import { checkTrackedPrices } from "./lib/shopping";
 
 const PAGES = {
@@ -47,10 +49,15 @@ function useTheme() {
     const apply = () => {
       const dark = window.matchMedia("(prefers-color-scheme: dark)").matches;
       root.dataset.theme = theme === "system" ? (dark ? "ink" : "paper") : theme;
+      // the high-contrast theme uses its own accent; otherwise the chosen one, with readable text on it and as text
+      const fill = theme === "contrast" ? CONTRAST_ACCENT : accent;
+      root.style.setProperty("--accent", fill);
+      root.style.setProperty("--accent-ink", readableOn(fill));
+      const surface = getComputedStyle(root).getPropertyValue("--surface").trim() || "#ffffff";
+      root.style.setProperty("--accent-text", accentText(fill, surface));
     };
     apply();
     root.dataset.density = density;
-    root.style.setProperty("--accent", accent);
     root.style.setProperty("--scale", String(fontScale));
     const mq = window.matchMedia("(prefers-color-scheme: dark)");
     mq.addEventListener("change", apply);
@@ -88,6 +95,7 @@ export default function App() {
   useTheme();
   useBackground();
   useFirstRunCheck();
+  useRecordNewInstallVersion();
   if (!s.settings.onboarded) return <Wizard />;
   if (s.wizardSteps) return <WizardOverlay steps={s.wizardSteps} />;
   const Page = PAGES[s.page] ?? Home;
@@ -123,6 +131,7 @@ export default function App() {
       {s.emailImportOpen && <EmailImport />}
       <CarryOver />
       <UpdatePrompt />
+      <WhatsNew />
       <ErrorAlert />
       {s.toast && (
         <div className="toast" role="status">

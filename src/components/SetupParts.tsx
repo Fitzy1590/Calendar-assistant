@@ -32,6 +32,9 @@ export const THEMES: { id: ThemeName; name: string; bg: string; fg: string }[] =
   { id: "sand", name: "Sand", bg: "#ece2cf", fg: "#2a2118" },
   { id: "ink", name: "Ink", bg: "#111113", fg: "#ecebe6" },
   { id: "slate", name: "Slate", bg: "#0e151d", fg: "#e3e8ed" },
+  { id: "oled", name: "OLED dark", bg: "#000000", fg: "#f2f2ef" },
+  { id: "forest", name: "Forest", bg: "#0f1a14", fg: "#e6efe6" },
+  { id: "contrast", name: "High contrast", bg: "#000000", fg: "#ffffff" },
 ];
 export const ACCENTS = [
   { c: "#2f5d8a", n: "Ink blue" },
@@ -87,12 +90,17 @@ export function ThemePicker() {
           style={{ width: 32, height: 28, border: 0, background: "none" }}
         />
       </div>
+      {s.settings.theme === "contrast" && (
+        <div className="faint" style={{ fontSize: 12.5 }}>
+          High contrast uses its own yellow accent so everything stays easy to see.
+        </div>
+      )}
       <div className="row">
         <span className="muted" style={{ width: 70 }}>
           Density
         </span>
         <div className="seg">
-          {(["comfortable", "compact"] as const).map((d) => (
+          {(["compact", "comfortable", "spacious"] as const).map((d) => (
             <button key={d} aria-pressed={s.settings.density === d} onClick={() => s.updateSettings((st) => void (st.density = d))}>
               {d}
             </button>

@@ -3,6 +3,7 @@ import { useStore } from "../store";
 import { checkForUpdates, dismissPrompt, installUpdate, RELEASES_PAGE, skipVersion, updatesSupported, useUpdates } from "../lib/updates";
 import { isAndroid, openUrl } from "../lib/platform";
 import { Modal, Toggle } from "./ui";
+import { showWhatsNew } from "./WhatsNew";
 
 function Progress() {
   const st = useUpdates((u) => u.state);
@@ -116,6 +117,11 @@ export function UpdateSettings() {
         >
           Check for updates now
         </button>
+        {!isAndroid() && (
+          <button className="btn sm" onClick={showWhatsNew}>
+            What's new
+          </button>
+        )}
         {state.kind === "available" && (
           <button className="btn sm" onClick={installUpdate}>
             {state.via === "updater" ? "Update and restart" : "Download update"}

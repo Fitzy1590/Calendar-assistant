@@ -157,7 +157,7 @@ export interface FavTeam {
   badge?: string;
 }
 
-export type ThemeName = "paper" | "ink" | "slate" | "sand" | "system";
+export type ThemeName = "paper" | "ink" | "slate" | "sand" | "oled" | "forest" | "contrast" | "system";
 export type PageId = "home" | "calendar" | "tasks" | "contacts" | "notes" | "shopping" | "reminders" | "news" | "sports" | "settings";
 
 export interface HomeWidget {
@@ -171,7 +171,7 @@ export interface Settings {
   displayName: string;
   theme: ThemeName;
   accent: string;
-  density: "compact" | "comfortable";
+  density: "compact" | "comfortable" | "spacious";
   fontScale: number;
   location?: Place;
   units: "metric" | "imperial";
@@ -208,6 +208,7 @@ export interface Settings {
     installAutomatically: boolean; // Windows: download, install and restart without asking
     skipVersion?: string; // "Skip this version"
     lastChecked?: number;
+    lastSeenVersion?: string; // version whose "What's new" window was last shown or skipped
   };
   sync: {
     shareSettings: boolean; // keep news, sports, reminders, invites and shopping preferences the same on every device

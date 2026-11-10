@@ -1,5 +1,5 @@
 ---
-paths: ["src/components/**/*.tsx", "src/views/**/*.tsx"]
+paths: ["src/components/**/*.tsx", "src/pages/**/*.tsx", "src/views/**/*.tsx", "src/styles.css"]
 ---
 
 # Calendar UI rules
@@ -30,3 +30,11 @@ paths: ["src/components/**/*.tsx", "src/views/**/*.tsx"]
 ## Dates
 - Format with date-fns and the user's `clock24` setting (`fmtTime` in `lib/util.ts`). Never hand-build date strings.
 - Draw calendars from `calendarEvents()` (`lib/birthdays.ts`) and expand recurrence with `lib/recurrence.ts`.
+
+## Inbox and mail UI
+- Message lists are one `role="listbox"` with `role="option"` rows and a roving `tabIndex`: ↑/↓ or j/k move, Enter opens, Esc returns to the list, Home/End jump. Never a `<div onClick>` per row.
+- Each row's `aria-label` = sender, subject, time, unread/priority state. New mail is announced in a polite live region ("3 new messages"), never by moving focus.
+- Mail HTML is rendered only after sanitising; remote images and links are blocked until the person allows them. External links open via `openUrl`.
+- Folder drag-and-drop always has a keyboard equivalent (a "Move to…" menu). Drop targets are labelled.
+- AI draft panels: the draft is editable text in a labelled textarea; "Send" is a separate, explicit button. Voice dictation shows a live transcript and a visible stop control.
+- Themes come only from tokens (`[data-theme]`, `[data-density]`, `--accent`). Every theme meets WCAG AA text contrast; the high-contrast theme meets AAA.

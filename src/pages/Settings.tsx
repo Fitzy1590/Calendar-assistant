@@ -460,8 +460,8 @@ function BackupPanel() {
         </div>
         <Field label="">
           <span className="muted">
-            Turn on daily Drive backup under Email, Google & Outlook above. Backups go to a hidden app folder in your Drive; API keys are
-            never included.
+            Turn on daily Drive backup under Email, Google & Outlook above. Backups go to the “Calendar Assistant (sync)” folder in your
+            Drive; API keys are never included.
           </span>
         </Field>
       </div>

@@ -6,6 +6,9 @@ Sign-in works in the **installed Windows app**.
 
 ## 1. Register the app (about 5 minutes)
 
+Prefer to be walked through it? In the app press **Step-by-step Outlook setup guide** (Settings → Email): the same steps, with a
+button that opens Microsoft Entra.
+
 1. Open <https://entra.microsoft.com> and sign in with the Microsoft account you use for Outlook/Hotmail.
    (If it asks you to set up a free directory, accept: it costs nothing.)
 2. **Applications → App registrations → New registration**.

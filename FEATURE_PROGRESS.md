@@ -5,7 +5,7 @@ Package manager is **npm** (`package-lock.json`, CI runs `npm ci`); commands bel
 
 **Baseline checks** (run for every item, in addition to its own check):
 - `B1` `npx tsc --noEmit` exits 0
-- `B2` `npm test`, all suites pass (currently 177 tests in 19 files)
+- `B2` `npm test`, all suites pass (currently 189 tests in 20 files)
 - `B3` `npm run build` succeeds
 - `B4` Rust touched: `rustfmt --edition 2021 --check src-tauri/src/*.rs`, plus a green GitHub `build` run (check, windows, android jobs)
 - `B5` `npx prettier --check "src/**/*.{ts,tsx}"` clean
@@ -46,10 +46,11 @@ Windows side and the shared engine first; Android joins next. Every stage also n
 | | Stage | Verification |
 |---|---|---|
 | [x] | **D1 Engine** (`driveSync.ts`): one file per device, pull only changed peer files, newest edit wins, deletes kept 180 days, defensive file parsing, consistency check that re-applies dropped records, per-peer "matches" status | `driveSync.test.ts` (14) with a fake Drive and two fake devices: merge, newest wins, delete propagates, no re-download/re-upload when unchanged, bad/malicious files skipped, repair, peer in-sync flag |
-| [x] | **D2 Windows wiring** (`driveSyncApp.ts`): real Drive calls (hidden app folder), store adapter, sync on open/focus/interval/20 s after a change, one-click connect | `driveSyncApp.test.ts` (2) against the real store: peer event lands, newer local edit survives, no API key in the file |
+| [x] | **D2 Windows wiring** (`driveSyncApp.ts`): real Drive calls (Drive folder, drive.file), store adapter, sync on open/focus/interval/20 s after a change, one-click connect | `driveSyncApp.test.ts` (2) against the real store: peer event lands, newer local edit survives, no API key in the file |
 | [x] | **D3 Freshness**: "Last synced" in Settings, "may be out of date" bar with Sync now, stale limit setting, sidebar Sync now also runs Drive | `freshness`/`ageLabel` tests; screenshots at 1280 px and 412 px |
 | [~] | **D4 Android sign-in**: DONE: device-code flow (`googleDevice.ts`, Drive app folder permission only), refresh and revoked-sign-in handling, client ID/secret fields (device-only, kept out of backups), code dialog, sign out. NOT DONE: tried on a real phone and with real Google | `googleDevice.test.ts` (7): pending/slow_down/denied/expired/cancel/timeout, refresh, invalid_grant; screenshot at 412 px; manual on a phone |
 | [~] | **D5 Android sync triggers**: DONE: on open, on return to front, on a timer while running, ~20 s after a change (same engine as Windows). NOT DONE: sync while the app is closed (native WorkManager, 15 min minimum) | Manual on a phone |
+| [x] | **D7 In-app setup guides** (added on request, for non-technical users): step-by-step Google (PC / phone) and Outlook guides with buttons that open the exact pages, in the setup wizard and in Settings (Google, Drive sync, Outlook) | `setupGuides.test.ts` (12): every link is https on a known site, every button a step mentions exists in a real screen; screenshots at 1280 px and 412 px |
 | [ ] | **D6 Real two-device check**: Windows + a second device (a second Windows profile works) on one Google account: edit on each, delete, offline then back; read the freshness bar | Manual checklist in the PR |
 
 ---

@@ -5,6 +5,7 @@ import { connectDriveSync, driveSyncAvailable, driveSyncNow, enableDriveSync, us
 import { beginDeviceSignIn, deviceConfigured, type DeviceCode } from "../lib/googleDevice";
 import { googleConfigured, googleConnected, googleDisconnect, SCOPES } from "../lib/google";
 import { isAndroid, openUrl } from "../lib/platform";
+import { SetupGuideButton } from "./SetupGuide";
 import { Field, Modal, Toggle } from "./ui";
 
 /** Re-render every 30 s so "synced 4 min ago" and the stale warning stay true. */
@@ -72,9 +73,15 @@ export function DriveSyncSetup() {
   return (
     <div className="stack">
       <div className="faint" style={{ fontSize: 12.5 }}>
-        Each device writes one file into a hidden Google Drive folder that only this app can see, and reads the others'. No server to run.
-        It carries your calendar, tasks, notes, contacts, shopping list and shared preferences, never API keys or sign-ins. Changes appear
-        within a few minutes.
+        Each device writes one file into a “Calendar Assistant (sync)” folder in your Google Drive (the app can only see files it made
+        itself), and reads the others'. No server to run. It carries your calendar, tasks, notes, contacts, shopping list and shared
+        preferences, never API keys or sign-ins. Changes appear within a few minutes.
+      </div>
+      <div className="row" style={{ flexWrap: "wrap" }}>
+        <SetupGuideButton kind="google" label="Step-by-step setup guide" />
+        <span className="faint" style={{ fontSize: 12.5 }}>
+          Needs a free Google setup first. The guide walks you through it.
+        </span>
       </div>
       {!d.enabled ? (
         android ? (
@@ -281,8 +288,8 @@ function DeviceCodeModal({ onClose, onDone }: { onClose: () => void; onDone: () 
               {state.code.userCode}
             </div>
             <div className="faint" style={{ fontSize: 12.5 }}>
-              Choose your Google account and allow “Calendar Assistant” to use its hidden Drive folder. This window closes by itself when
-              it's done. The code works for {Math.floor(left / 60)}:{String(left % 60).padStart(2, "0")}.
+              Choose your Google account and allow “Calendar Assistant” to create and use its own Drive folder. This window closes by itself
+              when it's done. The code works for {Math.floor(left / 60)}:{String(left % 60).padStart(2, "0")}.
             </div>
           </>
         )}

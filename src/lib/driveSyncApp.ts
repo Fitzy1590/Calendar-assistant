@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { onLocalChange, useStore, type Change } from "../store";
 import type { CollectionName } from "../types";
 import { driveSyncOnce, FILE_PREFIX, type DriveApi, type DriveSyncResult, type LocalState, type PeerStatus } from "./driveSync";
-import { gfetch, googleConnected, googleToken, quietly, SCOPES } from "./google";
+import { appFolderId, gfetch, googleConnected, googleToken, quietly, SCOPES } from "./google";
 import { syncDue } from "./googleMap";
 import { platformName } from "./platform";
 import { allLocalChanges } from "./sync";
@@ -15,14 +15,15 @@ const FIELDS = "id,name,modifiedTime";
 
 export const googleDriveApi = (): DriveApi => ({
   async list() {
-    const q = encodeURIComponent(`name contains '${FILE_PREFIX}'`);
-    const j = await gfetch(`${DRIVE}?spaces=appDataFolder&q=${q}&fields=files(${FIELDS})&pageSize=100`, SCOPES.drive);
+    const parent = await appFolderId();
+    const q = encodeURIComponent(`name contains '${FILE_PREFIX}' and '${parent}' in parents and trashed=false`);
+    const j = await gfetch(`${DRIVE}?q=${q}&fields=files(${FIELDS})&pageSize=100`, SCOPES.drive);
     return j?.files ?? [];
   },
   read: (id) => gfetch(`${DRIVE}/${id}?alt=media`, SCOPES.drive),
   async write(name, body, existingId) {
     const boundary = "ca" + Math.random().toString(36).slice(2);
-    const meta = existingId ? {} : { name, parents: ["appDataFolder"] };
+    const meta = existingId ? {} : { name, parents: [await appFolderId()] };
     const payload = `--${boundary}\r\nContent-Type: application/json\r\n\r\n${JSON.stringify(meta)}\r\n--${boundary}\r\nContent-Type: application/json\r\n\r\n${body}\r\n--${boundary}--`;
     return gfetch(`${existingId ? `${UPLOAD}/${existingId}` : UPLOAD}?uploadType=multipart&fields=${FIELDS}`, SCOPES.drive, {
       method: existingId ? "PATCH" : "POST",

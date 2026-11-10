@@ -19,6 +19,7 @@ import {
 } from "../lib/google";
 import { backupJson, restoreBackup } from "../lib/backup";
 import { forceSync, onSyncStatus } from "../lib/sync";
+import { SetupGuideButton } from "./SetupGuide";
 import { BUILT_IN_WORDS, browserSpeechAvailable, dictate, useVoice, voiceReady } from "../lib/wake";
 import { isAndroid, isTauri } from "../lib/platform";
 import { IPin } from "./Icons";
@@ -453,8 +454,9 @@ export function GoogleSetup({ compact }: { compact?: boolean }) {
       <div className="stack">
         <div className="muted">
           Google Calendar sync, Drive backup and Gmail scanning run from the Windows app. Anything they add reaches this phone through sync,
-          so there's nothing to sign in to here.
+          so there's nothing to sign in to here. (Drive sync on this phone is under Settings → Phone & sync.)
         </div>
+        <SetupGuideButton kind="google" label="Step-by-step Google setup guide" />
         {!compact && (
           <div className="faint" style={{ fontSize: 12.5 }}>
             Microsoft Outlook client ID (optional, for scanning on this phone)
@@ -472,6 +474,12 @@ export function GoogleSetup({ compact }: { compact?: boolean }) {
   const connected = googleConnected(SCOPES.calendar) || googleConnected(SCOPES.drive);
   return (
     <div className="stack">
+      <div className="row" style={{ flexWrap: "wrap" }}>
+        <SetupGuideButton kind="google" label="Step-by-step Google setup guide" />
+        <span className="faint" style={{ fontSize: 12.5 }}>
+          New to this? It walks you through it, with buttons that open the right Google pages.
+        </span>
+      </div>
       {usesLoopback() ? (
         <div className="grid2">
           <Field label="Google client ID (Desktop app)">
@@ -521,7 +529,7 @@ export function GoogleSetup({ compact }: { compact?: boolean }) {
               Register <span className="mono">{location.origin}/oauth.html</span> as the redirect URI.
             </>
           )}{" "}
-          Step-by-step in docs/GOOGLE_AND_OUTLOOK.md.
+          Use the step-by-step guide above if you get stuck.
         </div>
       )}
       <div className="row">

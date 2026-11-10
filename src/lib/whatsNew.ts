@@ -13,6 +13,14 @@ export interface WhatsNewEntry {
 
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    version: "0.1.8",
+    title: "Setup guides built in",
+    points: [
+      "A “Step-by-step setup guide” button in the setup wizard and Settings walks you through connecting Google (Drive and Calendar) and Outlook.",
+      "Each step has a button that opens the exact Google or Microsoft page, with separate steps for your PC and your phone.",
+    ],
+  },
+  {
     version: "0.1.7",
     title: "Your phone joins Drive sync",
     points: [

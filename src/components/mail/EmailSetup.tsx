@@ -4,6 +4,7 @@ import { useStore } from "../../store";
 import { reclassifyCached, syncMail } from "../../lib/mail/engine";
 import { connectOutlook, disconnectOutlook, msConfigured, msSignInAvailable } from "../../lib/mail/microsoft";
 import { toast } from "../../store";
+import { SetupGuideButton } from "../SetupGuide";
 import { Field, Toggle } from "../ui";
 import { RulesEditor } from "./RulesEditor";
 
@@ -89,8 +90,11 @@ export function EmailSetup() {
         />
       </Field>
       <div className="faint" style={{ fontSize: 12.5 }}>
-        You create this once for free in Microsoft Entra (Azure). Step by step in docs/EMAIL_SETUP.md. The app only asks to <b>read</b> your
+        You create this once for free in Microsoft Entra (Azure). The guide walks you through it. The app only asks to <b>read</b> your
         mail.
+      </div>
+      <div>
+        <SetupGuideButton kind="microsoft" label="Step-by-step Outlook setup guide" />
       </div>
 
       <h4 style={{ margin: "8px 0 0" }}>What counts as important</h4>

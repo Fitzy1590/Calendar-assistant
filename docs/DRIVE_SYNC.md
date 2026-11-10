@@ -3,6 +3,15 @@
 An alternative to the sync server: your devices share your data through a hidden folder in **your own Google Drive** that only
 Calendar Assistant can see. Works on the same Google account on every device. Both can run at once.
 
+## Easiest way: the in-app guide
+
+In the app, press **Step-by-step setup guide** (Settings → Phone & sync, Settings → Email, Google & Outlook, or the setup wizard).
+It gives plain instructions with buttons that open the exact Google pages, for your PC or your phone. The notes below are the
+same steps in short form.
+
+One step is easy to miss: in your Google Cloud project, **turn on the Google Drive API** (and the Google Calendar API if you want
+Google Calendar sync), or sign-in works but Drive calls fail.
+
 ## Turn it on (Windows)
 
 1. Settings → **Email, Google & Outlook**: add your Google client ID (same one used for Calendar and Drive backup).

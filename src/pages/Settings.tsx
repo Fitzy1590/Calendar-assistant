@@ -22,6 +22,7 @@ import { Diagnostics } from "../components/Errors";
 import { ISearch } from "../components/Icons";
 import { Field, PageHead, Toggle } from "../components/ui";
 import { EmailSetup } from "../components/mail/EmailSetup";
+import { DriveSyncSetup } from "../components/DriveSync";
 
 interface Item {
   id: string;
@@ -186,6 +187,14 @@ export function Settings() {
         keywords: "sync android phone pair pairing code server call sms text phone link devices force sync now share preferences",
         wide: true,
         render: () => <SyncSetup />,
+      },
+      {
+        id: "drive",
+        section: "Phone & sync",
+        label: "Sync through Google Drive",
+        keywords: "google drive sync change file android windows phone periodic auto background stale out of date check no server",
+        wide: true,
+        render: () => <DriveSyncSetup />,
       },
       {
         id: "mail",

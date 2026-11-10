@@ -196,7 +196,7 @@ export async function quietly<T>(fn: () => Promise<T>): Promise<T> {
   }
 }
 
-async function gfetch(url: string, scope: string, init: RequestInit = {}) {
+export async function gfetch(url: string, scope: string, init: RequestInit = {}) {
   const t = await googleToken([scope], interactiveCalls);
   const r = await fetch(url, {
     ...init,

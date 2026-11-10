@@ -1,3 +1,4 @@
+import type { DriveSyncMeta } from "./lib/driveSync";
 import type { MailSettings } from "./lib/mail/types";
 export type ID = string;
 
@@ -255,6 +256,15 @@ export interface Settings {
     microsoftClientId: string;
   };
   mail: MailSettings;
+  /** Sync through the hidden Google Drive app folder (no server). Per device. */
+  driveSync: {
+    enabled: boolean;
+    everyMins: number;
+    staleMins: number; // warn when the last good sync is older than this
+    lastOkAt?: number;
+    lastError?: string;
+    meta: DriveSyncMeta;
+  };
   localEventsApiKey: string; // Ticketmaster Discovery key (optional)
   google: {
     calendarSync: boolean; // two-way sync with Google Calendar

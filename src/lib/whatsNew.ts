@@ -13,6 +13,15 @@ export interface WhatsNewEntry {
 
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    version: "0.1.6",
+    title: "Sync through Google Drive",
+    points: [
+      "Settings → Phone & sync → Sync through Google Drive: devices share your calendar and lists through a hidden Drive folder, with no server to run.",
+      "It syncs when the app opens, every few minutes, and soon after you change something.",
+      "A bar warns you if your calendar may be out of date, and a check makes sure every device matches.",
+    ],
+  },
+  {
     version: "0.1.5",
     title: "Email arrives (Outlook)",
     points: [

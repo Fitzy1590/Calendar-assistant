@@ -21,6 +21,7 @@ import { UpdateSettings } from "../components/Updates";
 import { Diagnostics } from "../components/Errors";
 import { ISearch } from "../components/Icons";
 import { Field, PageHead, Toggle } from "../components/ui";
+import { EmailSetup } from "../components/mail/EmailSetup";
 
 interface Item {
   id: string;
@@ -187,6 +188,14 @@ export function Settings() {
         render: () => <SyncSetup />,
       },
       {
+        id: "mail",
+        section: "Email",
+        label: "Email accounts, important mail and alerts",
+        keywords: "email mail outlook hotmail inbox important junk subscriptions notifications alerts badge summary",
+        wide: true,
+        render: () => <EmailSetup />,
+      },
+      {
         id: "google",
         section: "Email, Google & Outlook",
         label: "Google Calendar, Google Drive, Gmail and Outlook",
@@ -301,6 +310,7 @@ export function Settings() {
 const NAMES: Record<PageId, string> = {
   home: "Home",
   calendar: "Calendar",
+  email: "Email",
   tasks: "Tasks",
   notes: "Notes",
   shopping: "Shopping",

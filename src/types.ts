@@ -1,3 +1,4 @@
+import type { MailSettings } from "./lib/mail/types";
 export type ID = string;
 
 /** Every synced record carries an id, a last-modified stamp and a tombstone flag. */
@@ -158,10 +159,21 @@ export interface FavTeam {
 }
 
 export type ThemeName = "paper" | "ink" | "slate" | "sand" | "oled" | "forest" | "contrast" | "system";
-export type PageId = "home" | "calendar" | "tasks" | "contacts" | "notes" | "shopping" | "reminders" | "news" | "sports" | "settings";
+export type PageId =
+  | "home"
+  | "calendar"
+  | "email"
+  | "tasks"
+  | "contacts"
+  | "notes"
+  | "shopping"
+  | "reminders"
+  | "news"
+  | "sports"
+  | "settings";
 
 export interface HomeWidget {
-  id: "weather" | "clock" | "minical" | "agenda" | "tasks" | "birthdays" | "headlines" | "sports" | "localEvents" | "notes";
+  id: "weather" | "clock" | "minical" | "agenda" | "tasks" | "birthdays" | "headlines" | "sports" | "localEvents" | "notes" | "mail";
   visible: boolean;
 }
 
@@ -242,6 +254,7 @@ export interface Settings {
     googleDesktopClientSecret: string; // Google treats desktop secrets as non-confidential; still kept out of backups
     microsoftClientId: string;
   };
+  mail: MailSettings;
   localEventsApiKey: string; // Ticketmaster Discovery key (optional)
   google: {
     calendarSync: boolean; // two-way sync with Google Calendar

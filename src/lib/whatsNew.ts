@@ -13,6 +13,15 @@ export interface WhatsNewEntry {
 
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    version: "0.1.5",
+    title: "Email arrives (Outlook)",
+    points: [
+      "A new Email page for Outlook and Hotmail, with junk and subscriptions kept out of the way.",
+      "Important mail shows on Home, with desktop alerts, an unread count in the menu and a morning summary.",
+      "Needs your free Microsoft app ID (see docs/EMAIL_SETUP.md). Your sign-in is kept in Windows' secure store.",
+    ],
+  },
+  {
     version: "0.1.4",
     title: "A summary after every update",
     points: [

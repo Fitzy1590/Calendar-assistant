@@ -3,14 +3,16 @@ import { useEffect, useState } from "react";
 import type { PageId } from "../types";
 import { live, useStore } from "../store";
 import { onSyncStatus } from "../lib/sync";
+import { needsAttention, useMail } from "../lib/mail/engine";
 import { SyncPanel } from "./SyncPanel";
 import { upcomingReminders } from "../lib/reminders";
 import { todayYmd } from "../lib/util";
-import { IBell, ICal, ICart, IChat, ICog, IDown, IHome, IIdea, INews, INote, IPeople, IRight, ISport, ITasks } from "./Icons";
+import { IBell, ICal, IMail, ICart, IChat, ICog, IDown, IHome, IIdea, INews, INote, IPeople, IRight, ISport, ITasks } from "./Icons";
 
 const META: Record<PageId, { label: string; icon: (p: { size?: number }) => React.JSX.Element }> = {
   home: { label: "Home", icon: IHome },
   calendar: { label: "Calendar", icon: ICal },
+  email: { label: "Email", icon: IMail },
   tasks: { label: "Tasks", icon: ITasks },
   notes: { label: "Notes", icon: INote },
   shopping: { label: "Shopping", icon: ICart },
@@ -23,6 +25,7 @@ const META: Record<PageId, { label: string; icon: (p: { size?: number }) => Reac
 
 export function Sidebar() {
   const s = useStore();
+  const mailMessages = useMail((m) => m.messages);
   const [sportsOpen, setSportsOpen] = useState(true);
   const [syncOpen, setSyncOpen] = useState(false);
   const [sync, setSync] = useState<{ status: string; peers: string[] }>({ status: "off", peers: [] });
@@ -33,7 +36,9 @@ export function Sidebar() {
   const today = todayYmd();
   const openTasks = live(s.tasks).filter((t) => !t.done && !t.ignored && t.due && t.due <= today).length;
   const reminders = upcomingReminders(2).filter((r) => r.at.getTime() <= Date.now() + 864e5).length;
-  const counts: Partial<Record<PageId, number>> = { tasks: openTasks, reminders };
+  const mail = s.settings.mail;
+  const mailCount = mail.alerts.badge && mail.accounts.length ? needsAttention(mailMessages).length : 0;
+  const counts: Partial<Record<PageId, number>> = { tasks: openTasks, reminders, email: mailCount };
   const go = (p: PageId) => s.setPage(p);
 
   return (

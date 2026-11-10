@@ -13,6 +13,7 @@ import { BrowserModeBanner } from "./components/BrowserModeBanner";
 import { IIdea, IMail } from "./components/Icons";
 import { Home } from "./pages/Home";
 import { Calendar } from "./pages/Calendar";
+import { Email } from "./pages/Email";
 import { Tasks } from "./pages/Tasks";
 import { Contacts } from "./pages/Contacts";
 import { Reminders } from "./pages/Reminders";
@@ -26,12 +27,14 @@ import { dueNow } from "./lib/reminders";
 import { notify } from "./lib/platform";
 import { dailyBackups } from "./lib/backup";
 import { startGoogleAutoSync } from "./lib/googleAuto";
+import { startMailPolling } from "./lib/mail/engine";
 import { accentText, CONTRAST_ACCENT, readableOn } from "./lib/themes";
 import { checkTrackedPrices } from "./lib/shopping";
 
 const PAGES = {
   home: Home,
   calendar: Calendar,
+  email: Email,
   tasks: Tasks,
   notes: Notes,
   shopping: Shopping,
@@ -86,7 +89,8 @@ function useBackground() {
     const a = setInterval(tickReminders, 30_000);
     const b = setInterval(tickSync, 15 * 60_000);
     const stopGoogle = startGoogleAutoSync();
-    return () => (clearInterval(a), clearInterval(b), stopGoogle());
+    const stopMail = startMailPolling();
+    return () => (clearInterval(a), clearInterval(b), stopGoogle(), stopMail());
   }, []);
 }
 

@@ -57,8 +57,10 @@ scripts/ docs/ .github/workflows/build.yml   versioning, setup guides, CI + rele
 
 ## Email module (in progress: see `SPEC.md`, stages in `FEATURE_PROGRESS.md`)
 
-- Code: `src/lib/mail/` (provider adapters `gmail.ts`, `graph.ts`; `thread.ts` context builder; `classify.ts`; `drafts.ts`
-  Claude/Gemini; `cache.ts` IndexedDB), page `src/pages/Email.tsx`, parts in `src/components/mail/`. Same shape as other services.
+- Code: `src/lib/mail/` built: `graph.ts` (Outlook adapter, injected API), `microsoft.ts` (sign-in), `classify.ts` (buckets +
+  importance), `cache.ts` (IndexedDB), `engine.ts` (sync, alerts, daily summary); planned: `gmail.ts`, `thread.ts`, `drafts.ts`
+  (Claude/Gemini). Page `src/pages/Email.tsx`, parts in `src/components/mail/`. Sign-in setup: `docs/EMAIL_SETUP.md`.
+- Never run Prettier on `styles.css` (it is excluded; it would rewrite the whole file).
 - Mail is **not** a store collection: bodies live in IndexedDB on this device only (never synced, never in backups).
   Account metadata is in `settings.mail`; **tokens only in the OS secure store** (`lib/secureStore.ts`), never settings or logs.
 - Never mutate a thread or message object; build new ones. Sanitise HTML before rendering. AI drafts are draft-only: nothing is

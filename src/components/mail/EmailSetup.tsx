@@ -1,0 +1,182 @@
+import { useState } from "react";
+import { format } from "date-fns";
+import { useStore } from "../../store";
+import { reclassifyCached, syncMail } from "../../lib/mail/engine";
+import { connectOutlook, disconnectOutlook, msConfigured, msSignInAvailable } from "../../lib/mail/microsoft";
+import { toast } from "../../store";
+import { Field, Toggle } from "../ui";
+
+/** Settings: connect Outlook, choose what counts as important, and how it alerts. */
+export function EmailSetup() {
+  const s = useStore();
+  const m = s.settings.mail;
+  const [busy, setBusy] = useState("");
+  const run = async (label: string, fn: () => Promise<string | void>) => {
+    setBusy(label);
+    try {
+      const msg = await fn();
+      if (msg) toast(msg);
+    } catch (e) {
+      toast((e as Error).message);
+    } finally {
+      setBusy("");
+    }
+  };
+  const set = (fn: (mail: typeof m) => void, resort = false) => {
+    s.updateSettings((st) => fn(st.mail));
+    if (resort) reclassifyCached().catch(() => {});
+  };
+  const connect = () =>
+    run("connect", async () => {
+      await connectOutlook();
+      return syncMail();
+    });
+  const canConnect = msSignInAvailable() && msConfigured();
+  return (
+    <div className="stack">
+      <div className="stack" style={{ gap: 8 }}>
+        {m.accounts.map((a) => (
+          <div key={a.id} className="row" style={{ justifyContent: "space-between", flexWrap: "wrap" }}>
+            <span className="row">
+              <span className={"dot " + (a.status === "ok" ? "ok" : "")} />
+              <b>{a.address}</b>
+              <span className="faint" style={{ fontSize: 12.5 }}>
+                {a.status === "needs-reconnect"
+                  ? "Sign in again"
+                  : a.status === "error"
+                    ? a.error
+                    : a.lastSyncAt
+                      ? `synced ${format(a.lastSyncAt, "d MMM h:mm a")}`
+                      : "not synced yet"}
+              </span>
+            </span>
+            <span className="row">
+              {a.status === "needs-reconnect" && (
+                <button className="btn sm primary" disabled={!canConnect || !!busy} onClick={connect}>
+                  Sign in again
+                </button>
+              )}
+              <button className="btn sm" disabled={!!busy} onClick={() => run("sync", syncMail)}>
+                {busy === "sync" ? "Syncing…" : "Sync now"}
+              </button>
+              <button
+                className="btn sm ghost"
+                disabled={!!busy}
+                onClick={() =>
+                  run("rm", async () => (await disconnectOutlook(a.id), "Account removed, and its mail cleared from this device."))
+                }
+              >
+                Disconnect
+              </button>
+            </span>
+          </div>
+        ))}
+        {!m.accounts.length && <div className="muted">No email account connected yet.</div>}
+      </div>
+      <div className="row">
+        <button className="btn primary" disabled={!canConnect || !!busy} onClick={connect}>
+          {busy === "connect" ? "Waiting for your browser…" : "Add Outlook / Hotmail account"}
+        </button>
+        {!msSignInAvailable() && <span className="faint">Sign-in runs in the installed Windows app.</span>}
+      </div>
+      <Field label="Microsoft app (client) ID">
+        <input
+          className="input mono"
+          value={s.settings.email.microsoftClientId}
+          onChange={(e) => s.updateSettings((st) => void (st.email.microsoftClientId = e.target.value.trim()))}
+          placeholder="00000000-0000-…"
+        />
+      </Field>
+      <div className="faint" style={{ fontSize: 12.5 }}>
+        You create this once for free in Microsoft Entra (Azure). Step by step in docs/EMAIL_SETUP.md. The app only asks to <b>read</b> your
+        mail.
+      </div>
+
+      <h4 style={{ margin: "8px 0 0" }}>What counts as important</h4>
+      <span className="row">
+        <Toggle
+          checked={m.important.actionUrgent}
+          onChange={(v) => set((x) => void (x.important.actionUrgent = v), true)}
+          label="Action required and urgent"
+        />{" "}
+        Emails that ask you something or are time-sensitive
+      </span>
+      <span className="row">
+        <Toggle
+          checked={m.important.contacts}
+          onChange={(v) => set((x) => void (x.important.contacts = v), true)}
+          label="People in my Contacts"
+        />{" "}
+        Anyone saved in your Contacts
+      </span>
+      <span className="row">
+        <Toggle
+          checked={m.important.financial}
+          onChange={(v) => set((x) => void (x.important.financial = v), true)}
+          label="Financial alerts"
+        />{" "}
+        Bills due, failed payments and bank notices
+      </span>
+      <span className="row">
+        <Toggle checked={m.important.everything} onChange={(v) => set((x) => void (x.important.everything = v), true)} label="Everything" />{" "}
+        All personal mail
+      </span>
+      <div className="faint" style={{ fontSize: 12.5 }}>
+        Junk and subscriptions are never important: they stay in their own folders and never trigger a card or alert. Nothing is deleted.
+      </div>
+
+      <h4 style={{ margin: "8px 0 0" }}>How it shows up</h4>
+      <span className="row">
+        <Toggle checked={m.alerts.homeCard} onChange={(v) => set((x) => void (x.alerts.homeCard = v))} label="Home page card" /> “Important
+        mail” card on Home
+      </span>
+      <span className="row">
+        <Toggle checked={m.alerts.desktop} onChange={(v) => set((x) => void (x.alerts.desktop = v))} label="Desktop notifications" /> A
+        notification when new important mail arrives
+      </span>
+      <span className="row">
+        <Toggle checked={m.alerts.badge} onChange={(v) => set((x) => void (x.alerts.badge = v))} label="Menu badge" /> Unread count next to
+        Email in the left menu
+      </span>
+      <span className="row">
+        <Toggle checked={m.alerts.dailySummary} onChange={(v) => set((x) => void (x.alerts.dailySummary = v))} label="Daily summary" /> One
+        summary each morning after
+        <select
+          className="input"
+          style={{ width: "auto" }}
+          aria-label="Summary hour"
+          value={m.alerts.summaryHour}
+          onChange={(e) => set((x) => void (x.alerts.summaryHour = Number(e.target.value)))}
+        >
+          {[6, 7, 8, 9, 10, 12].map((h) => (
+            <option key={h} value={h}>{`${h}:00`}</option>
+          ))}
+        </select>
+      </span>
+
+      <h4 style={{ margin: "8px 0 0" }}>Checking and storage</h4>
+      <span className="row">
+        Check for new mail every
+        <select
+          className="input"
+          style={{ width: "auto" }}
+          aria-label="How often to check for mail"
+          value={m.pollMins}
+          onChange={(e) => set((x) => void (x.pollMins = Number(e.target.value)))}
+        >
+          {[1, 3, 5, 15].map((n) => (
+            <option key={n} value={n}>{`${n} minute${n > 1 ? "s" : ""}`}</option>
+          ))}
+        </select>
+        and when the app opens
+      </span>
+      <span className="row">
+        <Toggle checked={m.cacheText} onChange={(v) => set((x) => void (x.cacheText = v))} label="Keep message text on this device" /> Keep
+        message text for offline reading (off: only sender, subject and a short preview)
+      </span>
+      <div className="faint" style={{ fontSize: 12.5 }}>
+        Mail stays on this PC. It isn't synced to your phone or included in backups, and your sign-in is kept in Windows' secure store.
+      </div>
+    </div>
+  );
+}

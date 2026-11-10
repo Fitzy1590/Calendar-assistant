@@ -27,6 +27,7 @@ and an **Android app** ([Tauri 2](https://tauri.app)), and the two stay in sync 
 | **Google** | One-click two-way Google Calendar sync (Settings → Sync with Google Calendar), automatic every 5–60 minutes and when the app opens; daily backup of data + settings to Google Drive. |
 | **Backup** | Full JSON backup/restore (merges, never overwrites newer data), `.ics` and `.csv` export, 14 daily on-device snapshots, Drive backup. |
 | **Settings** | Search box that filters every setting by keyword; everything you customise is remembered. |
+| **Email** | Outlook/Hotmail inbox (read-only): junk and subscriptions filtered out, important mail on Home with desktop alerts, a menu badge and a morning summary. Setup: [docs/EMAIL_SETUP.md](docs/EMAIL_SETUP.md). Windows app. |
 | **Looks** | Seven themes (Paper, Sand, Ink, Slate, OLED dark, Forest, High contrast, or match the system), any accent colour, three densities (Compact, Comfortable, Spacious) and text size. Text stays readable on every theme. |
 | **Setup wizard** | Theme, location, formats, news, sports, reminders, phone sync, Google, assistant. Skip any step or the whole thing; skipped steps wait on the home page under "Finish setting up". Restore from a backup on the first screen. |
 | **Updates** | Checks for a new version on launch: Windows installs it and restarts (automatically if you like); Android downloads the new APK and asks to install. **Settings → Updates → Check for updates now** forces a check. |

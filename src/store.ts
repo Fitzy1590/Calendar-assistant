@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { CollectionName, Contact, PageId, RecordOf, Settings, Synced } from "./types";
 import { pairingCode, uid } from "./lib/util";
+import { DEFAULT_MAIL_SETTINGS } from "./lib/mail/types";
 
 export const DEFAULT_SETTINGS: Settings = {
   onboarded: false,
@@ -47,18 +48,19 @@ export const DEFAULT_SETTINGS: Settings = {
   email: { googleClientId: "", googleDesktopClientId: "", googleDesktopClientSecret: "", microsoftClientId: "" },
   voice: { wakeWord: false, engine: "picovoice", picovoiceKey: "", keyword: "custom", sensitivity: 0.6, chime: true, closeToTray: true },
   localEventsApiKey: "",
+  mail: DEFAULT_MAIL_SETTINGS,
   google: { calendarSync: false, calendarId: "primary", driveBackup: false, syncEveryMins: 15 },
   backup: { autoLocal: true },
-  sidebar: (["home", "calendar", "tasks", "notes", "shopping", "reminders", "contacts", "news", "sports", "settings"] as PageId[]).map(
-    (id) => ({
-      id,
-      visible: true,
-    }),
-  ),
+  sidebar: (
+    ["home", "calendar", "email", "tasks", "notes", "shopping", "reminders", "contacts", "news", "sports", "settings"] as PageId[]
+  ).map((id) => ({
+    id,
+    visible: true,
+  })),
   pages: {
     home: {
       widgets: (
-        ["weather", "clock", "minical", "agenda", "tasks", "notes", "localEvents", "birthdays", "headlines", "sports"] as const
+        ["weather", "clock", "minical", "agenda", "mail", "tasks", "notes", "localEvents", "birthdays", "headlines", "sports"] as const
       ).map((id) => ({ id, visible: true })),
     },
     calendar: { view: "week", showTasks: true, showBirthdays: true, dayStartHour: 7 },

@@ -19,7 +19,7 @@ export type UpdateState =
   | { kind: "idle" }
   | { kind: "checking" }
   | { kind: "none"; checkedAt: number }
-  | { kind: "available"; version: string; notes: string; via: "updater" | "apk" | "page"; url?: string }
+  | { kind: "available"; version: string; notes: string; via: "updater" | "installer" | "apk" | "page"; url?: string; sha256?: string }
   | { kind: "downloading"; version: string; received: number; total?: number }
   | { kind: "ready"; version: string } // installed; restarting
   | { kind: "error"; message: string };
@@ -47,6 +47,23 @@ export function newer(a: string, b: string) {
   return false;
 }
 
+/** How to get a release onto this device, from GitHub's release JSON. Pure, so it is tested. */
+export function chooseDownload(
+  rel: { html_url?: string; assets?: { name: string; browser_download_url: string; digest?: string }[] },
+  android: boolean,
+): { via: "installer" | "apk" | "page"; url: string; sha256?: string } {
+  const assets = rel.assets ?? [];
+  if (android) {
+    const apk = assets.find((a) => /\.apk$/i.test(a.name));
+    if (apk) return { via: "apk", url: apk.browser_download_url };
+  } else {
+    // Windows without a signed-update key: download the installer ourselves, but only when GitHub published its SHA-256
+    const exe = assets.find((a) => /-setup\.exe$/i.test(a.name) && /^sha256:[0-9a-f]{64}$/i.test(a.digest ?? ""));
+    if (exe) return { via: "installer", url: exe.browser_download_url, sha256: exe.digest };
+  }
+  return { via: "page", url: rel.html_url || RELEASES_PAGE };
+}
+
 async function currentVersion() {
   if (!isTauri()) return useUpdates.getState().current;
   const { getVersion } = await import("@tauri-apps/api/app");
@@ -61,7 +78,7 @@ let pending: import("@tauri-apps/plugin-updater").Update | null = null;
  * Look for a newer version. `manual` = the user pressed "Check for updates": ignore "skip this version"
  * and report "you're up to date". Returns true when an update is available.
  */
-export async function checkForUpdates(manual = false): Promise<boolean> {
+export async function checkForUpdates(manual = false, atLaunch = false): Promise<boolean> {
   if (!updatesSupported()) {
     if (manual) set({ kind: "error", message: "The browser version is always up to date." });
     return false;
@@ -83,7 +100,7 @@ export async function checkForUpdates(manual = false): Promise<boolean> {
         done();
         if (!manual && settings.skipVersion === viaUpdater.version) return (set({ kind: "idle" }), false);
         set({ kind: "available", version: viaUpdater.version, notes: viaUpdater.body ?? "", via: "updater" }, true);
-        if (!manual && settings.installAutomatically) await installUpdate();
+        if (!manual && atLaunch && settings.installAutomatically) await installUpdate();
         return true;
       }
     }
@@ -103,17 +120,9 @@ export async function checkForUpdates(manual = false): Promise<boolean> {
       return false;
     }
     if (!manual && settings.skipVersion === version) return (set({ kind: "idle" }), false);
-    const apk = (rel.assets ?? []).find((a: { name: string }) => /\.apk$/i.test(a.name));
-    set(
-      {
-        kind: "available",
-        version,
-        notes: String(rel.body ?? "").slice(0, 4000),
-        via: isAndroid() && apk ? "apk" : "page",
-        url: isAndroid() && apk ? apk.browser_download_url : rel.html_url || RELEASES_PAGE,
-      },
-      true,
-    );
+    const pick = chooseDownload(rel, isAndroid());
+    set({ kind: "available", version, notes: String(rel.body ?? "").slice(0, 4000), ...pick }, true);
+    if (!manual && atLaunch && pick.via === "installer" && settings.installAutomatically) await installUpdate();
     return true;
   } catch (e) {
     set({ kind: "error", message: friendly(e) });
@@ -133,6 +142,23 @@ async function checkWithUpdater() {
 export async function installUpdate() {
   const st = useUpdates.getState().state;
   if (st.kind !== "available") return;
+  if (st.via === "installer" && st.url && st.sha256) {
+    const { invoke } = await import("@tauri-apps/api/core");
+    const { listen } = await import("@tauri-apps/api/event");
+    set({ kind: "downloading", version: st.version, received: 0 });
+    const un = await listen<{ received: number; total?: number }>("update-progress", (e) =>
+      set({ kind: "downloading", version: st.version, received: e.payload.received, total: e.payload.total ?? undefined }),
+    );
+    try {
+      await invoke("install_update_direct", { url: st.url, sha256: st.sha256 }); // the app closes itself once the installer starts
+      set({ kind: "ready", version: st.version });
+    } catch (e) {
+      set({ kind: "error", message: `${friendly(e)} You can also download it from the Releases page.` });
+    } finally {
+      un();
+    }
+    return;
+  }
   if (st.via !== "updater") {
     if (st.url) await openUrl(st.url);
     return;
@@ -173,7 +199,14 @@ function friendly(e: unknown) {
 export function startUpdateChecks() {
   if (!updatesSupported()) return;
   currentVersion().catch(() => {});
-  const auto = () => useStore.getState().settings.updates.checkOnLaunch && checkForUpdates(false);
-  setTimeout(auto, 8000);
-  setInterval(auto, 12 * 3600e3);
+  // updates install themselves by default; people who had it off before this default existed are switched on once
+  if (!useStore.getState().settings.updates.autoDefaultApplied)
+    useStore.getState().updateSettings((s) => {
+      s.updates.installAutomatically = true;
+      s.updates.autoDefaultApplied = true;
+    });
+  const auto = (atLaunch: boolean) => useStore.getState().settings.updates.checkOnLaunch && checkForUpdates(false, atLaunch);
+  // installing at launch is safe (nothing is open yet); later checks only ask, so the app never restarts under you
+  setTimeout(() => auto(true), 8000);
+  setInterval(() => auto(false), 12 * 3600e3);
 }

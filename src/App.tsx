@@ -1,4 +1,6 @@
 import { useEffect } from "react";
+import { isFullscreen, setFullscreen, toggleFullscreen } from "./lib/fullscreen";
+import { isAndroid, isTauri } from "./lib/platform";
 import { useStore } from "./store";
 import { Sidebar } from "./components/Sidebar";
 import { AssistantDrawer, CommandBar } from "./components/Assistant";
@@ -10,7 +12,7 @@ import { UpdatePrompt } from "./components/Updates";
 import { useRecordNewInstallVersion, WhatsNew } from "./components/WhatsNew";
 import { ErrorAlert, ErrorBoundary, useFirstRunCheck } from "./components/Errors";
 import { BrowserModeBanner } from "./components/BrowserModeBanner";
-import { IIdea, IMail } from "./components/Icons";
+import { IFullscreen, IIdea, IMail } from "./components/Icons";
 import { Home } from "./pages/Home";
 import { Calendar } from "./pages/Calendar";
 import { Email } from "./pages/Email";
@@ -97,8 +99,30 @@ function useBackground() {
   }, []);
 }
 
+/** F11 toggles full screen (title bar hidden); Esc leaves it. */
+function useFullscreenKeys() {
+  useEffect(() => {
+    if (!isTauri()) return () => {}; // a browser already has F11
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "F11") {
+        e.preventDefault();
+        toggleFullscreen().catch(() => {});
+      } else if (e.key === "Escape") {
+        isFullscreen()
+          .then(async (on) => {
+            if (on) await setFullscreen(false);
+          })
+          .catch(() => {});
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+}
+
 export default function App() {
   const s = useStore();
+  useFullscreenKeys();
   useTheme();
   useBackground();
   useFirstRunCheck();
@@ -120,6 +144,11 @@ export default function App() {
           >
             <IMail /> <span className="hide-sm">Import</span>
           </button>
+          {isTauri() && !isAndroid() && (
+            <button className="btn ghost" onClick={() => toggleFullscreen().catch(() => {})} title="Full screen (F11). Esc to leave.">
+              <IFullscreen /> <span className="hide-sm">Full screen</span>
+            </button>
+          )}
           <button className="btn ghost" onClick={() => s.setUi({ feedbackOpen: true })} title="Suggestions & feedback">
             <IIdea /> <span className="hide-sm">Feedback</span>
           </button>

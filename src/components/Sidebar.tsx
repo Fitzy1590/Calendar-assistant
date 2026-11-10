@@ -26,7 +26,7 @@ const META: Record<PageId, { label: string; icon: (p: { size?: number }) => Reac
 export function Sidebar() {
   const s = useStore();
   const mailMessages = useMail((m) => m.messages);
-  const [sportsOpen, setSportsOpen] = useState(true);
+  const [sportsOpen, setSportsOpen] = useState(false); // collapsed until you open it
   const [syncOpen, setSyncOpen] = useState(false);
   const [sync, setSync] = useState<{ status: string; peers: string[] }>({ status: "off", peers: [] });
   useEffect(() => {

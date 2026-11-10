@@ -25,7 +25,17 @@ Use a new, higher version each time (`v0.2.1`, `v0.3.0` …).
 * **Android** checks the same way and downloads the new APK; Android asks you to confirm the install.
 * Updates come from the newest GitHub Release, so publish a new version tag to ship one.
 
-### Update key (one-time, needed for Windows self-updates)
+### Automatic updates without a key (Windows)
+
+Until the key below exists, the Windows app still updates itself: at launch it finds the newest release, downloads
+the installer from your GitHub release, checks it against the SHA-256 GitHub publishes for that file, runs it and
+restarts. It only trusts `github.com/Fitzy1590/Calendar-assistant/releases/download/…-setup.exe`, and never installs a file with no
+published checksum. Later checks while the app is open only ask. Settings → Updates → *Install automatically* turns this off.
+
+### Update key (one-time, needed for signed Windows self-updates)
+
+Easiest: on your PC (Node.js installed) run `node scripts/setup-updates.mjs`. It creates the key in a folder outside the repo and
+sets the three GitHub values for you if the GitHub CLI is signed in, or tells you exactly what to paste. Or by hand:
 
 Windows only installs an update whose signature matches the public key built into the app, so nobody else
 can push an update to it. Create the key pair on your own computer:

@@ -13,6 +13,15 @@ export interface WhatsNewEntry {
 
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    version: "0.2.0",
+    title: "Updates install themselves, and a Sports calendar",
+    points: [
+      "The Windows app now downloads and installs updates by itself when it starts, then restarts. No more GitHub page.",
+      "Sports opens on a week or month calendar of upcoming games, with a list view and a filter by team. The Sports menu starts collapsed.",
+      "Full screen button (or F11) hides the title bar; Esc leaves it. The app always opens on Home.",
+    ],
+  },
+  {
     version: "0.1.9",
     title: "Gmail, Bigpond and other email",
     points: [

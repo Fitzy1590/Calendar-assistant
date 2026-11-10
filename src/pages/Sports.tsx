@@ -8,17 +8,13 @@ import { openUrl } from "../lib/platform";
 import { localIso, ymd } from "../lib/util";
 import { ICal, IPlay, IPlus, ISearch, ITrash } from "../components/Icons";
 import { PageHead } from "../components/ui";
+import { SportsUpcoming } from "../components/SportsUpcoming";
 
 export function Sports() {
   const s = useStore();
-  const focus =
-    s.sportFocus ??
-    (s.settings.teams[0]
-      ? { kind: "team" as const, id: s.settings.teams[0].id }
-      : s.settings.sports[0]
-        ? { kind: "sport" as const, id: s.settings.sports[0] }
-        : null);
-  const [custom, setCustom] = useState(!focus);
+  // no team or sport picked = the upcoming-games calendar for every team you follow
+  const focus = s.sportFocus;
+  const [custom, setCustom] = useState(!s.settings.teams.length && !s.settings.sports.length);
   return (
     <>
       <PageHead
@@ -28,7 +24,10 @@ export function Sports() {
         setOpen={setCustom}
         customise={<FollowPanel />}
       />
-      <div className="row" style={{ marginBottom: 16 }}>
+      <div className="row" style={{ marginBottom: 16, flexWrap: "wrap" }}>
+        <button className="chip" aria-pressed={!focus} onClick={() => s.setSportFocus(null)}>
+          Upcoming games
+        </button>
         {s.settings.teams.map((t) => (
           <button key={t.id} className="chip" aria-pressed={focus?.id === t.id} onClick={() => s.setSportFocus({ kind: "team", id: t.id })}>
             {t.badge && <img src={t.badge} alt="" width={16} height={16} />} {t.name}
@@ -42,7 +41,7 @@ export function Sports() {
       </div>
       {focus?.kind === "team" && <TeamView team={s.settings.teams.find((t) => t.id === focus.id)!} />}
       {focus?.kind === "sport" && <SportView sport={focus.id} />}
-      {!focus && <div className="empty">Follow a team or a sport above to get started.</div>}
+      {!focus && <SportsUpcoming />}
     </>
   );
 }

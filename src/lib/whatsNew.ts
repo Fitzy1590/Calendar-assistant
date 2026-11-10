@@ -18,6 +18,7 @@ export const WHATS_NEW: WhatsNewEntry[] = [
     points: [
       "This window now appears once after an update, with the highlights.",
       "Settings → Updates → What's new shows it again any time.",
+      "New looks: OLED dark, Forest and High-contrast themes, and a roomier Spacious density.",
     ],
   },
   {

@@ -157,7 +157,7 @@ export interface FavTeam {
   badge?: string;
 }
 
-export type ThemeName = "paper" | "ink" | "slate" | "sand" | "system";
+export type ThemeName = "paper" | "ink" | "slate" | "sand" | "oled" | "forest" | "contrast" | "system";
 export type PageId = "home" | "calendar" | "tasks" | "contacts" | "notes" | "shopping" | "reminders" | "news" | "sports" | "settings";
 
 export interface HomeWidget {
@@ -171,7 +171,7 @@ export interface Settings {
   displayName: string;
   theme: ThemeName;
   accent: string;
-  density: "compact" | "comfortable";
+  density: "compact" | "comfortable" | "spacious";
   fontScale: number;
   location?: Place;
   units: "metric" | "imperial";

@@ -5,7 +5,7 @@ Package manager is **npm** (`package-lock.json`, CI runs `npm ci`); commands bel
 
 **Baseline checks** (run for every item, in addition to its own check):
 - `B1` `npx tsc --noEmit` exits 0
-- `B2` `npm test`, all suites pass (currently 56 tests in 8 files)
+- `B2` `npm test`, all suites pass (currently 77 tests in 9 files)
 - `B3` `npm run build` succeeds
 - `B4` Rust touched: `rustfmt --edition 2021 --check src-tauri/src/*.rs`, plus a green GitHub `build` run (check, windows, android jobs)
 - `B5` `npx prettier --check "src/**/*.{ts,tsx}"` clean
@@ -19,7 +19,7 @@ Open question for you: none blocking. Assumption to confirm: "cache message text
 
 | | Stage | Verification |
 |---|---|---|
-| [ ] | **E1 Themes and density**: `oled`, `forest`, `contrast` themes; `spacious` density; accent contrast helper; Settings pickers | Unit test: every theme's text/background pairs meet AA (`contrast` AAA); Playwright screenshots of Home in each theme at 1280 px and 412 px |
+| [x] | **E1 Themes and density**: `oled`, `forest`, `contrast` themes (plus 4 existing); `spacious` density; accent contrast helpers (`lib/themes.ts`: readable text on accent buttons, text-safe accent per theme); Settings pickers | `npx vitest run src/lib/themes.test.ts` (21): every theme meets AA text/muted/status contrast (AAA for contrast), accents readable on every surface; Playwright screenshots of Home/Settings in the new themes at 1280 px and 412 px (done, shown after publishing) |
 | [ ] | **E2 Storage checker** (app-wide): usage estimate, 80%/500 MB warning, safe cleanup dialog, 7-day snooze | Unit tests for thresholds and the cleanup plan (never lists events/tasks/notes/contacts/settings); manual: fake a full store, dialog appears, nothing user-made is deleted |
 | [ ] | **E3 Secure store + per-account auth**: Rust `secure_store_*` (Credential Manager), `secureStore.ts` with fallback, `google.ts` per-account tokens, `microsoft.ts` (PKCE loopback) | `cargo test` for the store (standalone) and green Windows CI; unit tests: refresh, `invalid_grant` → needs-reconnect, tokens absent from `localStorage`/backups/error reports |
 | [ ] | **E4 Gmail adapter**: initial sync, history polling, threads, labels, send (injectable API) | Adapter tests against a fake Gmail: history 404 → resync, 429 backoff, send builds correct reply headers |

@@ -8,7 +8,9 @@ import { connectOutlook, msConfigured, msSignInAvailable } from "../../lib/mail/
 import { googleConfigured } from "../../lib/google";
 import { toast } from "../../store";
 import { SetupGuideButton } from "../SetupGuide";
-import { Field, Toggle } from "../ui";
+import { Field, Suggest, Toggle } from "../ui";
+import { KEY_LINKS } from "../../lib/suggest";
+import { openUrl } from "../../lib/platform";
 import { RulesEditor } from "./RulesEditor";
 
 /** Settings: connect Outlook, Gmail or any IMAP mailbox, choose what counts as important, and how it alerts. */
@@ -213,6 +215,7 @@ export function EmailSetup() {
           onChange={(e) => s.updateSettings((st) => void (st.email.microsoftClientId = e.target.value.trim()))}
           placeholder="00000000-0000-…"
         />
+        <Suggest label="Where to get it" items={[{ label: KEY_LINKS.entra.label, onUse: () => void openUrl(KEY_LINKS.entra.url) }]} />
       </Field>
       <div className="faint" style={{ fontSize: 12.5 }}>
         You create this once for free in Microsoft Entra (Azure). The guide walks you through it. The app only asks to <b>read</b> your

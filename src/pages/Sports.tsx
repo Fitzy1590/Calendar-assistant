@@ -7,7 +7,8 @@ import { highlightsSearch, kickoff, lastMatches, nextMatches, searchTeams, sport
 import { openUrl } from "../lib/platform";
 import { localIso, ymd } from "../lib/util";
 import { ICal, IPlay, IPlus, ISearch, ITrash } from "../components/Icons";
-import { PageHead } from "../components/ui";
+import { PageHead, Suggest } from "../components/ui";
+import { POPULAR_TEAMS } from "../lib/suggest";
 import { SportsUpcoming } from "../components/SportsUpcoming";
 
 export function Sports() {
@@ -51,6 +52,14 @@ export function FollowPanel() {
   const [q, setQ] = useState("");
   const [results, setResults] = useState<Team[]>([]);
   const key = s.settings.sportsApiKey;
+  const find = async (query: string) => {
+    setQ(query);
+    try {
+      setResults(await searchTeams(query, key));
+    } catch (err) {
+      toast(String(err));
+    }
+  };
   const follow = (t: Team) => {
     if (s.settings.teams.some((x) => x.id === t.id)) return;
     s.updateSettings((st) => void st.teams.push({ id: t.id, name: t.name, sport: t.sport, league: t.league, badge: t.badge } as FavTeam));
@@ -85,13 +94,9 @@ export function FollowPanel() {
         </div>
         <form
           className="row"
-          onSubmit={async (e) => {
+          onSubmit={(e) => {
             e.preventDefault();
-            try {
-              setResults(await searchTeams(q, key));
-            } catch (err) {
-              toast(String(err));
-            }
+            void find(q);
           }}
         >
           <input
@@ -105,6 +110,13 @@ export function FollowPanel() {
             <ISearch size={16} /> Find
           </button>
         </form>
+        <Suggest
+          label="Popular"
+          items={POPULAR_TEAMS.filter((n) => !s.settings.teams.some((t) => t.name === n)).map((n) => ({
+            label: n,
+            onUse: () => void find(n),
+          }))}
+        />
         <div className="list" style={{ marginTop: 8 }}>
           {results.slice(0, 8).map((t) => (
             <div key={t.id} className="row" style={{ justifyContent: "space-between" }}>

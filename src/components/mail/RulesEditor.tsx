@@ -4,7 +4,8 @@ import { useStore } from "../../store";
 import { deleteRule, saveRule, useMail } from "../../lib/mail/engine";
 import { describeRule, matchRule, newRule, parseList, validateRule } from "../../lib/mail/rules";
 import type { MailRule } from "../../lib/mail/types";
-import { Field, Modal, Toggle } from "../ui";
+import { Field, Modal, Suggest, Toggle } from "../ui";
+import { RULE_KEYWORDS, senderIdeas } from "../../lib/suggest";
 
 /** Settings → Email: your own rules. */
 export function RulesEditor() {
@@ -97,6 +98,12 @@ function RuleModal({ start, isNew, onClose }: { start: MailRule; isNew: boolean;
             aria-describedby="rule-senders-help"
           />
         </Field>
+        <Suggest
+          label="From your mail"
+          items={senderIdeas(useMail.getState().messages.map((m) => m.from.address))
+            .filter((d) => !senders.includes(d))
+            .map((d) => ({ label: d, onUse: () => setSenders((x) => (x.trim() ? `${x.trim().replace(/,$/, "")}, ${d}` : d)) }))}
+        />
         <div id="rule-senders-help" className="faint" style={{ fontSize: 12.5, marginTop: -6 }}>
           An address, or a domain like @energyco.com for everyone there. Separate with commas.
         </div>
@@ -108,6 +115,14 @@ function RuleModal({ start, isNew, onClose }: { start: MailRule; isNew: boolean;
             placeholder="invoice, booking, deadline"
           />
         </Field>
+        <Suggest
+          items={RULE_KEYWORDS.filter((k) => !keywords.toLowerCase().includes(k))
+            .slice(0, 6)
+            .map((k) => ({
+              label: k,
+              onUse: () => setKeywords((x) => (x.trim() ? `${x.trim().replace(/,$/, "")}, ${k}` : k)),
+            }))}
+        />
         <div className="row">
           <span className="muted">Match</span>
           <div className="seg" role="group" aria-label="Keyword matching">

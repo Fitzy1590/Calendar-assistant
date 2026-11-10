@@ -21,9 +21,10 @@ import { backupJson, restoreBackup } from "../lib/backup";
 import { forceSync, onSyncStatus } from "../lib/sync";
 import { SetupGuideButton } from "./SetupGuide";
 import { BUILT_IN_WORDS, browserSpeechAvailable, dictate, useVoice, voiceReady } from "../lib/wake";
-import { isAndroid, isTauri } from "../lib/platform";
+import { isAndroid, isTauri, openUrl } from "../lib/platform";
 import { IPin } from "./Icons";
-import { Field, Toggle } from "./ui";
+import { Field, Suggest, Toggle } from "./ui";
+import { cityGuesses, DEVICE_NAMES, KEY_LINKS, NEWS_KEYWORDS, regionDefaults, SYNC_URL_IDEAS } from "../lib/suggest";
 
 /** Building blocks shared by the first-run wizard and the Settings page, so both stay in step. */
 
@@ -163,6 +164,12 @@ export function LocationPicker() {
           Use my location
         </button>
       </div>
+      {!q && !s.settings.location && (
+        <Suggest
+          label="Near you"
+          items={cityGuesses(Intl.DateTimeFormat().resolvedOptions().timeZone).map((c) => ({ label: c, onUse: () => setQ(c) }))}
+        />
+      )}
       {res.length > 0 && (
         <div className="list card" style={{ padding: "4px 12px" }}>
           {res.map((p) => (
@@ -214,6 +221,7 @@ export function FormatPicker() {
           ))}
         </div>
       </span>
+      <RegionSuggestion />
       <span className="row">
         Calendar opens in{" "}
         <div className="seg">
@@ -271,6 +279,14 @@ export function NewsPicker() {
           placeholder="Follow a topic, e.g. Formula 1, climate"
         />
         <button className="btn">Add</button>
+        <Suggest
+          items={NEWS_KEYWORDS.filter((k) => !s.settings.newsKeywords.includes(k))
+            .slice(0, 6)
+            .map((k) => ({
+              label: k,
+              onUse: () => s.updateSettings((st) => void (st.newsKeywords = [...new Set([...st.newsKeywords, k])])),
+            }))}
+        />
         {s.settings.newsKeywords.map((k) => (
           <button
             type="button"
@@ -374,6 +390,9 @@ export function SyncSetup() {
             onChange={(e) => set({ serverUrl: e.target.value.trim() })}
             placeholder="wss://sync.example.com"
           />
+          {!sy.serverUrl && (
+            <Suggest items={SYNC_URL_IDEAS.map((i) => ({ label: i.label, title: i.value, onUse: () => set({ serverUrl: i.value }) }))} />
+          )}
         </Field>
         <Field label="Pairing code (same on every device)">
           <div className="row" style={{ flexWrap: "nowrap" }}>
@@ -390,6 +409,14 @@ export function SyncSetup() {
             onChange={(e) => set({ deviceName: e.target.value })}
             placeholder="e.g. Desk PC, Pixel"
           />
+          {!sy.deviceName && (
+            <Suggest
+              items={(isAndroid() ? DEVICE_NAMES.android : DEVICE_NAMES.windows).map((n) => ({
+                label: n,
+                onUse: () => set({ deviceName: n }),
+              }))}
+            />
+          )}
         </Field>
         <Field label="Calls and texts from Windows go">
           <select
@@ -639,6 +666,10 @@ export function AssistantSetup() {
             onChange={(e) => set({ apiKey: e.target.value.trim() })}
             placeholder="sk-ant-…"
           />
+          <Suggest
+            label="Where to get it"
+            items={[{ label: KEY_LINKS.anthropic.label, onUse: () => void openUrl(KEY_LINKS.anthropic.url) }]}
+          />
         </Field>
       )}
       <div className="row">
@@ -725,6 +756,10 @@ export function WakeWordSetup() {
               onChange={(e) => set({ picovoiceKey: e.target.value.trim() })}
               placeholder="Paste your AccessKey"
             />
+            <Suggest
+              label="Where to get it"
+              items={[{ label: KEY_LINKS.picovoice.label, onUse: () => void openUrl(KEY_LINKS.picovoice.url) }]}
+            />
           </Field>
           <div className="grid2">
             <Field label="Wake word">
@@ -802,6 +837,10 @@ export function LocalEventsSetup() {
         value={s.settings.localEventsApiKey}
         onChange={(e) => s.updateSettings((st) => void (st.localEventsApiKey = e.target.value.trim()))}
         placeholder="Leave blank to use search links"
+      />
+      <Suggest
+        label="Where to get it"
+        items={[{ label: KEY_LINKS.ticketmaster.label, onUse: () => void openUrl(KEY_LINKS.ticketmaster.url) }]}
       />
     </Field>
   );
@@ -894,5 +933,28 @@ export function ShoppingSetup() {
         Live price comparison uses Claude (Settings → Assistant & voice). Nearby stores come from OpenStreetMap and work without it.
       </div>
     </div>
+  );
+}
+
+/** "Suggested for your region" when the clock or week start differs from what this region usually uses. */
+function RegionSuggestion() {
+  const s = useStore();
+  const want = regionDefaults(navigator.language || "en-AU");
+  if (s.settings.clock24 === want.clock24 && s.settings.weekStartsOn === want.weekStartsOn) return null;
+  const text = `${want.weekStartsOn ? "Monday" : "Sunday"} week start, ${want.clock24 ? "24-hour" : "12-hour"} clock`;
+  return (
+    <Suggest
+      label="Suggested for your region"
+      items={[
+        {
+          label: `Use ${text}`,
+          onUse: () =>
+            s.updateSettings((st) => {
+              st.clock24 = want.clock24;
+              st.weekStartsOn = want.weekStartsOn;
+            }),
+        },
+      ]}
+    />
   );
 }

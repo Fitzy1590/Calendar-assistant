@@ -19,6 +19,7 @@ export const WHATS_NEW: WhatsNewEntry[] = [
       "The Windows app now downloads and installs updates by itself when it starts, then restarts. No more GitHub page.",
       "Sports opens on a week or month calendar of upcoming games, with a list view and a filter by team. The Sports menu starts collapsed.",
       "Full screen button (or F11) hides the title bar; Esc leaves it. The app always opens on Home.",
+      "Settings now suggest values: server settings for Bigpond and other mail, device names, your town, news topics, popular teams, rule keywords, and links to where each key comes from.",
     ],
   },
   {

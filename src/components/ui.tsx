@@ -105,6 +105,29 @@ export function PageHead({
   );
 }
 
+/** A row of one-tap suggestions under a field ("Suggestions: Home PC · Work PC"). */
+export function Suggest({
+  label = "Suggestions",
+  items,
+}: {
+  label?: string;
+  items: { label: string; onUse: () => void; title?: string }[];
+}) {
+  if (!items.length) return null;
+  return (
+    <div className="row" role="group" aria-label={label} style={{ flexWrap: "wrap", gap: 6 }}>
+      <span className="faint" style={{ fontSize: 12.5 }}>
+        {label}:
+      </span>
+      {items.map((i) => (
+        <button key={i.label} type="button" className="chip" title={i.title} onClick={i.onUse}>
+          {i.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <label className="field">

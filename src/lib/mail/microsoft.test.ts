@@ -29,3 +29,18 @@ describe("graphApi", () => {
     );
   });
 });
+
+import { explainMicrosoftError } from "./microsoft";
+
+describe("explainMicrosoftError", () => {
+  it("turns the common setup errors into the fix", () => {
+    expect(explainMicrosoftError("AADSTS7000218: The request body must contain client_assertion")).toMatch(/Allow public client flows/);
+    expect(explainMicrosoftError("AADSTS50011: The redirect URI does not match")).toMatch(/Mobile and desktop/);
+    expect(explainMicrosoftError("AADSTS700016: Application not found")).toMatch(/client\) ID/);
+    expect(explainMicrosoftError("AADSTS50020: user account does not exist")).toMatch(/personal Microsoft accounts/);
+  });
+  it("leaves other messages alone", () => {
+    expect(explainMicrosoftError("Outlook sign-in timed out. Try again.")).toBe("Outlook sign-in timed out. Try again.");
+    expect(explainMicrosoftError("AADSTS99999: something new")).toBe("AADSTS99999: something new");
+  });
+});

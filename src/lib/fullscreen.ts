@@ -2,7 +2,7 @@ import { isTauri } from "./platform";
 import { toast, useStore } from "../store";
 
 /**
- * Full screen on and off. In the Windows app this hides the title bar and, unless you turn it off in Settings, the
+ * Full screen on and off. In the Windows app this hides the title bar (the window is maximised without its frame) and, if you turn it on in Settings, the
  * taskbar too: the window loses its frame and covers the whole screen itself. (It does not use the system's own
  * full screen mode, which misplaces the mouse on rotated or scaled displays.) Esc or F11 brings everything back.
  * In a browser it uses the browser's own full screen.

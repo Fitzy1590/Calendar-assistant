@@ -54,7 +54,7 @@ google.com/device on any device, and the phone receives the sign-in. Drive sync 
 Google allows in this flow (if Google ever refuses, the sign-in dialog shows its message).
 
 1. In Google Cloud (the **same project** as your Windows client; the hidden folder is shared per project): APIs & Services →
-   Credentials → Create credentials → OAuth client ID → type **TVs and Limited Input devices**. Copy the client ID and secret.
+   Credentials → **+ Create credentials → OAuth client ID** (not "Help me choose") → type **TVs and Limited Input devices**. Copy the client ID and secret.
 2. If the OAuth consent screen is in **Testing**, add your Google account as a test user. In Testing, Google ends the sign-in after
    about 7 days; set the app to **In production** (an "unverified app" warning is fine for personal use) to keep it.
 3. On the phone: Settings → Phone & sync → **Sync through Google Drive**. Enter the client ID and secret, press **Get a sign-in

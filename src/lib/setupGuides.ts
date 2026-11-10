@@ -45,7 +45,7 @@ const projectSteps: GuideStep[] = [
 const windowsSteps: GuideStep[] = [
   {
     title: "Create the key for this PC",
-    body: "On the Credentials page press Create credentials → OAuth client ID. Application type: Desktop app. Name: Calendar Assistant PC. Press Create, then copy the Client ID and the Client secret.",
+    body: "On the Credentials page press “+ Create credentials” and choose “OAuth client ID” from the menu (not “Help me choose”, which asks “Which API are you using?”: press Cancel if you land there). Application type: Desktop app. Name: Calendar Assistant PC. Press Create, then copy the Client ID and the Client secret.",
     links: [{ label: "Open Credentials", url: `${CLOUD}/apis/credentials` }],
   },
   {
@@ -63,7 +63,7 @@ const windowsSteps: GuideStep[] = [
 const androidSteps: GuideStep[] = [
   {
     title: "Create the key for this phone",
-    body: "On the Credentials page press Create credentials → OAuth client ID. Application type: TVs and Limited Input devices. Name: Calendar Assistant phone. Press Create, then copy the Client ID and the Client secret.",
+    body: "On the Credentials page press “+ Create credentials” and choose “OAuth client ID” from the menu (not “Help me choose”, which asks “Which API are you using?”: press Cancel if you land there). Application type: TVs and Limited Input devices. Name: Calendar Assistant phone. Press Create, then copy the Client ID and the Client secret.",
     links: [{ label: "Open Credentials", url: `${CLOUD}/apis/credentials` }],
   },
   {

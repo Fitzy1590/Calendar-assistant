@@ -44,3 +44,21 @@ describe("explainMicrosoftError", () => {
     expect(explainMicrosoftError("AADSTS99999: something new")).toBe("AADSTS99999: something new");
   });
 });
+
+import { parseTokenResponse } from "./microsoft";
+
+describe("parseTokenResponse", () => {
+  it("returns the tokens on success", () => {
+    expect(parseTokenResponse(200, JSON.stringify({ access_token: "a", expires_in: 3600, refresh_token: "r" }))).toMatchObject({
+      access_token: "a",
+      refresh_token: "r",
+    });
+  });
+  it("throws the description Microsoft gives, or a bare invalid_grant, or the status", () => {
+    expect(() => parseTokenResponse(400, JSON.stringify({ error: "invalid_request", error_description: "AADSTS90023: x" }))).toThrow(
+      "AADSTS90023",
+    );
+    expect(() => parseTokenResponse(400, JSON.stringify({ error: "invalid_grant", error_description: "long" }))).toThrow("invalid_grant");
+    expect(() => parseTokenResponse(502, "<html>")).toThrow("Microsoft 502");
+  });
+});

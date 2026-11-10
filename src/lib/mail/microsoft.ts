@@ -27,17 +27,25 @@ const DONE_PAGE = `<!doctype html><html><head><meta charset="utf-8"><title>Signe
 <body style="font:16px system-ui;padding:48px;max-width:560px;margin:auto;color:#1d1b17;background:#f6f5f2">
 <h2 style="margin:0 0 8px">Signed in to Calendar Assistant</h2><p>You can close this tab and go back to the app.</p></body></html>`;
 
-async function tokenRequest(body: Record<string, string>) {
-  // native HTTP in the app: no CORS problems
-  const { fetch: tfetch } = await import("@tauri-apps/plugin-http");
-  const r = await tfetch(`${AUTH}/token`, {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams(body).toString(),
-  });
-  const j = await r.json();
-  if (!r.ok) throw new Error(j.error === "invalid_grant" ? "invalid_grant" : j.error_description || j.error || `Microsoft ${r.status}`);
+/** Microsoft's answer to a token request: the tokens, or an error that says what to fix. Pure. */
+export function parseTokenResponse(status: number, text: string) {
+  let j: any = {};
+  try {
+    j = JSON.parse(text);
+  } catch {
+    /* not JSON: fall through to the status */
+  }
+  if (status < 200 || status >= 300) {
+    throw new Error(j.error === "invalid_grant" ? "invalid_grant" : j.error_description || j.error || `Microsoft ${status}`);
+  }
   return j as { access_token: string; expires_in: number; refresh_token?: string };
+}
+
+async function tokenRequest(body: Record<string, string>) {
+  // sent by the app itself (src-tauri/src/oauth_proxy.rs): the web view would add an Origin header, which Microsoft refuses
+  const { invoke } = await import("@tauri-apps/api/core");
+  const [status, text] = await invoke<[number, string]>("ms_token_request", { form: body });
+  return parseTokenResponse(status, text);
 }
 
 /** Plain-English fixes for the Microsoft sign-in errors people actually hit while setting up their app. Pure. */
@@ -50,6 +58,7 @@ export function explainMicrosoftError(msg: string): string {
     "50011": "In your Microsoft app (Entra → Authentication), add the redirect `http://localhost` under “Mobile and desktop applications”.",
     "700016": "Microsoft doesn't know that app ID. Check the Application (client) ID you pasted.",
     "50020": "Your Microsoft app must allow personal Microsoft accounts: Entra → Authentication → Supported account types.",
+    "90023": "Microsoft refused the request as cross-origin. Update the app to the newest version.",
     "700025": "In your Microsoft app (Entra → Authentication), turn on “Allow public client flows” and save.",
     "65001": "Microsoft needs you to accept the permission. Press the button again and choose Accept.",
   };

@@ -13,6 +13,14 @@ export interface WhatsNewEntry {
 
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    version: "0.1.7",
+    title: "Your phone joins Drive sync",
+    points: [
+      "On Android, sign in to Google Drive with a short code (google.com/device) and your phone syncs through the same hidden Drive folder as your PC.",
+      "It syncs when the app opens, every few minutes while it's running, and soon after you change something.",
+    ],
+  },
+  {
     version: "0.1.6",
     title: "Sync through Google Drive",
     points: [

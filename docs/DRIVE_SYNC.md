@@ -36,14 +36,23 @@ Calendar Assistant can see. Works on the same Google account on every device. Bo
 - Not instant: changes show up after the sync interval (or at once if both apps are open and you press Sync now). The sync server
   is faster.
 - Your data must stay under about 25 MB.
-- **Android is not connected yet.** It needs its own sign-in (see below).
+- Android signs in with a device code (see below); it syncs while the app is open, not while closed.
 
-## Android (next step)
+## Android
 
-Android can't use the Windows sign-in. Plan: **device-code sign-in**: the phone shows a short code, you enter it at
-google.com/device. Google allows only the Drive app-folder permission for that flow, which is all this needs.
+Android can't use the Windows sign-in, so the phone signs in with a **device code**: it shows a short code, you type it at
+google.com/device on any device, and the phone receives the sign-in. Drive sync only needs the Drive app-folder permission, which
+Google allows in this flow (if Google ever refuses, the sign-in dialog shows its message).
 
-- Create a second OAuth client of type **TVs and Limited Input devices** in the **same Google Cloud project** as the Windows client
-  (the hidden folder is shared per project).
-- Android syncs when the app opens, returns to the front, and on a timer while running. Sync while the app is closed needs native
-  Android code (WorkManager, 15-minute minimum) and is a separate, later step.
+1. In Google Cloud (the **same project** as your Windows client; the hidden folder is shared per project): APIs & Services →
+   Credentials → Create credentials → OAuth client ID → type **TVs and Limited Input devices**. Copy the client ID and secret.
+2. If the OAuth consent screen is in **Testing**, add your Google account as a test user. In Testing, Google ends the sign-in after
+   about 7 days; set the app to **In production** (an "unverified app" warning is fine for personal use) to keep it.
+3. On the phone: Settings → Phone & sync → **Sync through Google Drive**. Enter the client ID and secret, press **Get a sign-in
+   code**, enter the code at google.com/device, pick your account and allow it. The dialog closes and Drive sync turns on.
+4. The phone then syncs when the app opens or returns to the front, every few minutes while it is running, and soon after you change
+   something. The client secret stays on the phone only (not in backups).
+
+- Needs an Android build that includes this feature (it is not in the APK from before v0.1.7).
+- Sync while the app is **closed** needs native Android code (WorkManager, 15-minute minimum). That is not built yet.
+- Calendar and Gmail never sign in on the phone: Windows syncs them and they reach the phone through the Drive files.

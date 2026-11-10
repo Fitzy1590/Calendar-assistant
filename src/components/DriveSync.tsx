@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { useStore, toast } from "../store";
 import { ageLabel, freshness } from "../lib/driveSync";
-import { connectDriveSync, driveSyncAvailable, driveSyncNow, useDriveSync } from "../lib/driveSyncApp";
-import { googleConfigured, googleConnected, SCOPES } from "../lib/google";
-import { isAndroid } from "../lib/platform";
-import { Toggle } from "./ui";
+import { connectDriveSync, driveSyncAvailable, driveSyncNow, enableDriveSync, useDriveSync } from "../lib/driveSyncApp";
+import { beginDeviceSignIn, deviceConfigured, type DeviceCode } from "../lib/googleDevice";
+import { googleConfigured, googleConnected, googleDisconnect, SCOPES } from "../lib/google";
+import { isAndroid, openUrl } from "../lib/platform";
+import { Field, Modal, Toggle } from "./ui";
 
 /** Re-render every 30 s so "synced 4 min ago" and the stale warning stay true. */
 function useTick(ms = 30_000) {
@@ -20,7 +21,7 @@ export function StaleBanner() {
   const d = useStore((s) => s.settings.driveSync);
   const { syncing } = useDriveSync();
   useTick();
-  if (isAndroid() || !driveSyncAvailable()) return null;
+  if (!driveSyncAvailable()) return null;
   const f = freshness(d.enabled, d.lastOkAt, d.staleMins);
   if (f.state === "off" || f.state === "fresh" || (f.state === "never" && !d.lastError && syncing)) return null;
   const text =
@@ -62,14 +63,11 @@ export function DriveSyncSetup() {
       setBusy(false);
     }
   };
-  if (isAndroid())
-    return (
-      <div className="muted">
-        Android will join Drive sync in the next step: it signs in with a short code you type at google.com/device. Until then the sync
-        server keeps your phone up to date.
-      </div>
-    );
-  const ready = googleConfigured();
+  const android = isAndroid();
+  const [code, setCode] = useState(false);
+  const email = useStore((s) => s.settings.email);
+  const connected = googleConnected(SCOPES.drive);
+  const ready = android ? deviceConfigured() : googleConfigured();
   const f = freshness(d.enabled, d.lastOkAt, d.staleMins);
   return (
     <div className="stack">
@@ -79,16 +77,51 @@ export function DriveSyncSetup() {
         within a few minutes.
       </div>
       {!d.enabled ? (
-        <div className="row">
-          <button className="btn primary" disabled={!ready || busy} onClick={() => run(connectDriveSync, "Drive sync is on.")}>
-            {busy
-              ? "Waiting for your browser…"
-              : googleConnected(SCOPES.drive)
-                ? "Turn on Drive sync"
-                : "Connect Google and turn on Drive sync"}
-          </button>
-          {!ready && <span className="faint">Add your Google client ID under Email, Google & Outlook first.</span>}
-        </div>
+        android ? (
+          <div className="stack">
+            <div className="faint" style={{ fontSize: 12.5 }}>
+              The phone signs in with a short code you type at google.com/device. In Google Cloud, create an OAuth client of type “TVs and
+              Limited Input devices” in the same project as your Windows client, then enter its ID and secret here (step by step in
+              docs/DRIVE_SYNC.md).
+            </div>
+            <Field label="Client ID (TVs and Limited Input devices)">
+              <input
+                className="input mono"
+                value={email.googleDeviceClientId}
+                onChange={(e) => update((st) => void (st.email.googleDeviceClientId = e.target.value.trim()))}
+                placeholder="xxxx.apps.googleusercontent.com"
+              />
+            </Field>
+            <Field label="Client secret">
+              <input
+                className="input mono"
+                type="password"
+                value={email.googleDeviceClientSecret}
+                onChange={(e) => update((st) => void (st.email.googleDeviceClientSecret = e.target.value.trim()))}
+                placeholder="GOCSPX-…"
+              />
+            </Field>
+            <div className="row">
+              {connected ? (
+                <button className="btn primary" disabled={busy} onClick={() => run(enableDriveSync, "Drive sync is on.")}>
+                  Turn on Drive sync
+                </button>
+              ) : (
+                <button className="btn primary" disabled={!ready} onClick={() => setCode(true)}>
+                  Get a sign-in code
+                </button>
+              )}
+              {connected && <span className="faint">Signed in to Google Drive on this phone.</span>}
+            </div>
+          </div>
+        ) : (
+          <div className="row">
+            <button className="btn primary" disabled={!ready || busy} onClick={() => run(connectDriveSync, "Drive sync is on.")}>
+              {busy ? "Waiting for your browser…" : connected ? "Turn on Drive sync" : "Connect Google and turn on Drive sync"}
+            </button>
+            {!ready && <span className="faint">Add your Google client ID under Email, Google & Outlook first.</span>}
+          </div>
+        )
       ) : (
         <>
           <span className="row">
@@ -147,6 +180,20 @@ export function DriveSyncSetup() {
               Skipped: {errors.join(" · ")}
             </div>
           )}
+          {android && (
+            <div>
+              <button
+                className="btn sm ghost"
+                onClick={() => (
+                  googleDisconnect(),
+                  update((st) => void (st.driveSync.enabled = false)),
+                  toast("Signed out of Google Drive on this phone.")
+                )}
+              >
+                Sign out of Google Drive
+              </button>
+            </div>
+          )}
           <span className="row">
             Warn me if the calendar hasn't synced for
             <select
@@ -165,6 +212,81 @@ export function DriveSyncSetup() {
           </span>
         </>
       )}
+      {code && (
+        <DeviceCodeModal
+          onClose={() => setCode(false)}
+          onDone={() => (setCode(false), run(enableDriveSync, "Signed in. Drive sync is on."))}
+        />
+      )}
     </div>
+  );
+}
+
+/** Android: shows the code to type at google.com/device, and waits for it. */
+function DeviceCodeModal({ onClose, onDone }: { onClose: () => void; onDone: () => void }) {
+  const [state, setState] = useState<{ code?: DeviceCode; error?: string }>({});
+  useTick(1000);
+  useEffect(() => {
+    let alive = true;
+    let cancel = () => {};
+    beginDeviceSignIn().then(
+      ({ code, done, cancel: c }) => {
+        cancel = c;
+        if (!alive) return c();
+        setState({ code });
+        done.then(
+          () => alive && onDone(),
+          (e: Error) => alive && setState((x) => ({ ...x, error: e.message })),
+        );
+      },
+      (e: Error) => alive && setState({ error: e.message }),
+    );
+    return () => {
+      alive = false;
+      cancel();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const left = state.code ? Math.max(0, Math.round((state.code.expiresAt - Date.now()) / 1000)) : 0;
+  return (
+    <Modal
+      title="Sign in to Google Drive"
+      onClose={onClose}
+      footer={
+        <>
+          <button className="btn ghost" onClick={onClose}>
+            Cancel
+          </button>
+          {state.code && (
+            <button className="btn primary" onClick={() => openUrl(state.code!.url)}>
+              Open google.com/device
+            </button>
+          )}
+        </>
+      }
+    >
+      <div className="stack" role="status" aria-live="polite">
+        {state.error ? (
+          <div role="alert" style={{ color: "var(--bad)" }}>
+            {state.error}
+          </div>
+        ) : !state.code ? (
+          <div className="muted">Getting a code from Google…</div>
+        ) : (
+          <>
+            <div>
+              On any device, open <b>google.com/device</b> and enter this code:
+            </div>
+            <div className="mono" style={{ fontSize: 32, fontWeight: 700, letterSpacing: ".08em" }}>
+              {state.code.userCode}
+            </div>
+            <div className="faint" style={{ fontSize: 12.5 }}>
+              Choose your Google account and allow “Calendar Assistant” to use its hidden Drive folder. This window closes by itself when
+              it's done. The code works for {Math.floor(left / 60)}:{String(left % 60).padStart(2, "0")}.
+            </div>
+          </>
+        )}
+      </div>
+    </Modal>
   );
 }

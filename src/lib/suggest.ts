@@ -5,17 +5,17 @@ export const DEVICE_NAMES = {
   android: ["My phone", "Pixel", "Samsung phone", "Tablet"],
 } as const;
 
-export const NEWS_KEYWORDS = ["Formula 1", "AFL", "NRL", "Cricket", "Property", "Interest rates", "Climate", "Travel", "Electric cars", "Space"];
+export const NEWS_KEYWORDS = [
   "Formula 1",
   "AFL",
   "NRL",
   "Cricket",
-  "Technology",
   "Property",
   "Interest rates",
   "Climate",
-  "Health",
   "Travel",
+  "Electric cars",
+  "Space",
 ];
 
 export const POPULAR_TEAMS = [

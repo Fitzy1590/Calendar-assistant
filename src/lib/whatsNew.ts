@@ -18,6 +18,7 @@ export const WHATS_NEW: WhatsNewEntry[] = [
     points: [
       "A “Step-by-step setup guide” button in the setup wizard and Settings walks you through connecting Google (Drive and Calendar) and Outlook.",
       "Each step has a button that opens the exact Google or Microsoft page, with separate steps for your PC and your phone.",
+      "Fixed phone sign-in to Google Drive: sync now uses a “Calendar Assistant (sync)” folder in your Drive.",
     ],
   },
   {

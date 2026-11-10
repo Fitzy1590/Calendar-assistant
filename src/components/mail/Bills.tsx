@@ -120,7 +120,7 @@ export function Bills() {
       </div>
       {!showPaid && unpaid.length > 0 && (
         <div className="faint" style={{ fontSize: 12.5 }}>
-          “Paid” is tracked in this app only. It doesn't pay anything or change your Outlook inbox.
+          “Paid” is tracked in this app only. It doesn't pay anything or change your mailbox.
         </div>
       )}
     </div>

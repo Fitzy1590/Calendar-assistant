@@ -1,4 +1,5 @@
 import { htmlToText } from "./text";
+import type { InboxSync, MailProvider } from "./provider";
 import type { MailAddr, RawMail } from "./types";
 
 /**
@@ -64,13 +65,6 @@ export async function fetchHeaders(api: GraphApi, providerIds: string[]): Promis
   return out;
 }
 
-export interface InboxSync {
-  upserts: RawMail[];
-  removedIds: string[]; // full ids (`account:provider`)
-  deltaLink?: string;
-  initial: boolean; // the first sync (or a fresh start after Graph dropped the bookmark): don't alert for the backlog
-}
-
 /** What changed in the inbox since `deltaLink`; without one, the last `sinceDays` days. */
 export async function syncInbox(api: GraphApi, acct: { id: string; deltaLink?: string }, sinceDays = 30): Promise<InboxSync> {
   const fresh = () =>
@@ -121,3 +115,8 @@ export async function fetchProfile(api: GraphApi): Promise<{ address: string; na
   const j = await api(`${GRAPH}/me?$select=mail,userPrincipalName,displayName`);
   return { address: String(j?.mail || j?.userPrincipalName || "").toLowerCase(), name: String(j?.displayName || "") };
 }
+
+export const graphProvider = (api: GraphApi): MailProvider => ({
+  sync: (account) => syncInbox(api, account),
+  bodyText: (id) => fetchBodyText(api, id),
+});

@@ -7,8 +7,7 @@ import { HandlePanel } from "../components/mail/HandlePanel";
 import { BUCKET_LABEL } from "../lib/mail/classify";
 import { dismissMail, needsAttention, refreshMail, syncMail, unpaidBills, useMail } from "../lib/mail/engine";
 import { getMessage, putMessages } from "../lib/mail/cache";
-import { fetchBodyText } from "../lib/mail/graph";
-import { msApiFor } from "../lib/mail/microsoft";
+import { providerFor } from "../lib/mail/providers";
 import type { MailBucket, MailMessage } from "../lib/mail/types";
 import { isAndroid } from "../lib/platform";
 
@@ -47,14 +46,19 @@ export function Email() {
   );
   const selected = messages.find((m) => m.id === selectedId);
 
-  // open a message: show it, mark it seen here (not in Outlook), and load its text if it isn't cached
+  // open a message: show it, mark it seen here (not in your mailbox), and load its text if it isn't cached
   useEffect(() => {
     if (!selected) return;
     if (!selected.dismissed) void dismissMail(selected.id);
     if (selected.text) return void setBody({ id: selected.id, text: selected.text, loading: false });
     setBody({ id: selected.id, text: "", loading: true });
     let cancelled = false;
-    fetchBodyText(msApiFor(selected.accountId), selected.providerId)
+    Promise.resolve()
+      .then(() => {
+        const acct = s.settings.mail.accounts.find((a) => a.id === selected.accountId);
+        if (!acct) throw new Error("account removed");
+        return providerFor(acct).bodyText(selected.providerId);
+      })
       .then(async (text) => {
         if (cancelled) return;
         setBody({ id: selected.id, text, loading: false });
@@ -97,7 +101,9 @@ export function Email() {
       <>
         <PageHead title="Email" />
         <div className="card stack">
-          <div>Connect your Outlook or Hotmail account to see your mail here, with junk and subscriptions kept out of the way.</div>
+          <div>
+            Connect your Outlook, Gmail or other email account to see your mail here, with junk and subscriptions kept out of the way.
+          </div>
           <div>
             <button className="btn primary" onClick={() => s.setPage("settings")}>
               Set up email in Settings
@@ -212,7 +218,7 @@ export function Email() {
               </pre>
               <HandlePanel m={selected} />
               <div className="faint" style={{ fontSize: 12 }}>
-                Opening a message here only marks it as seen in this app. Your Outlook inbox is not changed.
+                Opening a message here only marks it as seen in this app. Your mailbox is not changed.
               </div>
             </div>
           ) : (

@@ -2,13 +2,16 @@ import { useState } from "react";
 import { format } from "date-fns";
 import { useStore } from "../../store";
 import { reclassifyCached, syncMail } from "../../lib/mail/engine";
-import { connectOutlook, disconnectOutlook, msConfigured, msSignInAvailable } from "../../lib/mail/microsoft";
+import { connectGmail, connectImap, disconnectAccount, otherMailAvailable } from "../../lib/mail/accounts";
+import { domainOf, guessImap } from "../../lib/mail/imapPresets";
+import { connectOutlook, msConfigured, msSignInAvailable } from "../../lib/mail/microsoft";
+import { googleConfigured } from "../../lib/google";
 import { toast } from "../../store";
 import { SetupGuideButton } from "../SetupGuide";
 import { Field, Toggle } from "../ui";
 import { RulesEditor } from "./RulesEditor";
 
-/** Settings: connect Outlook, choose what counts as important, and how it alerts. */
+/** Settings: connect Outlook, Gmail or any IMAP mailbox, choose what counts as important, and how it alerts. */
 export function EmailSetup() {
   const s = useStore();
   const m = s.settings.mail;
@@ -34,6 +37,28 @@ export function EmailSetup() {
       return syncMail();
     });
   const canConnect = msSignInAvailable() && msConfigured();
+  const [imap, setImap] = useState<{ open: boolean; address: string; password: string; host: string; port: number; edited: boolean }>({
+    open: false,
+    address: "",
+    password: "",
+    host: "",
+    port: 993,
+    edited: false,
+  });
+  const preset = guessImap(imap.address);
+  const host = imap.edited ? imap.host : preset.host;
+  const port = imap.edited ? imap.port : preset.port;
+  const addImap = () =>
+    run("imap", async () => {
+      await connectImap(imap.address, { host, port, user: imap.address, password: imap.password });
+      setImap({ open: false, address: "", password: "", host: "", port: 993, edited: false });
+      return syncMail();
+    });
+  const addGmail = () =>
+    run("gmail", async () => {
+      await connectGmail();
+      return syncMail();
+    });
   return (
     <div className="stack">
       <div className="stack" style={{ gap: 8 }}>
@@ -53,9 +78,32 @@ export function EmailSetup() {
               </span>
             </span>
             <span className="row">
-              {a.status === "needs-reconnect" && (
+              {a.status === "needs-reconnect" && a.provider === "graph" && (
                 <button className="btn sm primary" disabled={!canConnect || !!busy} onClick={connect}>
                   Sign in again
+                </button>
+              )}
+              {a.status === "needs-reconnect" && a.provider === "gmail" && (
+                <button className="btn sm primary" disabled={!!busy} onClick={addGmail}>
+                  Sign in again
+                </button>
+              )}
+              {a.status === "needs-reconnect" && a.provider === "imap" && (
+                <button
+                  className="btn sm primary"
+                  disabled={!!busy}
+                  onClick={() =>
+                    setImap({
+                      open: true,
+                      address: a.address,
+                      password: "",
+                      host: a.imap?.host ?? "",
+                      port: a.imap?.port ?? 993,
+                      edited: !!a.imap,
+                    })
+                  }
+                >
+                  Enter password again
                 </button>
               )}
               <button className="btn sm" disabled={!!busy} onClick={() => run("sync", syncMail)}>
@@ -65,7 +113,7 @@ export function EmailSetup() {
                 className="btn sm ghost"
                 disabled={!!busy}
                 onClick={() =>
-                  run("rm", async () => (await disconnectOutlook(a.id), "Account removed, and its mail cleared from this device."))
+                  run("rm", async () => (await disconnectAccount(a), "Account removed, and its mail cleared from this device."))
                 }
               >
                 Disconnect
@@ -81,6 +129,83 @@ export function EmailSetup() {
         </button>
         {!msSignInAvailable() && <span className="faint">Sign-in runs in the installed Windows app.</span>}
       </div>
+      <div className="row" style={{ flexWrap: "wrap" }}>
+        <button className="btn" disabled={!otherMailAvailable() || !googleConfigured() || !!busy} onClick={addGmail}>
+          {busy === "gmail" ? "Waiting for your browser…" : "Add Gmail account"}
+        </button>
+        <button className="btn" disabled={!otherMailAvailable() || !!busy} onClick={() => setImap((x) => ({ ...x, open: !x.open }))}>
+          Add other email (Bigpond, Yahoo, iCloud…)
+        </button>
+        {!googleConfigured() && (
+          <span className="faint" style={{ fontSize: 12.5 }}>
+            Gmail uses the Google client ID from the Google setup above.
+          </span>
+        )}
+      </div>
+      {imap.open && (
+        <div className="stack" style={{ gap: 10, padding: 12, border: "1px solid var(--line-strong)", borderRadius: "var(--radius)" }}>
+          <Field label="Email address">
+            <input
+              className="input"
+              type="email"
+              autoComplete="off"
+              value={imap.address}
+              onChange={(e) => setImap({ ...imap, address: e.target.value })}
+              placeholder="you@bigpond.com"
+            />
+          </Field>
+          <Field label="Password">
+            <input
+              className="input"
+              type="password"
+              autoComplete="off"
+              value={imap.password}
+              onChange={(e) => setImap({ ...imap, password: e.target.value })}
+            />
+          </Field>
+          {imap.address.includes("@") && (
+            <div className="faint" style={{ fontSize: 12.5 }}>
+              {preset.useInstead ? (
+                <b>{preset.note}</b>
+              ) : (
+                <>
+                  Detected <b>{preset.name}</b> ({host || domainOf(imap.address)}). {preset.note}
+                </>
+              )}
+            </div>
+          )}
+          <details>
+            <summary className="faint">Server settings</summary>
+            <div className="row" style={{ marginTop: 8, flexWrap: "wrap" }}>
+              <input
+                className="input mono"
+                aria-label="IMAP server"
+                value={host}
+                onChange={(e) => setImap({ ...imap, host: e.target.value.trim(), port, edited: true })}
+              />
+              <input
+                className="input mono"
+                aria-label="Port"
+                style={{ width: 90 }}
+                inputMode="numeric"
+                value={port}
+                onChange={(e) => setImap({ ...imap, host, port: Number(e.target.value) || 993, edited: true })}
+              />
+            </div>
+          </details>
+          <div className="row">
+            <button className="btn primary" disabled={!!busy || !imap.address || !imap.password || !!preset.useInstead} onClick={addImap}>
+              {busy === "imap" ? "Checking the password…" : "Connect"}
+            </button>
+            <button className="btn ghost" disabled={!!busy} onClick={() => setImap((x) => ({ ...x, open: false }))}>
+              Cancel
+            </button>
+          </div>
+          <div className="faint" style={{ fontSize: 12.5 }}>
+            Read-only. Your password is kept in Windows' secure storage on this PC, never in settings, backups or sync.
+          </div>
+        </div>
+      )}
       <Field label="Microsoft app (client) ID">
         <input
           className="input mono"

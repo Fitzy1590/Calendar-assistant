@@ -62,11 +62,14 @@ export type RawMail = Omit<MailMessage, "bucket" | "important" | "reasons">;
 
 export interface MailAccountMeta {
   id: string;
-  provider: "graph";
+  provider: "graph" | "gmail" | "imap";
   address: string;
   name: string;
   enabled: boolean;
-  deltaLink?: string; // Graph's "changes since" bookmark
+  /** Where this provider left off: Graph's delta link, Gmail's historyId, IMAP's UIDVALIDITY. Opaque to the engine. */
+  deltaLink?: string;
+  /** IMAP only. The password is in the secure store, never here. */
+  imap?: { host: string; port: number; user: string };
   lastSyncAt?: number;
   status: "ok" | "needs-reconnect" | "error";
   error?: string;

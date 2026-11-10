@@ -13,6 +13,15 @@ export interface WhatsNewEntry {
 
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    version: "0.1.9",
+    title: "Gmail, Bigpond and other email",
+    points: [
+      "Add a Gmail account, or any other mailbox (Bigpond / Telstra, Yahoo, iCloud and more) from Settings → Email.",
+      "They get the same junk and subscription filtering, important-mail alerts, rules and Bills tab as Outlook.",
+      "Read-only: nothing is sent, moved or deleted in your mailbox.",
+    ],
+  },
+  {
     version: "0.1.8",
     title: "Setup guides built in",
     points: [

@@ -7,6 +7,10 @@ use std::sync::atomic::{AtomicBool, Ordering};
 #[cfg(windows)]
 mod browser_mode;
 mod crash;
+#[cfg(not(target_os = "android"))]
+mod imap_core;
+#[cfg_attr(target_os = "android", path = "imap_stub.rs")]
+mod imap_mail;
 mod secure_store;
 #[cfg(windows)]
 mod webview_fix;
@@ -96,7 +100,10 @@ pub fn run() {
             repair_webview,
             secure_store::secure_store_get,
             secure_store::secure_store_set,
-            secure_store::secure_store_delete
+            secure_store::secure_store_delete,
+            imap_mail::imap_test,
+            imap_mail::imap_sync,
+            imap_mail::imap_body
         ])
         .setup(|_app| {
             // Nice-to-haves never stop the app from opening: if one fails it's logged and skipped.

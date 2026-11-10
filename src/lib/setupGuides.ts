@@ -37,7 +37,7 @@ const projectSteps: GuideStep[] = [
   },
   {
     title: "Set up the sign-in screen",
-    body: "Press Get started (or Configure consent screen). App name: Calendar Assistant. Use your own email where it asks. Audience: External. Finish the steps. Then add yourself so Google lets you in: Audience → Test users → Add users → type your Google email. Later, press Publish app so your sign-in doesn't stop working after about a week.",
+    body: "Press Get started (or Configure consent screen). Step 1: App name “Calendar Assistant”, and pick your email as the support email, then Next. Step 2: Audience “External”, then Next. Step 3: type your email, then Next. Step 4: tick the agreement, press Continue, then Create. Then add yourself so Google lets you in: left menu → Audience → Test users → Add users → type your Google email → Save. Later, press Publish app so your sign-in doesn't stop working after about a week.",
     links: [{ label: "Open the sign-in screen settings", url: `${CLOUD}/apis/credentials/consent` }],
   },
 ];
@@ -45,7 +45,7 @@ const projectSteps: GuideStep[] = [
 const windowsSteps: GuideStep[] = [
   {
     title: "Create the key for this PC",
-    body: "On the Credentials page press “+ Create credentials” and choose “OAuth client ID” from the menu (not “Help me choose”, which asks “Which API are you using?”: press Cancel if you land there). Application type: Desktop app. Name: Calendar Assistant PC. Press Create, then copy the Client ID and the Client secret.",
+    body: "In the left menu open “Clients” and press “+ Create client” (on older screens: Credentials → “+ Create credentials” → “OAuth client ID”). Never choose “Help me choose”, which asks “Which API are you using?”: press Cancel if you land there. Application type: Desktop app. Name: Calendar Assistant PC. Press Create, then copy the Client ID and the Client secret.",
     links: [{ label: "Open Credentials", url: `${CLOUD}/apis/credentials` }],
   },
   {
@@ -63,7 +63,7 @@ const windowsSteps: GuideStep[] = [
 const androidSteps: GuideStep[] = [
   {
     title: "Create the key for this phone",
-    body: "On the Credentials page press “+ Create credentials” and choose “OAuth client ID” from the menu (not “Help me choose”, which asks “Which API are you using?”: press Cancel if you land there). Application type: TVs and Limited Input devices. Name: Calendar Assistant phone. Press Create, then copy the Client ID and the Client secret.",
+    body: "In the left menu open “Clients” and press “+ Create client” (on older screens: Credentials → “+ Create credentials” → “OAuth client ID”). Never choose “Help me choose”, which asks “Which API are you using?”: press Cancel if you land there. Application type: TVs and Limited Input devices. Name: Calendar Assistant phone. Press Create, then copy the Client ID and the Client secret.",
     links: [{ label: "Open Credentials", url: `${CLOUD}/apis/credentials` }],
   },
   {

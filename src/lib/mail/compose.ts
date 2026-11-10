@@ -184,3 +184,12 @@ export const canSendNow = (checks: SendCheck[]) => !checks.some((c) => c.level =
 /** The addresses typed into a "To" box. */
 export const parseRecipients = (text: string): MailAddr[] => parseAddrList(text.replace(/;/g, ","));
 export const recipientsText = (list: MailAddr[]) => list.map((a) => (a.name ? `${a.name} <${a.address}>` : a.address)).join(", ");
+
+/** Put new text where you write (above the signature and the quoted original), keeping both. */
+export function withDraft(body: string, text: string, signature = ""): string {
+  const quote = body.slice(ownText(body).length);
+  return `${text.trim()}\n\n${signature.trim() ? `${signature.trim()}\n\n` : ""}${quote.replace(/^\n+/, "")}`.replace(
+    /\n+$/,
+    quote ? "\n" : "",
+  );
+}

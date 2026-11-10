@@ -14,11 +14,11 @@ export interface WhatsNewEntry {
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
     version: "0.2.3",
-    title: "Email folders and a connection guide",
+    title: "Reply, forward and send email",
     points: [
-      "Right-click an email to create a rule and a new folder in one step, or move it to a folder. Folders live in this app only; your mailbox is never changed.",
-      "Rules can file mail into a folder, and folders show up beside Inbox in the Email page (manage them in Settings → Email).",
-      "Add other email (Bigpond, Yahoo, iCloud…) now explains what went wrong and how to fix it, and tries other server names for you.",
+      "Reply, reply all, forward and write new email from Outlook, Gmail and Bigpond: right-click an email or use the buttons under it. Send has an undo, Send later, and a check before it goes. Allow sending once per account in Settings → Email.",
+      "Draft replies with Claude or Gemini (you edit and send; nothing sends itself), plus quick replies, thread summaries, dates to calendar or tasks, snooze, follow-up reminders, templates, signatures and attachments.",
+      "Folders and rules in this app, and a right-click menu you can reorder (Settings → Email). Add other email explains connection errors.",
     ],
   },
   {

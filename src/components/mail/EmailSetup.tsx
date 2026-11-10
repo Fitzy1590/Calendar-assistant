@@ -2,6 +2,8 @@ import { useState } from "react";
 import { format } from "date-fns";
 import { useStore } from "../../store";
 import { createFolder, deleteFolder, reclassifyCached, renameFolder, syncMail } from "../../lib/mail/engine";
+import { dropMenu, MENU_ITEMS, menuOrder, nudgeMenu, toggleMenuItem } from "../../lib/mail/menu";
+import { allowSending } from "../../lib/mail/accounts";
 import { connectGmail, connectImap, disconnectAccount, otherMailAvailable } from "../../lib/mail/accounts";
 import { domainOf, guessImap } from "../../lib/mail/imapPresets";
 import { explainImapError } from "../../lib/mail/imapHelp";
@@ -239,6 +241,8 @@ export function EmailSetup() {
       </div>
 
       <FoldersEditor />
+      <MenuEditor />
+      <WritingEditor />
 
       <h4 style={{ margin: "8px 0 0" }}>What counts as important</h4>
       <span className="row">
@@ -432,6 +436,185 @@ function FoldersEditor() {
       </form>
       <div className="faint" style={{ fontSize: 12.5 }}>
         Deleting a folder doesn't delete any mail: it goes back to the Inbox views. Your real mailbox is never changed.
+      </div>
+    </div>
+  );
+}
+
+/** Settings: the right-click menu on an email. Move items up and down (or drag them), and hide the ones you don't use. */
+function MenuEditor() {
+  const s = useStore();
+  const menu = s.settings.mail.menu;
+  const order = menuOrder(menu);
+  const [drag, setDrag] = useState<string | null>(null);
+  const set = (next: typeof menu) => s.updateSettings((st) => void (st.mail.menu = next));
+  return (
+    <div className="stack" style={{ gap: 8 }}>
+      <h4 style={{ margin: "8px 0 0" }}>Right-click menu</h4>
+      <div className="faint" style={{ fontSize: 12.5 }}>
+        Right-click an email to reply, forward, draft with Claude or Gemini and more. Drag items, or use the arrows, to put them in the
+        order you like.
+      </div>
+      <ol
+        className="list"
+        style={{ margin: 0, padding: 0, listStyle: "none", display: "grid", gap: 4 }}
+        aria-label="Right-click menu items"
+      >
+        {order.map((id, i) => {
+          const label = MENU_ITEMS.find((x) => x.id === id)!.label;
+          const shown = !menu.hidden.includes(id);
+          return (
+            <li
+              key={id}
+              className="row"
+              draggable
+              onDragStart={() => setDrag(id)}
+              onDragOver={(e) => drag && e.preventDefault()}
+              onDrop={(e) => {
+                e.preventDefault();
+                if (drag && drag !== id) set(dropMenu(menu, drag, id));
+                setDrag(null);
+              }}
+              onDragEnd={() => setDrag(null)}
+              style={{ justifyContent: "space-between", flexWrap: "nowrap", cursor: "grab" }}
+            >
+              <span className="row">
+                <span className="faint mono" aria-hidden="true">
+                  {i + 1}
+                </span>
+                <Toggle checked={shown} onChange={() => set(toggleMenuItem(menu, id))} label={`Show “${label}”`} />{" "}
+                <span style={{ opacity: shown ? 1 : 0.5 }}>{label}</span>
+              </span>
+              <span className="row">
+                <button
+                  className="btn sm ghost"
+                  aria-label={`Move ${label} up`}
+                  disabled={i === 0}
+                  onClick={() => set(nudgeMenu(menu, id, -1))}
+                >
+                  ↑
+                </button>
+                <button
+                  className="btn sm ghost"
+                  aria-label={`Move ${label} down`}
+                  disabled={i === order.length - 1}
+                  onClick={() => set(nudgeMenu(menu, id, 1))}
+                >
+                  ↓
+                </button>
+              </span>
+            </li>
+          );
+        })}
+      </ol>
+      <div>
+        <button className="btn sm ghost" onClick={() => set({ order: [], hidden: [] })}>
+          Reset to the standard menu
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/** Settings: sending and writing: who can send, the signature for each account, saved replies, and the undo time. */
+function WritingEditor() {
+  const s = useStore();
+  const m = s.settings.mail;
+  const [name, setName] = useState("");
+  const [body, setBody] = useState("");
+  if (!m.accounts.length) return null;
+  return (
+    <div className="stack" style={{ gap: 8 }}>
+      <h4 style={{ margin: "8px 0 0" }}>Sending and writing</h4>
+      {m.accounts.map((a) => (
+        <div key={a.id} className="stack" style={{ gap: 4 }}>
+          <div className="row" style={{ flexWrap: "wrap", justifyContent: "space-between" }}>
+            <b>{a.address}</b>
+            {a.canSend ? (
+              <span className="faint">Can send</span>
+            ) : (
+              <button
+                className="btn sm primary"
+                onClick={() =>
+                  allowSending(a).then(
+                    () => toast("Sending allowed."),
+                    (e: Error) => toast(e.message),
+                  )
+                }
+              >
+                Allow sending
+              </button>
+            )}
+          </div>
+          <textarea
+            className="input"
+            rows={2}
+            aria-label={`Signature for ${a.address}`}
+            placeholder="Signature, added to new messages and replies from this account"
+            value={m.signatures[a.id] ?? ""}
+            onChange={(e) => s.updateSettings((st) => void (st.mail.signatures[a.id] = e.target.value))}
+          />
+        </div>
+      ))}
+      <label className="row">
+        Undo for
+        <select
+          className="input"
+          style={{ width: "auto" }}
+          value={m.undoSeconds}
+          onChange={(e) => s.updateSettings((st) => void (st.mail.undoSeconds = Number(e.target.value)))}
+        >
+          {[5, 10, 20, 30].map((n) => (
+            <option key={n} value={n}>
+              {n} seconds
+            </option>
+          ))}
+        </select>
+        after pressing Send
+      </label>
+      <div className="eyebrow">Saved replies (templates)</div>
+      {m.templates.map((t) => (
+        <div key={t.id} className="row" style={{ justifyContent: "space-between", flexWrap: "nowrap" }}>
+          <span className="ellipsis">
+            <b>{t.name}</b> <span className="faint">{t.body.slice(0, 60)}</span>
+          </span>
+          <button
+            className="btn sm ghost"
+            onClick={() => s.updateSettings((st) => void (st.mail.templates = st.mail.templates.filter((x) => x.id !== t.id)))}
+          >
+            Delete
+          </button>
+        </div>
+      ))}
+      <input
+        className="input"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        placeholder="Template name, e.g. Confirm a booking"
+        maxLength={40}
+      />
+      <textarea
+        className="input"
+        rows={3}
+        value={body}
+        onChange={(e) => setBody(e.target.value)}
+        placeholder="Hi {first name}, confirming our booking on {date} at {time}."
+      />
+      <div className="row">
+        <button
+          className="btn sm"
+          disabled={!name.trim() || !body.trim()}
+          onClick={() => {
+            s.updateSettings((st) => void st.mail.templates.push({ id: crypto.randomUUID().slice(0, 8), name: name.trim(), body }));
+            setName("");
+            setBody("");
+          }}
+        >
+          Add template
+        </button>
+        <span className="faint" style={{ fontSize: 12.5 }}>
+          Fill-ins: {"{first name}"} {"{name}"} {"{date}"} {"{time}"}
+        </span>
       </div>
     </div>
   );

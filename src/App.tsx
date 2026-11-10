@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { isFullscreen, setFullscreen, toggleFullscreen } from "./lib/fullscreen";
 import { isTyping, pageForKey } from "./lib/shortcuts";
+import { MailHost } from "./components/mail/OutboxBar";
 import { isAndroid, isTauri } from "./lib/platform";
 import { useStore } from "./store";
 import { Sidebar } from "./components/Sidebar";
@@ -202,6 +203,7 @@ export default function App() {
       {s.feedbackOpen && <FeedbackModal />}
       {s.emailImportOpen && <EmailImport />}
       <CarryOver />
+      <MailHost />
       <UpdatePrompt />
       <WhatsNew />
       <ErrorAlert />

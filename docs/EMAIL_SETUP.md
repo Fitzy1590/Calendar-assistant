@@ -58,6 +58,18 @@ Settings → Email → **Add other email**. Type the address and password: the s
 - **Junk and subscriptions** (newsletters, mailing lists) never appear on Home or in alerts. They stay in their own folders in the
   Email page. Nothing is deleted, and nothing in Outlook is changed.
 
+## Writing and sending
+
+Right-click an email, or use the buttons under it: **Reply**, **Reply all**, **Forward**, **Draft with Claude** or **Draft with Gemini**. **New email** is at the top of the Email page.
+
+* **Allow sending (once per account):** Outlook asks for the "send mail" permission, Gmail asks to allow sending (enable the Gmail API first), and a Bigpond/Yahoo/iCloud account sends through its outgoing server (SMTP) with the same password. Settings → Email shows **Allow sending** for any account that hasn't been allowed yet.
+* **Send** puts the message in an outbox for 10 seconds (change it in Settings) so you can **Undo**. **Send later** schedules it; it goes out when the app is running at that time (it can stay in the tray) or the next time you open it. A message that fails to send is kept so you can retry.
+* **Before you send** you get a short check: no recipient, a bad address, an empty message, a forgotten attachment, no subject.
+* **Claude and Gemini** write a draft into the box; nothing is sent until you press Send. Add your keys in Settings → Assistant. The first time, you are shown exactly what will be sent: only the newest few messages, with quoted replies and signatures removed and card numbers, long numbers and link tokens hidden. Anything the AI isn't sure of is marked `[CHECK: …]` and Send stays off until you resolve it.
+* **Extras:** quick replies, thread summary and deadlines, dates in an email as calendar events or tasks (with clash warnings), snooze, "remind me if no reply in N days", templates with fill-ins, a signature per account, attachments up to 10 MB (3 MB for Outlook).
+* **Right-click menu:** Settings → Email → Right-click menu lets you drag items, use the arrows, or hide the ones you don't use.
+* Messages sent through Bigpond/IMAP are not saved to a Sent folder in your mailbox (Outlook and Gmail save theirs).
+
 ## Folders
 
 Right-click an email (or open it and press **Create rule + folder…**) to make a folder and a rule in one step: choose a new or existing folder

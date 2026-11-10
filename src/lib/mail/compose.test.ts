@@ -7,6 +7,7 @@ import {
   parseRecipients,
   recipientsFor,
   startCompose,
+  withDraft,
   subjectFor,
   unresolvedChecks,
   validAddress,
@@ -114,5 +115,19 @@ describe("addresses", () => {
     expect(validAddress("a@b.co")).toBe(true);
     expect(validAddress("a@b")).toBe(false);
     expect(parseRecipients("Sam <sam@x.com>; pat@y.com").map((a) => a.address)).toEqual(["sam@x.com", "pat@y.com"]);
+  });
+});
+
+describe("putting a draft into the message", () => {
+  const body = "\n\nLuke\n\nOn Tue 10 Nov 2026, 8:44 AM, Sam <s@x.com> wrote:\n> Can you confirm?";
+  it("writes above the signature and keeps the quote", () => {
+    const out = withDraft(body, "Yes, Thursday works.", "Luke");
+    expect(out.startsWith("Yes, Thursday works.\n\nLuke\n\nOn Tue")).toBe(true);
+    expect(out).toContain("> Can you confirm?");
+    expect(ownText(out).trim()).toBe("Yes, Thursday works.\n\nLuke");
+  });
+  it("works with no quote (a new message)", () => {
+    expect(withDraft("", "Hello", "")).toBe("Hello");
+    expect(withDraft("", "Hello", "Luke")).toBe("Hello\n\nLuke");
   });
 });

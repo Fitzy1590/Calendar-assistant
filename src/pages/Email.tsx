@@ -5,6 +5,9 @@ import { PageHead } from "../components/ui";
 import { Bills } from "../components/mail/Bills";
 import { FolderRuleDialog } from "../components/mail/FolderRuleDialog";
 import { HandlePanel } from "../components/mail/HandlePanel";
+import { ReaderTools } from "../components/mail/ReaderTools";
+import { isSnoozed } from "../lib/mail/followups";
+import { newMail } from "../lib/mail/composeStore";
 import { MailContextMenu } from "../components/mail/MailContextMenu";
 import { BUCKET_LABEL } from "../lib/mail/classify";
 import { dismissMail, needsAttention, refreshMail, syncMail, unpaidBills, useMail } from "../lib/mail/engine";
@@ -32,6 +35,7 @@ export function Email() {
   const [view, setView] = useState<View>("important");
   const [ctx, setCtx] = useState<{ m: MailMessage; x: number; y: number } | null>(null);
   const [fileFor, setFileFor] = useState<MailMessage | null>(null);
+  const [datesFor, setDatesFor] = useState<string | null>(null);
   const [body, setBody] = useState<{ id: string; text: string; loading: boolean } | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const accounts = s.settings.mail.accounts;
@@ -45,18 +49,21 @@ export function Email() {
   // mail filed in a folder leaves the other views; a folder that was deleted no longer holds any
   const filed = (m: MailMessage) => !!m.folderId && folderIds.includes(m.folderId);
   const current = view.startsWith("folder:") ? folders.find((f) => f.id === view.slice(7)) : undefined;
-  const viewLabel = current?.name ?? VIEWS.find((v) => v.id === view)?.label ?? "Mail";
+  const viewLabel = current?.name ?? (view === "snoozed" ? "Snoozed" : (VIEWS.find((v) => v.id === view)?.label ?? "Mail"));
   const rows = useMemo(
     () =>
       view.startsWith("folder:")
         ? messages.filter((m) => m.folderId === view.slice(7))
-        : messages.filter((VIEWS.find((v) => v.id === view) ?? VIEWS[0]).match).filter((m) => !filed(m)),
+        : view === "snoozed"
+          ? messages.filter((m) => isSnoozed(m))
+          : messages.filter((VIEWS.find((v) => v.id === view) ?? VIEWS[0]).match).filter((m) => !filed(m) && !isSnoozed(m)),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [messages, view, folderIds.join(",")],
   );
-  const counts = useMemo(
+  const counts = useMemo<Record<string, number>>(
     () => ({
-      ...Object.fromEntries(VIEWS.map((v) => [v.id, messages.filter((m) => v.match(m) && !m.isRead && !filed(m)).length])),
+      ...Object.fromEntries(VIEWS.map((v) => [v.id, messages.filter((m) => v.match(m) && !m.isRead && !filed(m) && !isSnoozed(m)).length])),
+      snoozed: messages.filter((m) => isSnoozed(m)).length,
       ...Object.fromEntries(folders.map((f) => [`folder:${f.id}`, messages.filter((m) => m.folderId === f.id && !m.isRead).length])),
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -161,9 +168,14 @@ export function Email() {
         title="Email"
         sub={accounts.map((a) => a.address).join(", ")}
         actions={
-          <button className="btn" disabled={syncing} onClick={() => syncMail().catch(() => {})}>
-            {syncing ? "Syncing…" : "Sync now"}
-          </button>
+          <span className="row">
+            <button className="btn primary" onClick={() => newMail()}>
+              New email
+            </button>
+            <button className="btn" disabled={syncing} onClick={() => syncMail().catch(() => {})}>
+              {syncing ? "Syncing…" : "Sync now"}
+            </button>
+          </span>
         }
       />
       {tabs}
@@ -180,6 +192,11 @@ export function Email() {
               {counts[v.id] ? <span className="mono faint"> {counts[v.id]}</span> : null}
             </button>
           ))}
+          {counts.snoozed > 0 && (
+            <button className="chip" aria-pressed={view === "snoozed"} onClick={() => setView("snoozed")}>
+              Snoozed <span className="mono faint">{counts.snoozed}</span>
+            </button>
+          )}
           {folders.map((f) => (
             <button key={f.id} className="chip" aria-pressed={view === `folder:${f.id}`} onClick={() => setView(`folder:${f.id}`)}>
               {f.name}
@@ -239,6 +256,10 @@ export function Email() {
               <pre className="mail-body">
                 {body?.id === selected.id ? (body.loading ? "Loading…" : body.text || selected.preview) : selected.preview}
               </pre>
+              <ReaderTools
+                m={selected}
+                showDates={datesFor === selected.id || (selected.bucket !== "subscriptions" && selected.bucket !== "spam")}
+              />
               <HandlePanel m={selected} onFile={() => setFileFor(selected)} />
               <div className="faint" style={{ fontSize: 12 }}>
                 Opening a message here only marks it as seen in this app. Your mailbox is not changed.
@@ -254,6 +275,7 @@ export function Email() {
           {...ctx}
           onClose={() => setCtx(null)}
           onFile={() => setFileFor(ctx.m)}
+          onDates={() => setDatesFor(ctx.m.id)}
           onMoved={(id) => id && setView(`folder:${id}`)}
         />
       )}

@@ -97,6 +97,16 @@ export function ThemePicker() {
           High contrast uses its own yellow accent so everything stays easy to see.
         </div>
       )}
+      {isTauri() && !isAndroid() && (
+        <span className="row">
+          <Toggle
+            checked={s.settings.fullscreenCoverTaskbar}
+            onChange={(v) => s.updateSettings((st) => void (st.fullscreenCoverTaskbar = v))}
+            label="Full screen hides the taskbar"
+          />{" "}
+          Full screen (F11) also hides the Windows taskbar
+        </span>
+      )}
       <div className="row">
         <span className="muted" style={{ width: 70 }}>
           Density

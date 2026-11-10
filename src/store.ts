@@ -15,6 +15,7 @@ export const DEFAULT_SETTINGS: Settings = {
   units: "metric",
   clock24: false,
   weekStartsOn: 1,
+  fullscreenCoverTaskbar: true,
   newsCategories: ["TOP", "NATION", "TECHNOLOGY"],
   newsKeywords: [],
   newsRegion: "AU:en",

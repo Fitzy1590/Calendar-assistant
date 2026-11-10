@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import type { PageId } from "../types";
 import { live, useStore } from "../store";
 import { onSyncStatus } from "../lib/sync";
+import { moveTo, nudge } from "../lib/order";
 import { needsAttention, useMail } from "../lib/mail/engine";
 import { SyncPanel } from "./SyncPanel";
 import { upcomingReminders } from "../lib/reminders";
@@ -40,6 +41,14 @@ export function Sidebar() {
   const mailCount = mail.alerts.badge && mail.accounts.length ? needsAttention(mailMessages).length : 0;
   const counts: Partial<Record<PageId, number>> = { tasks: openTasks, reminders, email: mailCount };
   const go = (p: PageId) => s.setPage(p);
+  // reorder the menu: drag a row onto another, or Alt+Up / Alt+Down on a focused row
+  const [dragId, setDragId] = useState<PageId | null>(null);
+  const [overId, setOverId] = useState<PageId | null>(null);
+  const reorder = (next: typeof s.settings.sidebar) => s.updateSettings((st) => void (st.sidebar = next));
+  const nudgeItem = (id: PageId, dir: -1 | 1) => {
+    reorder(nudge(s.settings.sidebar, id, dir, (x) => x.visible));
+    requestAnimationFrame(() => document.getElementById(`nav-${id}`)?.focus());
+  };
 
   return (
     <nav className="side" aria-label="Main">
@@ -51,8 +60,41 @@ export function Sidebar() {
         .map(({ id }) => {
           const { label, icon: Icon } = META[id];
           return (
-            <div key={id}>
-              <button className="nav-item" aria-current={s.page === id ? "page" : undefined} onClick={() => go(id)}>
+            <div
+              key={id}
+              className={overId === id && dragId && dragId !== id ? "nav-drop" : undefined}
+              draggable
+              onDragStart={(e) => {
+                e.dataTransfer.setData("text/nav", id);
+                e.dataTransfer.effectAllowed = "move";
+                setDragId(id);
+              }}
+              onDragOver={(e) => {
+                if (!dragId) return;
+                e.preventDefault();
+                setOverId(id);
+              }}
+              onDrop={(e) => {
+                e.preventDefault();
+                if (dragId && dragId !== id) reorder(moveTo(s.settings.sidebar, dragId, id));
+                setDragId(null);
+                setOverId(null);
+              }}
+              onDragEnd={() => (setDragId(null), setOverId(null))}
+            >
+              <button
+                id={`nav-${id}`}
+                className="nav-item"
+                aria-current={s.page === id ? "page" : undefined}
+                aria-keyshortcuts="Alt+ArrowUp Alt+ArrowDown"
+                onClick={() => go(id)}
+                onKeyDown={(e) => {
+                  if (e.altKey && (e.key === "ArrowUp" || e.key === "ArrowDown")) {
+                    e.preventDefault();
+                    nudgeItem(id, e.key === "ArrowUp" ? -1 : 1);
+                  }
+                }}
+              >
                 <Icon size={18} /> <span className="nav-label-text">{label}</span>
                 {id === "sports" ? (
                   <span

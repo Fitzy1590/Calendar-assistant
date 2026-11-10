@@ -1,6 +1,6 @@
 # Sync through Google Drive (no server)
 
-An alternative to the sync server: your devices share your data through a hidden folder in **your own Google Drive** that only
+An alternative to the sync server: your devices share your data through a folder in **your own Google Drive** that only
 Calendar Assistant can see. Works on the same Google account on every device. Both can run at once.
 
 ## Easiest way: the in-app guide
@@ -53,7 +53,7 @@ Android can't use the Windows sign-in, so the phone signs in with a **device cod
 google.com/device on any device, and the phone receives the sign-in. Drive sync only needs the Drive app-folder permission, which
 Google allows in this flow (if Google ever refuses, the sign-in dialog shows its message).
 
-1. In Google Cloud (the **same project** as your Windows client; the hidden folder is shared per project): APIs & Services →
+1. In Google Cloud (the **same project** as your Windows client; the sync folder is shared per project): APIs & Services →
    Credentials → **+ Create credentials → OAuth client ID** (not "Help me choose") → type **TVs and Limited Input devices**. Copy the client ID and secret.
 2. If the OAuth consent screen is in **Testing**, add your Google account as a test user. In Testing, Google ends the sign-in after
    about 7 days; set the app to **In production** (an "unverified app" warning is fine for personal use) to keep it.

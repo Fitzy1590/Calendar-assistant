@@ -24,7 +24,7 @@ export const WHATS_NEW: WhatsNewEntry[] = [
     version: "0.1.7",
     title: "Your phone joins Drive sync",
     points: [
-      "On Android, sign in to Google Drive with a short code (google.com/device) and your phone syncs through the same hidden Drive folder as your PC.",
+      "On Android, sign in to Google Drive with a short code (google.com/device) and your phone syncs through the same Drive folder as your PC.",
       "It syncs when the app opens, every few minutes while it's running, and soon after you change something.",
     ],
   },
@@ -32,7 +32,7 @@ export const WHATS_NEW: WhatsNewEntry[] = [
     version: "0.1.6",
     title: "Sync through Google Drive",
     points: [
-      "Settings → Phone & sync → Sync through Google Drive: devices share your calendar and lists through a hidden Drive folder, with no server to run.",
+      "Settings → Phone & sync → Sync through Google Drive: devices share your calendar and lists through a Drive folder, with no server to run.",
       "It syncs when the app opens, every few minutes, and soon after you change something.",
       "A bar warns you if your calendar may be out of date, and a check makes sure every device matches.",
     ],

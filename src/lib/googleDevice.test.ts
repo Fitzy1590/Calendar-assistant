@@ -44,7 +44,7 @@ describe("device code sign-in", () => {
       },
     ]);
     const c = await requestDeviceCode(s.post, "cid", 1000);
-    expect(s.calls[0].form).toEqual({ client_id: "cid", scope: "https://www.googleapis.com/auth/drive.appdata" });
+    expect(s.calls[0].form).toEqual({ client_id: "cid", scope: "https://www.googleapis.com/auth/drive.file" });
     expect(c).toMatchObject({ userCode: "ABCD-EFGH", expiresAt: 1000 + 1800_000, interval: 5 });
   });
   it("explains a wrong client type", async () => {

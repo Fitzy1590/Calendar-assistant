@@ -8,7 +8,7 @@ import { useStore } from "../store";
  * The protocol part is pure (network and clock are injected) so it is unit-tested; the app glue is at the bottom.
  */
 
-export const DEVICE_SCOPE = "https://www.googleapis.com/auth/drive.appdata";
+export const DEVICE_SCOPE = "https://www.googleapis.com/auth/drive.file";
 const DEVICE_CODE_URL = "https://oauth2.googleapis.com/device/code";
 const TOKEN_URL = "https://oauth2.googleapis.com/token";
 const GRANT = "urn:ietf:params:oauth:grant-type:device_code";

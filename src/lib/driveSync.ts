@@ -2,7 +2,7 @@ import type { Change } from "../store";
 import type { CollectionName } from "../types";
 
 /**
- * Sync between devices through Google Drive's hidden app folder (no server needed).
+ * Sync between devices through a Google Drive folder the app creates (drive.file scope) (no server needed).
  *
  * Each device writes ONE file of its own, `ca-sync-<deviceId>.json`, holding every record it knows (events, tasks, notes,
  * contacts, shopping, shared preferences). It only ever reads the other devices' files, and merges them by "newest edit

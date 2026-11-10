@@ -24,7 +24,7 @@ import { isAndroid, isTauri, openUrl } from "./platform";
 export const SCOPES = {
   gmail: "https://www.googleapis.com/auth/gmail.readonly",
   calendar: "https://www.googleapis.com/auth/calendar.events",
-  drive: "https://www.googleapis.com/auth/drive.appdata", // hidden per-app folder: can't see your other files
+  drive: "https://www.googleapis.com/auth/drive.file", // only files this app created: can't see your other files
   contacts: "https://www.googleapis.com/auth/contacts.readonly", // names, numbers and birthdays for "Sync birthdays"
 };
 
@@ -272,24 +272,43 @@ export async function googleCalendarOneClick(): Promise<string> {
   return syncGoogleCalendar();
 }
 
-/* ---------------- Google Drive backup (appDataFolder) ---------------- */
+/* ---------------- Google Drive backup + sync folder (drive.file) ---------------- */
 
 const DRIVE = "https://www.googleapis.com/drive/v3/files";
 const UPLOAD = "https://www.googleapis.com/upload/drive/v3/files";
 const NAME = "calendar-assistant-backup.json";
 
+const FOLDER_NAME = "Calendar Assistant (sync)";
+let folderId: string | undefined;
+
+/** The one folder this app keeps in My Drive. With drive.file the app only ever sees what it created itself. */
+export async function appFolderId(): Promise<string> {
+  if (folderId) return folderId;
+  const q = encodeURIComponent(`name='${FOLDER_NAME}' and mimeType='application/vnd.google-apps.folder' and trashed=false`);
+  const j = await gfetch(`${DRIVE}?q=${q}&fields=files(id)`, SCOPES.drive);
+  folderId = j?.files?.[0]?.id;
+  if (!folderId) {
+    const c = await gfetch(`${DRIVE}?fields=id`, SCOPES.drive, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: FOLDER_NAME, mimeType: "application/vnd.google-apps.folder" }),
+    });
+    folderId = c.id as string;
+  }
+  return folderId;
+}
+
 async function findBackup(): Promise<{ id: string; modifiedTime: string } | undefined> {
-  const j = await gfetch(
-    `${DRIVE}?spaces=appDataFolder&q=${encodeURIComponent(`name='${NAME}'`)}&fields=files(id,modifiedTime)`,
-    SCOPES.drive,
-  );
+  const parent = await appFolderId();
+  const q = encodeURIComponent(`name='${NAME}' and '${parent}' in parents and trashed=false`);
+  const j = await gfetch(`${DRIVE}?q=${q}&fields=files(id,modifiedTime)`, SCOPES.drive);
   return j.files?.[0];
 }
 
 export async function backupToDrive(json: string): Promise<string> {
   const existing = await findBackup();
   const boundary = "ca" + Math.random().toString(36).slice(2);
-  const meta = existing ? {} : { name: NAME, parents: ["appDataFolder"] };
+  const meta = existing ? {} : { name: NAME, parents: [await appFolderId()] };
   const body = `--${boundary}\r\nContent-Type: application/json\r\n\r\n${JSON.stringify(meta)}\r\n--${boundary}\r\nContent-Type: application/json\r\n\r\n${json}\r\n--${boundary}--`;
   await gfetch(existing ? `${UPLOAD}/${existing.id}?uploadType=multipart` : `${UPLOAD}?uploadType=multipart`, SCOPES.drive, {
     method: existing ? "PATCH" : "POST",

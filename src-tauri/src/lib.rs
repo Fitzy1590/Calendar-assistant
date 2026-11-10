@@ -247,7 +247,7 @@ fn webview_unavailable(detail: &str) {
 fn webview_status() -> String {
     #[cfg(windows)]
     {
-        webview_fix::diagnose().summary()
+        webview_fix::diagnose().summary_running()
     }
     #[cfg(not(windows))]
     {

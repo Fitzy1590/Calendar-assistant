@@ -43,6 +43,8 @@ export interface MailMessage {
   folderId?: string;
   linked?: { eventId?: string; taskId?: string }; // due date already added to Calendar / Tasks
   reminded?: string; // the due date a reminder was already sent for
+  snoozedUntil?: number; // hidden from the lists and alerts until then (this device)
+  followUpBy?: number; // remind me if nobody has replied by then (set when you send from here)
 }
 
 /** A rule you make. Sender and keywords must both match when both are given; for "either", make two rules. */
@@ -58,6 +60,13 @@ export interface MailRule {
   mute: boolean; // never important, no alerts
   bill: boolean; // send to Bills
   folderId?: string; // file the mail in this app folder
+}
+
+/** A saved reply. {first name}, {name}, {date}, {time} are filled in. */
+export interface MailTemplate {
+  id: string;
+  name: string;
+  body: string;
 }
 
 /** A folder that exists in this app only. */
@@ -77,8 +86,10 @@ export interface MailAccountMeta {
   enabled: boolean;
   /** Where this provider left off: Graph's delta link, Gmail's historyId, IMAP's UIDVALIDITY. Opaque to the engine. */
   deltaLink?: string;
-  /** IMAP only. The password is in the secure store, never here. */
-  imap?: { host: string; port: number; user: string };
+  /** IMAP only. The password is in the secure store, never here. smtp* is the outgoing server used for sending. */
+  imap?: { host: string; port: number; user: string; smtpHost?: string; smtpPort?: number };
+  /** This account has been allowed to send (Outlook Mail.Send, Gmail gmail.send, or an outgoing server for IMAP). */
+  canSend?: boolean;
   lastSyncAt?: number;
   status: "ok" | "needs-reconnect" | "error";
   error?: string;
@@ -95,6 +106,12 @@ export interface MailSettings {
   alerts: { homeCard: boolean; desktop: boolean; badge: boolean; dailySummary: boolean; summaryHour: number };
   rules: MailRule[];
   folders: MailFolder[];
+  /** The right-click menu: the order of its items and the ones you hid. */
+  menu: { order: string[]; hidden: string[] };
+  templates: MailTemplate[];
+  signatures: Record<string, string>; // per account id
+  undoSeconds: number; // how long Send waits so it can be undone
+  aiConfirmed: { claude?: boolean; gemini?: boolean }; // you've seen what gets sent to this AI
   bills: { remindDays: number }; // remind this many days before an unpaid bill is due (0 = off)
   /** How often you changed a sender by hand, to suggest making it a rule. */
   suggest: { counts: Record<string, Partial<Record<"important" | "mute" | "bill", number>>>; dismissed: string[] };
@@ -110,6 +127,11 @@ export const DEFAULT_MAIL_SETTINGS: MailSettings = {
   alerts: { homeCard: true, desktop: true, badge: true, dailySummary: true, summaryHour: 8 },
   rules: [],
   folders: [],
+  menu: { order: [], hidden: [] },
+  templates: [],
+  signatures: {},
+  undoSeconds: 10,
+  aiConfirmed: {},
   bills: { remindDays: 2 },
   suggest: { counts: {}, dismissed: [] },
 };

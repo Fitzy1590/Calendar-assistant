@@ -35,7 +35,27 @@ pub struct Findings {
 }
 
 impl Findings {
-    /// Plain-English list of what's wrong, one line each.
+    /// For the Settings page, where the app is plainly running inside WebView2: only real findings, never a guess
+    /// that it is damaged (it clearly isn't, so "Repair" could never clear that line).
+    pub fn summary_running(&self) -> String {
+        let s = self.summary();
+        let has_problem = self.blocked_from_running
+            || self.install_blocked_by_policy
+            || self.updater_disabled
+            || self.installed_version.is_none();
+        if has_problem {
+            return s;
+        }
+        match &self.installed_version {
+            Some(v) => format!(
+                "• WebView2 {v} is installed and the app is running in it. No problems found."
+            ),
+            None => s,
+        }
+    }
+
+    /// Plain-English list of what's wrong, one line each. Used when the app could NOT start, so a clean result
+    /// still suggests reinstalling.
     pub fn summary(&self) -> String {
         let mut out = Vec::new();
         match &self.installed_version {
@@ -225,6 +245,23 @@ mod tests {
                 && s.contains("blocked WebView2 from starting")
                 && s.contains("policy")
         );
+    }
+
+    #[test]
+    fn a_running_app_with_no_blocks_is_not_called_damaged() {
+        let f = Findings {
+            installed_version: Some("157.0.1".into()),
+            ..Default::default()
+        };
+        assert!(f.summary().contains("may be damaged")); // the app failed to start: still the best advice
+        let s = f.summary_running();
+        assert!(s.contains("No problems found") && !s.contains("damaged"));
+        let blocked = Findings {
+            installed_version: Some("157.0.1".into()),
+            blocked_from_running: true,
+            ..Default::default()
+        };
+        assert!(blocked.summary_running().contains("blocked WebView2"));
     }
 
     #[test]

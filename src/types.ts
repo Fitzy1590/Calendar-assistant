@@ -248,6 +248,8 @@ export interface Settings {
   assistant: {
     provider: "local" | "claude";
     apiKey: string;
+    geminiKey: string; // for "Draft reply with Gemini"; kept out of backups
+    geminiModel: string;
     voiceLang: string;
     speakReplies: boolean;
   };

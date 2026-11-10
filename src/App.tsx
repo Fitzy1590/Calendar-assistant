@@ -140,9 +140,24 @@ function useKeyboardShortcuts() {
   }, []);
 }
 
+/** In the Windows app, hide the web view's own right-click menu (Back, Refresh, Save as, Print…). Text boxes and selected text keep theirs. */
+function useNoBrowserMenu() {
+  useEffect(() => {
+    if (!isTauri()) return () => {};
+    const onMenu = (e: MouseEvent) => {
+      if (e.defaultPrevented) return; // a part of the app already showed its own menu
+      if (isTyping(e.target as HTMLElement | null) || window.getSelection()?.toString()) return;
+      e.preventDefault();
+    };
+    window.addEventListener("contextmenu", onMenu);
+    return () => window.removeEventListener("contextmenu", onMenu);
+  }, []);
+}
+
 export default function App() {
   const s = useStore();
   useKeyboardShortcuts();
+  useNoBrowserMenu();
   useTheme();
   useBackground();
   useFirstRunCheck();

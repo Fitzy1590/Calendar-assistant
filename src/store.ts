@@ -45,7 +45,7 @@ export const DEFAULT_SETTINGS: Settings = {
   updates: { checkOnLaunch: true, installAutomatically: true, autoDefaultApplied: true },
   sync: { shareSettings: true, enabled: false, serverUrl: "", pairingCode: pairingCode(), deviceName: "" },
   phone: { route: "companion" },
-  assistant: { provider: "local", apiKey: "", voiceLang: "en-AU", speakReplies: false },
+  assistant: { provider: "local", apiKey: "", geminiKey: "", geminiModel: "gemini-2.5-flash", voiceLang: "en-AU", speakReplies: false },
   email: {
     googleClientId: "",
     googleDesktopClientId: "",

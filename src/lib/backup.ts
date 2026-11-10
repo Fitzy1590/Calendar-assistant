@@ -33,7 +33,7 @@ export function makeBackup(): Backup {
     // secrets stay on the device: API keys are not written into backups
     settings: {
       ...s.settings,
-      assistant: { ...s.settings.assistant, apiKey: "" },
+      assistant: { ...s.settings.assistant, apiKey: "", geminiKey: "" },
       voice: { ...s.settings.voice, picovoiceKey: "" },
       email: { ...s.settings.email, googleDesktopClientSecret: "", googleDeviceClientSecret: "" },
     },
@@ -59,7 +59,7 @@ export function restoreBackup(json: string, opts: { settings: boolean }): string
       ...DEFAULT_SETTINGS,
       ...b.settings,
       onboarded: true,
-      assistant: { ...b.settings.assistant, apiKey: keep.assistant.apiKey },
+      assistant: { ...b.settings.assistant, apiKey: keep.assistant.apiKey, geminiKey: keep.assistant.geminiKey },
       voice: { ...DEFAULT_SETTINGS.voice, ...b.settings.voice, picovoiceKey: keep.voice.picovoiceKey },
       email: {
         ...DEFAULT_SETTINGS.email,

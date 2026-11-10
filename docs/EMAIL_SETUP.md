@@ -34,6 +34,24 @@ You do not need a client secret, and you don't need to add permissions by hand: 
 - **Junk and subscriptions** (newsletters, mailing lists) never appear on Home or in alerts. They stay in their own folders in the
   Email page. Nothing is deleted, and nothing in Outlook is changed.
 
+## Your rules
+
+Settings → Email → **Your rules**, or the buttons under any email, let you change how mail is handled:
+
+- **Treat as important**, **Always notify**, **Mute** (never important, no alerts) or **Send to Bills**.
+- Match on a **sender** (an address like `boss@work.com`, or a whole domain like `@energyco.com`) and/or **words in the subject**
+  (any word or all words). If you give both, an email must match both; for "either", make two rules.
+- **Just this email**: in the reader, set one email to Important or Not important, or to a bill, without making a rule.
+- After you change the same sender by hand three times, the reader offers to make it a rule.
+- Your rules win over the automatic sorting, and "just this email" wins over rules. Mute wins over Important.
+
+## Bills
+
+The **Bills** tab lists emails that ask you to pay (bills and invoices, not receipts), with the amount and due date read from the email
+when it can. For each bill: **Mark as paid** (it leaves Home and alerts; **Undo paid** brings it back), **Add to Calendar**
+(an all-day event on the due date), **Add as task**, **View email**, and **Not a bill**. Settings → Email → *Bills* sets a reminder
+a few days before a bill is due. "Paid" is tracked in this app only: it doesn't pay anything or change your Outlook inbox.
+
 ## Privacy
 
 Mail is stored on this PC only (not synced to your phone, not in backups). Message text can be switched off

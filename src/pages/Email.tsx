@@ -2,8 +2,10 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { format, formatDistanceToNowStrict, isToday } from "date-fns";
 import { useStore } from "../store";
 import { PageHead } from "../components/ui";
+import { Bills } from "../components/mail/Bills";
+import { HandlePanel } from "../components/mail/HandlePanel";
 import { BUCKET_LABEL } from "../lib/mail/classify";
-import { dismissMail, needsAttention, refreshMail, syncMail, useMail } from "../lib/mail/engine";
+import { dismissMail, needsAttention, refreshMail, syncMail, unpaidBills, useMail } from "../lib/mail/engine";
 import { getMessage, putMessages } from "../lib/mail/cache";
 import { fetchBodyText } from "../lib/mail/graph";
 import { msApiFor } from "../lib/mail/microsoft";
@@ -25,7 +27,7 @@ const when = (t: number) => (isToday(t) ? format(t, "h:mm a") : formatDistanceTo
 
 export function Email() {
   const s = useStore();
-  const { messages, syncing, error, selectedId } = useMail();
+  const { messages, syncing, error, selectedId, tab } = useMail();
   const [view, setView] = useState<View>("important");
   const [body, setBody] = useState<{ id: string; text: string; loading: boolean } | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
@@ -105,6 +107,30 @@ export function Email() {
       </>
     );
 
+  const billCount = unpaidBills(messages).length;
+  const sync = (
+    <button className="btn" disabled={syncing} onClick={() => syncMail().catch(() => {})}>
+      {syncing ? "Syncing…" : "Sync now"}
+    </button>
+  );
+  const tabs = (
+    <div className="seg" role="group" aria-label="Email sections" style={{ marginBottom: 12 }}>
+      <button aria-pressed={tab === "mail"} onClick={() => useMail.setState({ tab: "mail" })}>
+        Mail
+      </button>
+      <button aria-pressed={tab === "bills"} onClick={() => useMail.setState({ tab: "bills" })}>
+        Bills{billCount ? ` ${billCount}` : ""}
+      </button>
+    </div>
+  );
+  if (tab === "bills")
+    return (
+      <>
+        <PageHead title="Email" sub={accounts.map((a) => a.address).join(", ")} actions={sync} />
+        {tabs}
+        <Bills />
+      </>
+    );
   return (
     <>
       <PageHead
@@ -116,6 +142,7 @@ export function Email() {
           </button>
         }
       />
+      {tabs}
       {error && (
         <div role="alert" style={{ color: "var(--bad)", fontSize: 13, marginBottom: 8 }}>
           {error}
@@ -183,6 +210,7 @@ export function Email() {
               <pre className="mail-body">
                 {body?.id === selected.id ? (body.loading ? "Loading…" : body.text || selected.preview) : selected.preview}
               </pre>
+              <HandlePanel m={selected} />
               <div className="faint" style={{ fontSize: 12 }}>
                 Opening a message here only marks it as seen in this app. Your Outlook inbox is not changed.
               </div>

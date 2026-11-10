@@ -3,15 +3,26 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useStore } from "../../store";
 import { allMessages, clearAccount, getMessage, resetCacheConnection } from "./cache";
 import {
+  addSenderRule,
+  billToCalendar,
+  billToTask,
+  deleteRule,
   digestText,
+  markPaid,
+  maybeBillReminders,
   maybeDailyDigest,
   needsAttention,
+  paidBills,
   planAlerts,
   reclassifyCached,
   refreshMail,
+  saveRule,
+  setOverride,
   syncAccountWith,
+  unpaidBills,
   useMail,
 } from "./engine";
+import { newRule } from "./rules";
 import type { GraphApi } from "./graph";
 import type { MailAccountMeta, MailMessage } from "./types";
 
@@ -36,11 +47,13 @@ const mm = (p: Partial<MailMessage> = {}): MailMessage => ({
   ...p,
 });
 
-/** A scripted Graph: each call to the delta endpoint returns the next prepared page. */
-function scripted(batches: any[][]): GraphApi {
+/** A scripted Graph: each call to the delta endpoint returns the next prepared page. `bodies` answers message-text requests. */
+function scripted(batches: any[][], bodies: Record<string, string> = {}): GraphApi {
   let n = 0;
   return async (url) => {
     if (url.includes("batch")) return { responses: [] };
+    const body = url.match(/\/me\/messages\/([^?]+)/);
+    if (body) return { body: { contentType: "text", content: bodies[body[1]] ?? "" } };
     const items = batches[Math.min(n++, batches.length - 1)];
     return { value: items, "@odata.deltaLink": `https://graph.microsoft.com/v1.0/x/delta?$deltatoken=d${n}` };
   };
@@ -70,6 +83,12 @@ beforeEach(async () => {
     s.mail.lastDigestOn = undefined;
   });
   useMail.setState({ messages: [] });
+  useStore.setState({ events: {}, tasks: {} });
+  useStore.getState().updateSettings((s) => {
+    s.mail.rules = [];
+    s.mail.suggest = { counts: {}, dismissed: [] };
+    s.mail.bills = { remindDays: 2 };
+  });
 });
 
 describe("alerts and summary text", () => {
@@ -187,4 +206,124 @@ it("refreshMail loads the cache into the view store", async () => {
   await syncAccountWith(scripted([[gm("1")]]), useStore.getState().settings.mail.accounts[0], vi.fn());
   await refreshMail();
   expect(useMail.getState().messages).toHaveLength(1);
+});
+
+const first = () => useStore.getState().settings.mail.accounts[0];
+const billMail = (id: string, p: any = {}) =>
+  gm(id, {
+    subject: "Your bill is ready",
+    bodyPreview: "View your bill online",
+    from: { emailAddress: { name: "Energy Co", address: "bills@energyco.com" } },
+    receivedDateTime: "2026-11-10T01:00:00Z",
+    ...p,
+  });
+
+describe("your rules in the sync", () => {
+  it("applies a sender rule on the next sync, and always-notify alerts even for non-important mail", async () => {
+    await saveRule(newRule({ senders: ["news@club.com"], notify: true, name: "Club" }));
+    const alert = vi.fn();
+    const api = scripted([[gm("1")], [gm("2", { subject: "Club night", from: { emailAddress: { address: "news@club.com" } } })]]);
+    await syncAccountWith(api, first(), alert);
+    const fresh = await syncAccountWith(api, first(), alert);
+    expect(fresh.map((m) => m.providerId)).toEqual(["2"]);
+    expect(alert).toHaveBeenCalledTimes(1);
+  });
+  it("mute keeps a Contact out of attention and alerts", async () => {
+    useStore.setState({ contacts: { c: { id: "c", updatedAt: 1, name: "Mum", email: "mum@family.com" } } as any });
+    await saveRule(newRule({ senders: ["mum@family.com"], mute: true }));
+    const alert = vi.fn();
+    const api = scripted([[gm("1")], [gm("2", { from: { emailAddress: { address: "mum@family.com" } } })]]);
+    await syncAccountWith(api, first(), alert);
+    await syncAccountWith(api, first(), alert);
+    await refreshMail();
+    expect(alert).not.toHaveBeenCalled();
+    expect(needsAttention(useMail.getState().messages)).toHaveLength(0);
+  });
+  it("adding and deleting a rule re-sorts cached mail straight away", async () => {
+    await syncAccountWith(scripted([[gm("1", { subject: "Lunch", toRecipients: [] })]]), first(), vi.fn());
+    expect((await getMessage("acc:1"))?.important).toBe(false);
+    const { rule } = await addSenderRule((await getMessage("acc:1"))!, "important");
+    expect((await getMessage("acc:1"))?.important).toBe(true);
+    await deleteRule(rule.id);
+    expect((await getMessage("acc:1"))?.important).toBe(false);
+  });
+  it("'just this email' sticks across syncs and counts toward a suggestion", async () => {
+    const api = scripted([[gm("1", { subject: "Lunch", toRecipients: [] })], [gm("1", { subject: "Lunch", toRecipients: [] })]]);
+    await syncAccountWith(api, first(), vi.fn());
+    await setOverride("acc:1", { important: true });
+    await syncAccountWith(api, first(), vi.fn());
+    expect(await getMessage("acc:1")).toMatchObject({ important: true, override: { important: true } });
+    expect(useStore.getState().settings.mail.suggest.counts["sam@example.com"]).toEqual({ important: 1 });
+    await setOverride("acc:1", { important: null });
+    expect((await getMessage("acc:1"))?.important).toBe(false);
+  });
+});
+
+describe("bills", () => {
+  it("reads the amount and due date from the email text, and lists it as an unpaid bill", async () => {
+    const api = scripted([[billMail("b1")]], { b1: "Hi Luke, your bill of $184.20 is due on 20 November 2026." });
+    await syncAccountWith(api, first(), vi.fn());
+    await refreshMail();
+    const [b] = unpaidBills(useMail.getState().messages);
+    expect(b).toMatchObject({ bill: true, amount: 184.2, dueDate: "2026-11-20" });
+  });
+  it("sorts unpaid bills by due date and marks paid / undo", async () => {
+    const api = scripted([
+      [billMail("b1", { bodyPreview: "due 25 November 2026 $10" }), billMail("b2", { bodyPreview: "due 15 November 2026 $20" })],
+    ]);
+    await syncAccountWith(api, first(), vi.fn());
+    await refreshMail();
+    expect(unpaidBills(useMail.getState().messages).map((m) => m.providerId)).toEqual(["b2", "b1"]);
+    await markPaid("acc:b2");
+    expect(unpaidBills(useMail.getState().messages).map((m) => m.providerId)).toEqual(["b1"]);
+    expect(paidBills(useMail.getState().messages).map((m) => m.providerId)).toEqual(["b2"]);
+    expect(needsAttention(useMail.getState().messages).some((m) => m.providerId === "b2")).toBe(false);
+    await markPaid("acc:b2", false);
+    expect(unpaidBills(useMail.getState().messages)).toHaveLength(2);
+  });
+  it("paid stays paid after the message syncs again", async () => {
+    const api = scripted([
+      [billMail("b1", { bodyPreview: "due 25 November 2026" })],
+      [billMail("b1", { bodyPreview: "due 25 November 2026", isRead: true })],
+    ]);
+    await syncAccountWith(api, first(), vi.fn());
+    await markPaid("acc:b1");
+    await syncAccountWith(api, first(), vi.fn());
+    expect((await getMessage("acc:b1"))?.paid).toBe(true);
+  });
+  it("adds the due date to the Calendar and to Tasks, once linked", async () => {
+    await syncAccountWith(scripted([[billMail("b1", { bodyPreview: "Amount due $50, due 25 November 2026" })]]), first(), vi.fn());
+    const ev = await billToCalendar("acc:b1");
+    expect(ev).toMatchObject({ allDay: true, start: "2026-11-25T00:00", end: "2026-11-26T00:00", title: "Pay Energy Co $50" });
+    const t = await billToTask("acc:b1");
+    expect(t).toMatchObject({ due: "2026-11-25", done: false });
+    expect((await getMessage("acc:b1"))?.linked).toEqual({ eventId: ev.id, taskId: t.id });
+  });
+  it("refuses to add a bill with no due date", async () => {
+    await syncAccountWith(scripted([[billMail("b1")]]), first(), vi.fn());
+    await expect(billToCalendar("acc:b1")).rejects.toThrow("no due date");
+  });
+  it("reminds once, before the due date, never for paid or muted bills", async () => {
+    const api = scripted([
+      [
+        billMail("b1", { bodyPreview: "due 12 November 2026" }),
+        billMail("b2", { bodyPreview: "due 12 November 2026" }),
+        billMail("b3", { bodyPreview: "due 30 December 2026" }),
+      ],
+    ]);
+    await syncAccountWith(api, first(), vi.fn());
+    await markPaid("acc:b2");
+    await refreshMail();
+    const alert = vi.fn();
+    const today = new Date(2026, 10, 10);
+    expect(await maybeBillReminders(alert, today)).toBe(1);
+    expect(alert.mock.calls[0][1]).toContain("due in 2 days");
+    expect(await maybeBillReminders(alert, today)).toBe(0);
+  });
+  it("is off when the reminder days is 0 or desktop alerts are off", async () => {
+    await syncAccountWith(scripted([[billMail("b1", { bodyPreview: "due 11 November 2026" })]]), first(), vi.fn());
+    await refreshMail();
+    useStore.getState().updateSettings((s) => void (s.mail.bills.remindDays = 0));
+    expect(await maybeBillReminders(vi.fn(), new Date(2026, 10, 10))).toBe(0);
+  });
 });

@@ -5,7 +5,7 @@ Package manager is **npm** (`package-lock.json`, CI runs `npm ci`); commands bel
 
 **Baseline checks** (run for every item, in addition to its own check):
 - `B1` `npx tsc --noEmit` exits 0
-- `B2` `npm test`, all suites pass (currently 114 tests in 14 files)
+- `B2` `npm test`, all suites pass (currently 154 tests in 16 files)
 - `B3` `npm run build` succeeds
 - `B4` Rust touched: `rustfmt --edition 2021 --check src-tauri/src/*.rs`, plus a green GitHub `build` run (check, windows, android jobs)
 - `B5` `npx prettier --check "src/**/*.{ts,tsx}"` clean
@@ -27,11 +27,12 @@ Open question for you: none blocking. Assumption to confirm: "cache message text
 | [x] | **E6 Mail cache** (IndexedDB): metadata always, text optional, size cap with oldest-first eviction, per-account purge | `cache.test.ts` (6) with fake IndexedDB |
 | [~] | **E7 Email page**: DONE: folders, message listbox (keyboard j/k/arrows/Home/End), reader with plain text, "why it is here", responsive. NOT DONE: HTML rendering/sanitising (text only for now), axe-core run, "Move to…" | Playwright screenshots at 1280 px and 412 px (done); axe-core not yet run |
 | [ ] | **E8 Thread context + summary**: `thread.ts` strip/redact/budget, confirm-before-first-send, summary cache | Unit tests: quotes/signatures stripped, codes/cards redacted, budget keeps newest 3, deadlines match `parseWhen`; confirm dialog shows exact payload |
-| [~] | **E9 Sorting**: DONE: `classify.ts` buckets (junk, subscriptions, financial, social, urgent, action, inbox) and importance rules. NOT DONE: your own rules, folders, drag-and-drop | `classify.test.ts` (10) |
+| [~] | **E9 Sorting**: DONE: `classify.ts` buckets and importance; **your own rules** (sender/domain + subject keywords, any/all; actions important / always notify / mute / send to Bills), one-click sender rules and "just this email" overrides from the reader, a rules editor in Settings with a live match count, rule suggestions after 3 manual changes. NOT DONE: folders and drag-and-drop | `rules.test.ts` (12), `classify.test.ts` (17), `engine.test.ts` (rule/override cases) |
 | [ ] | **E10 AI drafts + voice**: Claude and Gemini cards, tones, `[CHECK:]` blocking, dictation into instruction/draft | Fake-provider tests (parallel, cancel, error on one side); test that only the Send button reaches a send API; manual dictation (Picovoice in the app, Web Speech in browser mode) |
 | [ ] | **E11 Send/reply** via Gmail and Graph | Fake-API tests for threading headers; manual: reply to a real thread from each account |
 | [ ] | **E12 Calendar and task actions + automatic hint** | Unit tests: event/task preview from sample emails, hint appears only for date+time+event word; conflict warning shown; nothing created without confirm |
 | [~] | **E13 Polling and notifications**: DONE: 1-15 min polling, on open and on focus, desktop alert for new important mail (never the first-sync backlog), unread menu badge, daily summary, Home "Important mail" card, "what counts as important" and alert settings. NOT DONE: backoff on 429 | `engine.test.ts` (17) incl. alerts, no alerts for junk/subscriptions/old mail, summary once a day; real notification on real mail untested |
+| [x] | **E15 Bills** (added on request): Bills tab (unpaid/paid), amount and due date read from the email (preview and body), overdue/due-soon labels, **Mark as paid** / undo (kept locally), Add to Calendar (all-day event), Add as task, Not a bill, reminders N days before due (once per bill) | `bills.test.ts` (10), `engine.test.ts` (bills: parse from body, sort by due date, paid survives resync, calendar/task links, reminders once, off switch); screenshots at 1280 px and 412 px |
 | [ ] | **E14 Real-account verification** (Gmail and Outlook/Hotmail): connect, read, summarise, draft, send, reconnect after token loss | Manual checklist in the PR; then mock screenshots (see below) |
 
 Backlog, not voted: IMAP/SMTP (needs native Rust), push notifications (needs a server), Whisper dictation, Cyberpunk theme, phone access to mail, LLM-refined sorting.

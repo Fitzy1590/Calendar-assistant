@@ -79,4 +79,66 @@ describe("classify", () => {
   it("gives a reason for every sorting decision", () => {
     expect(classify(mail({ headers: { "list-id": "<x>" } }), ctx()).reasons.length).toBeGreaterThan(0);
   });
+
+  describe("your rules, overrides and bills", () => {
+    const rule = (p: object) => ({
+      id: "r",
+      name: "R",
+      enabled: true,
+      senders: [],
+      keywords: [],
+      keywordMode: "any" as const,
+      important: false,
+      notify: false,
+      mute: false,
+      bill: false,
+      ...p,
+    });
+    it("a rule can make a subscription important and notify", () => {
+      const r = classify(
+        mail({ from: { address: "newsletter@shop.com" }, headers: { "list-id": "<x>" } }),
+        ctx({ userRules: [rule({ senders: ["newsletter@shop.com"], important: true, notify: true })] }),
+      );
+      expect(r).toMatchObject({ bucket: "subscriptions", important: true, notify: true });
+      expect(r.reasons.join()).toContain("Your rule");
+    });
+    it("a keyword rule matches the subject", () => {
+      const r = classify(mail({ subject: "Booking confirmed" }), ctx({ userRules: [rule({ keywords: ["booking"], important: true })] }));
+      expect(r.important).toBe(true);
+    });
+    it("mute beats a Contact", () => {
+      const r = classify(
+        mail({ from: { address: "mum@family.com" } }),
+        ctx({ userRules: [rule({ senders: ["mum@family.com"], mute: true })] }),
+      );
+      expect(r).toMatchObject({ important: false, notify: false, muted: true });
+    });
+    it("'just this email' beats rules, both ways", () => {
+      const muted = [rule({ senders: ["someone@example.com"], mute: true })];
+      expect(classify({ ...mail(), override: { important: true } }, ctx({ userRules: muted })).important).toBe(true);
+      expect(classify({ ...mail({ from: { address: "mum@family.com" } }), override: { important: false } }, ctx()).important).toBe(false);
+    });
+    it("treats a due bill as a bill and reads the amount and due date", () => {
+      const r = classify(
+        mail({
+          from: { address: "bills@energy.com" },
+          subject: "Your bill is ready",
+          preview: "Amount due $184.20, due 20 November 2026",
+          receivedAt: new Date(2026, 10, 10).getTime(),
+        }),
+        ctx(),
+      );
+      expect(r).toMatchObject({ bill: true, amount: 184.2, dueDate: "2026-11-20" });
+    });
+    it("does not treat a receipt as a bill, unless a rule or override says so", () => {
+      const receipt = mail({ from: { address: "orders@shop.com" }, subject: "Receipt for your order", preview: "Total $62.00" });
+      expect(classify(receipt, ctx()).bill).toBe(false);
+      expect(classify(receipt, ctx({ userRules: [rule({ senders: ["orders@shop.com"], bill: true })] })).bill).toBe(true);
+      expect(classify({ ...receipt, override: { bill: true } }, ctx()).bill).toBe(true);
+    });
+    it("lets you say an email that looks like a bill is not one", () => {
+      const b = mail({ from: { address: "bills@energy.com" }, subject: "Your bill is ready" });
+      expect(classify({ ...b, override: { bill: false } }, ctx()).bill).toBe(false);
+    });
+  });
 });

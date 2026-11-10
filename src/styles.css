@@ -491,3 +491,8 @@ input[type="range"], input[type="checkbox"] { accent-color: var(--accent); }
   .mail-folders { flex-direction: row; flex-wrap: wrap; }
   .mail-list, .mail-reader { max-height: none; }
 }
+.bill { display: grid; gap: 10px; }
+.bill-main { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 16px; align-items: center; }
+.bill-amount { font-size: 18px; font-weight: 600; text-align: right; }
+@media (max-width: 700px) { .bill-main { grid-template-columns: 1fr; gap: 4px; } .bill-amount { text-align: left; } }
+.handle h4 { font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }

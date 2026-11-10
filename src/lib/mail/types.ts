@@ -28,7 +28,33 @@ export interface MailMessage {
   bucket: MailBucket;
   important: boolean;
   reasons: string[]; // why it was sorted this way (shown in the reader)
-  dismissed?: boolean; // seen or dismissed here (local only: never written back to Outlook)
+  /** Set by your rules or overrides. */
+  notify?: boolean; // always send a desktop notification for this one
+  muted?: boolean; // kept off Home and out of alerts
+  bill?: boolean; // shows in the Bills tab
+  amount?: number; // pulled from the email, when it can be
+  dueDate?: string; // yyyy-MM-dd, pulled from the email, when it can be
+  /** Local only, never written back to Outlook: */
+  dismissed?: boolean; // seen or dismissed here
+  paid?: boolean;
+  paidAt?: number;
+  override?: { important?: boolean; bill?: boolean }; // "just this email"
+  linked?: { eventId?: string; taskId?: string }; // due date already added to Calendar / Tasks
+  reminded?: string; // the due date a reminder was already sent for
+}
+
+/** A rule you make. Sender and keywords must both match when both are given; for "either", make two rules. */
+export interface MailRule {
+  id: string;
+  name: string;
+  enabled: boolean;
+  senders: string[]; // "sam@x.com", "@energyco.com" or "energyco.com"
+  keywords: string[]; // looked for in the subject
+  keywordMode: "any" | "all";
+  important: boolean; // treat as important
+  notify: boolean; // always notify
+  mute: boolean; // never important, no alerts
+  bill: boolean; // send to Bills
 }
 
 /** A message as the provider adapter returns it, before sorting. */
@@ -55,6 +81,10 @@ export interface MailSettings {
   important: { actionUrgent: boolean; contacts: boolean; financial: boolean; everything: boolean };
   /** How important mail shows up. */
   alerts: { homeCard: boolean; desktop: boolean; badge: boolean; dailySummary: boolean; summaryHour: number };
+  rules: MailRule[];
+  bills: { remindDays: number }; // remind this many days before an unpaid bill is due (0 = off)
+  /** How often you changed a sender by hand, to suggest making it a rule. */
+  suggest: { counts: Record<string, Partial<Record<"important" | "mute" | "bill", number>>>; dismissed: string[] };
   lastDigestOn?: string; // yyyy-mm-dd of the last daily summary
 }
 
@@ -65,4 +95,7 @@ export const DEFAULT_MAIL_SETTINGS: MailSettings = {
   cacheMaxMB: 300,
   important: { actionUrgent: true, contacts: true, financial: true, everything: false },
   alerts: { homeCard: true, desktop: true, badge: true, dailySummary: true, summaryHour: 8 },
+  rules: [],
+  bills: { remindDays: 2 },
+  suggest: { counts: {}, dismissed: [] },
 };

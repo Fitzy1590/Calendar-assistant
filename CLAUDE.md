@@ -58,7 +58,7 @@ scripts/ docs/ .github/workflows/build.yml   versioning, setup guides, CI + rele
 ## Email module (in progress: see `SPEC.md`, stages in `FEATURE_PROGRESS.md`)
 
 - Code: `src/lib/mail/` built: `graph.ts` (Outlook adapter, injected API), `microsoft.ts` (sign-in), `classify.ts` (buckets +
-  importance), `cache.ts` (IndexedDB), `engine.ts` (sync, alerts, daily summary); planned: `gmail.ts`, `thread.ts`, `drafts.ts`
+  importance), `rules.ts` (your rules, suggestions), `bills.ts` (amount/due date), `cache.ts` (IndexedDB), `engine.ts` (sync, alerts, bills, summary); planned: `gmail.ts`, `thread.ts`, `drafts.ts`
   (Claude/Gemini). Page `src/pages/Email.tsx`, parts in `src/components/mail/`. Sign-in setup: `docs/EMAIL_SETUP.md`.
 - Never run Prettier on `styles.css` (it is excluded; it would rewrite the whole file).
 - Mail is **not** a store collection: bodies live in IndexedDB on this device only (never synced, never in backups).

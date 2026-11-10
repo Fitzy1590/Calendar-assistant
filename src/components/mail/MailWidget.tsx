@@ -11,7 +11,7 @@ export function MailWidget() {
   const accounts = s.settings.mail.accounts;
   const list = needsAttention(messages);
   const open = (id?: string) => {
-    useMail.setState({ selectedId: id });
+    useMail.setState({ selectedId: id, tab: "mail" });
     s.setPage("email");
   };
   return (

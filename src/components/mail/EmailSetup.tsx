@@ -5,6 +5,7 @@ import { reclassifyCached, syncMail } from "../../lib/mail/engine";
 import { connectOutlook, disconnectOutlook, msConfigured, msSignInAvailable } from "../../lib/mail/microsoft";
 import { toast } from "../../store";
 import { Field, Toggle } from "../ui";
+import { RulesEditor } from "./RulesEditor";
 
 /** Settings: connect Outlook, choose what counts as important, and how it alerts. */
 export function EmailSetup() {
@@ -152,6 +153,31 @@ export function EmailSetup() {
             <option key={h} value={h}>{`${h}:00`}</option>
           ))}
         </select>
+      </span>
+
+      <h4 style={{ margin: "8px 0 0" }}>Your rules</h4>
+      <div className="faint" style={{ fontSize: 12.5 }}>
+        Always treat a sender or subject words as important, always notify, mute, or send to Bills. Your rules win over the automatic
+        sorting.
+      </div>
+      <RulesEditor />
+
+      <h4 style={{ margin: "8px 0 0" }}>Bills</h4>
+      <span className="row">
+        Remind me
+        <select
+          className="input"
+          style={{ width: "auto" }}
+          aria-label="Bill reminder"
+          value={m.bills.remindDays}
+          onChange={(e) => set((x) => void (x.bills.remindDays = Number(e.target.value)))}
+        >
+          <option value={0}>never</option>
+          {[1, 2, 3, 7].map((n) => (
+            <option key={n} value={n}>{`${n} day${n > 1 ? "s" : ""} before`}</option>
+          ))}
+        </select>
+        an unpaid bill is due (and once if it's overdue)
       </span>
 
       <h4 style={{ margin: "8px 0 0" }}>Checking and storage</h4>

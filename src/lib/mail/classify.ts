@@ -1,4 +1,6 @@
-import type { MailBucket, MailMessage, MailSettings, RawMail } from "./types";
+import { looksLikeBill, parseAmount, parseDueDate } from "./bills";
+import { applyRules } from "./rules";
+import type { MailBucket, MailMessage, MailRule, MailSettings, RawMail } from "./types";
 
 /**
  * Decide a message's bucket and whether it is "important". Pure and local: nothing leaves the device.
@@ -9,7 +11,13 @@ export interface ClassifyContext {
   me: string; // the account's address
   contacts: Set<string>; // lower-case addresses of people in Contacts
   rules: MailSettings["important"];
+  userRules?: MailRule[]; // your own rules
 }
+
+/** A raw message plus what this device already knows about it. */
+export type ClassifyInput = RawMail & { override?: MailMessage["override"]; text?: string };
+
+export type Classified = Pick<MailMessage, "bucket" | "important" | "reasons" | "notify" | "muted" | "bill" | "amount" | "dueDate">;
 
 const NEWSLETTER_SENDER =
   /^(no-?reply|noreply|donotreply|do-not-reply|newsletter|news|marketing|offers|deals|promotions?|mailer|updates?|info|hello|team|notifications?)([._+-]|@)/i;
@@ -31,7 +39,7 @@ const ACTION_TEXT =
 const domainOf = (a: string) => a.split("@")[1]?.toLowerCase() ?? "";
 const lc = (s: string) => s.toLowerCase();
 
-export function classify(m: RawMail, ctx: ClassifyContext): Pick<MailMessage, "bucket" | "important" | "reasons"> {
+export function classify(m: ClassifyInput, ctx: ClassifyContext): Classified {
   const reasons: string[] = [];
   const from = lc(m.from.address);
   const domain = domainOf(from);
@@ -83,7 +91,41 @@ export function classify(m: RawMail, ctx: ClassifyContext): Pick<MailMessage, "b
     }
     if (ctx.rules.everything && bucket !== "social") important = true;
   }
-  return { bucket, important, reasons };
+
+  // bills: money mail that asks to be paid (not a receipt)
+  let bill = bucket === "financial" && looksLikeBill(m.subject, m.preview);
+  let notify = false;
+  let muted = false;
+
+  // your rules
+  const fx = applyRules(ctx.userRules ?? [], m);
+  for (const n of fx.names) reasons.push(`Your rule: ${n}`);
+  if (fx.important) important = true;
+  if (fx.notify) notify = true;
+  if (fx.bill) bill = true;
+  if (fx.muted) {
+    muted = true;
+    important = false;
+    notify = false;
+  }
+
+  // "just this email" wins over everything
+  if (m.override?.important === true) {
+    important = true;
+    muted = false;
+    reasons.push("You marked this email as important");
+  } else if (m.override?.important === false) {
+    important = false;
+    notify = false;
+    reasons.push("You marked this email as not important");
+  }
+  if (m.override?.bill !== undefined) bill = m.override.bill;
+
+  const body = `${m.subject}\n${m.preview}\n${m.text ?? ""}`;
+  const amount = bill ? parseAmount(body) : undefined;
+  const dueDate = bill ? parseDueDate(body, new Date(m.receivedAt)) : undefined;
+  if (bill) reasons.push("Treated as a bill");
+  return { bucket, important, reasons, notify, muted, bill, amount, dueDate };
 }
 
 export const BUCKET_LABEL: Record<MailBucket, string> = {

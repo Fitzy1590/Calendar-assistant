@@ -2,9 +2,9 @@ import { create } from "zustand";
 import { onLocalChange, useStore, type Change } from "../store";
 import type { CollectionName } from "../types";
 import { driveSyncOnce, FILE_PREFIX, type DriveApi, type DriveSyncResult, type LocalState, type PeerStatus } from "./driveSync";
-import { gfetch, googleConnected, googleSignInAvailable, googleToken, quietly, SCOPES } from "./google";
+import { gfetch, googleConnected, googleToken, quietly, SCOPES } from "./google";
 import { syncDue } from "./googleMap";
-import { isAndroid, platformName } from "./platform";
+import { platformName } from "./platform";
 import { allLocalChanges } from "./sync";
 
 /** Drive sync wired to the real app: Google Drive, the store, and when to run. The engine is in driveSync.ts. */
@@ -52,8 +52,8 @@ export const useDriveSync = create<{ syncing: boolean; peers: PeerStatus[]; repa
   errors: [],
 }));
 
-/** Is Drive sync possible on this device? (Android joins later, with a device-code sign-in.) */
-export const driveSyncAvailable = () => googleSignInAvailable();
+/** Drive sync works on Windows (loopback sign-in) and on Android (device-code sign-in). */
+export const driveSyncAvailable = () => true;
 
 const friendly = (e: unknown) => {
   const m = (e as Error).message ?? String(e);
@@ -86,11 +86,16 @@ export function driveSyncNow(): Promise<DriveSyncResult | null> {
   return inflight;
 }
 
-/** One click: sign in to Drive if needed, switch Drive sync on, and sync. */
-export async function connectDriveSync(): Promise<DriveSyncResult | null> {
-  await googleToken([SCOPES.drive]);
+/** Switch Drive sync on and sync (the sign-in is already done). */
+export async function enableDriveSync(): Promise<DriveSyncResult | null> {
   useStore.getState().updateSettings((s) => void (s.driveSync.enabled = true));
   return driveSyncNow();
+}
+
+/** Windows: sign in to Drive if needed, switch Drive sync on, and sync. (Android signs in with a code first.) */
+export async function connectDriveSync(): Promise<DriveSyncResult | null> {
+  await googleToken([SCOPES.drive]);
+  return enableDriveSync();
 }
 
 /**
@@ -98,7 +103,6 @@ export async function connectDriveSync(): Promise<DriveSyncResult | null> {
  * change something here. Silent (no sign-in window); a failure shows in Settings and in the "may be out of date" banner.
  */
 export function startDriveSync(): () => void {
-  if (isAndroid()) return () => {};
   let lastTry = 0;
   const ready = () => {
     const d = useStore.getState().settings.driveSync;

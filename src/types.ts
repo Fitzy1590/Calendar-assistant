@@ -252,6 +252,8 @@ export interface Settings {
   email: {
     googleClientId: string; // "Web application" client: browser / dev builds
     googleDesktopClientId: string; // "Desktop app" client: installed Windows app (loopback sign-in)
+    googleDeviceClientId: string; // "TVs and Limited Input devices" client: Android Drive sync (device-code sign-in)
+    googleDeviceClientSecret: string; // device-only, kept out of backups
     googleDesktopClientSecret: string; // Google treats desktop secrets as non-confidential; still kept out of backups
     microsoftClientId: string;
   };

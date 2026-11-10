@@ -35,7 +35,7 @@ export function makeBackup(): Backup {
       ...s.settings,
       assistant: { ...s.settings.assistant, apiKey: "" },
       voice: { ...s.settings.voice, picovoiceKey: "" },
-      email: { ...s.settings.email, googleDesktopClientSecret: "" },
+      email: { ...s.settings.email, googleDesktopClientSecret: "", googleDeviceClientSecret: "" },
     },
     data: Object.fromEntries(COLLECTIONS.map((c) => [c, Object.values(s[c])])) as Backup["data"],
   };
@@ -61,7 +61,12 @@ export function restoreBackup(json: string, opts: { settings: boolean }): string
       onboarded: true,
       assistant: { ...b.settings.assistant, apiKey: keep.assistant.apiKey },
       voice: { ...DEFAULT_SETTINGS.voice, ...b.settings.voice, picovoiceKey: keep.voice.picovoiceKey },
-      email: { ...DEFAULT_SETTINGS.email, ...b.settings.email, googleDesktopClientSecret: keep.email.googleDesktopClientSecret },
+      email: {
+        ...DEFAULT_SETTINGS.email,
+        ...b.settings.email,
+        googleDesktopClientSecret: keep.email.googleDesktopClientSecret,
+        googleDeviceClientSecret: keep.email.googleDeviceClientSecret,
+      },
       sync: { ...b.settings.sync, deviceName: keep.sync.deviceName },
     }));
   }

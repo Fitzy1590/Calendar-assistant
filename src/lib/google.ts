@@ -6,6 +6,7 @@ import type { Candidate } from "./email";
 import { fromYmd } from "./util";
 import { fromGoogle } from "./googleMap";
 import { CAL, syncCalendarWith } from "./googleSync";
+import { deviceAccessToken, deviceConnected, deviceDisconnect } from "./googleDevice";
 import { isAndroid, isTauri, openUrl } from "./platform";
 
 /**
@@ -49,19 +50,26 @@ export function googleConfigured() {
 
 /** True when a call needing `scope` can run without showing a sign-in window. */
 export const googleConnected = (scope: string) =>
-  (!!token && token.expires > Date.now() + 60e3 && token.scopes.includes(scope)) || (!!saved()?.scopes.includes(scope) && usesLoopback());
+  (isAndroid() && scope === SCOPES.drive && deviceConnected()) ||
+  (!!token && token.expires > Date.now() + 60e3 && token.scopes.includes(scope)) ||
+  (!!saved()?.scopes.includes(scope) && usesLoopback());
 
 export function googleDisconnect() {
   const r = saved()?.refresh ?? token?.value;
   token = null;
   localStorage.removeItem(REFRESH_KEY);
+  deviceDisconnect();
   // the sync token belongs to the account: the next one starts with a full sync
   useStore.getState().updateSettings((s) => void (s.google.syncToken = undefined));
   if (r) fetch(`https://oauth2.googleapis.com/revoke?token=${encodeURIComponent(r)}`, { method: "POST" }).catch(() => {});
 }
 
 export async function googleToken(scopes: string[], interactive = true): Promise<string> {
-  if (isAndroid()) throw new Error("Google sign-in runs from the Windows app; your events reach the phone through sync.");
+  if (isAndroid()) {
+    // the phone signs in by device code, for Drive sync only; Calendar and Gmail run from the Windows app
+    if (scopes.every((s) => s === SCOPES.drive)) return deviceAccessToken(interactive);
+    throw new Error("Google Calendar and Gmail run from the Windows app; your events reach the phone through sync.");
+  }
   if (token && token.expires > Date.now() + 60e3 && scopes.every((s) => token!.scopes.includes(s))) return token.value;
   const sv = saved();
   if (usesLoopback() && sv && scopes.every((s) => sv.scopes.includes(s))) {

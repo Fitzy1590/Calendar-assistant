@@ -52,6 +52,11 @@ export const INews = (p: P) => (
     <path d="M4 5h13v14H6a2 2 0 0 1-2-2zM17 9h3v8a2 2 0 0 1-2 2M7.5 9h6M7.5 12.5h6M7.5 16h4" />
   </S>
 );
+export const IFullscreen = (p: P) => (
+  <S {...p}>
+    <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" />
+  </S>
+);
 export const ISport = (p: P) => (
   <S {...p}>
     <circle cx="12" cy="12" r="8.5" />

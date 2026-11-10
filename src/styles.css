@@ -500,3 +500,32 @@ input[type="range"], input[type="checkbox"] { accent-color: var(--accent); }
 /* Setup guide */
 .guide { margin: 0; padding-left: 22px; display: grid; gap: 16px; }
 .guide li::marker { font-weight: 700; color: var(--accent-text, var(--accent)); }
+
+/* Sports: upcoming games calendar and list */
+.fx-grid { display: block; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); overflow: hidden; }
+.fx-heads, .fx-weekrow { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
+.fx-heads > div { padding: 6px 8px; border-bottom: 1px solid var(--line); }
+.fx-weekrow + .fx-weekrow .fx-day { border-top: 1px solid var(--line); }
+.fx-day { min-height: 92px; padding: 4px 6px 6px; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.fx-day + .fx-day { border-left: 1px solid var(--line); }
+.fx-grid.week .fx-day { min-height: 180px; }
+.fx-day.out { background: var(--surface-2); color: var(--faint); }
+.fx-day.today .fx-num { color: var(--accent-text, var(--accent)); font-weight: 700; }
+.fx-day.picked { outline: 2px solid var(--accent); outline-offset: -2px; }
+.fx-num { align-self: flex-start; background: none; border: 0; padding: 2px 4px; font: inherit; cursor: pointer; color: inherit; border-radius: 4px; }
+.fx-wd { display: none; }
+.fx-chip { display: flex; flex-direction: column; text-align: left; gap: 0; width: 100%; min-width: 0; padding: 3px 6px; font: inherit; font-size: 12px; cursor: pointer; color: var(--text); background: color-mix(in srgb, var(--accent) 12%, var(--surface)); border: 0; border-left: 3px solid var(--accent); border-radius: 4px; }
+.fx-time { font-size: 11px; color: var(--muted); }
+.fx-more { font-size: 11.5px; padding-left: 4px; }
+.fx-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 8px 0; flex-wrap: wrap; }
+.fx-row + .fx-row { border-top: 1px solid var(--line); }
+@media (max-width: 640px) {
+  .fx-grid.week .fx-heads { display: none; }
+  .fx-grid.week .fx-weekrow { grid-template-columns: 1fr; }
+  .fx-grid.week .fx-day { min-height: 0; border-left: 0; }
+  .fx-grid.week .fx-day + .fx-day { border-top: 1px solid var(--line); }
+  .fx-grid.week .fx-wd { display: inline; }
+  .fx-grid.month .fx-day { min-height: 70px; padding: 2px; }
+  .fx-grid.month .fx-time { display: none; }
+  .fx-grid.month .fx-chip { padding: 2px 3px; font-size: 10.5px; }
+}

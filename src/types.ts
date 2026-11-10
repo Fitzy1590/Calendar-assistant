@@ -218,7 +218,8 @@ export interface Settings {
   };
   updates: {
     checkOnLaunch: boolean;
-    installAutomatically: boolean; // Windows: download, install and restart without asking
+    installAutomatically: boolean; // Windows: download, install and restart without asking (at launch)
+    autoDefaultApplied?: boolean; // the "install automatically" default was applied once
     skipVersion?: string; // "Skip this version"
     lastChecked?: number;
     lastSeenVersion?: string; // version whose "What's new" window was last shown or skipped
@@ -290,6 +291,6 @@ export interface Settings {
     tasks: { showDone: boolean; groupBy: "day" | "priority" };
     news: { layout: "list" | "cards"; showImages: boolean };
     notes: { layout: "board" | "list"; size: "s" | "m" | "l"; showArchived: boolean };
-    sports: { resultsCount: number };
+    sports: { resultsCount: number; view?: "calendar" | "list"; range?: "week" | "month" };
   };
 }

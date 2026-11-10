@@ -41,7 +41,7 @@ export const DEFAULT_SETTINGS: Settings = {
     checkPricesDaily: true,
     notifyDrops: true,
   },
-  updates: { checkOnLaunch: true, installAutomatically: false },
+  updates: { checkOnLaunch: true, installAutomatically: true, autoDefaultApplied: true },
   sync: { shareSettings: true, enabled: false, serverUrl: "", pairingCode: pairingCode(), deviceName: "" },
   phone: { route: "companion" },
   assistant: { provider: "local", apiKey: "", voiceLang: "en-AU", speakReplies: false },
@@ -205,7 +205,6 @@ export const useStore = create<State>()(
         dismissedReminders: s.dismissedReminders,
         snoozedReminders: s.snoozedReminders,
         lastSyncSeq: s.lastSyncSeq,
-        page: s.page,
       }),
       // saved data that can't be read (damaged): restore the newest daily snapshot automatically
       onRehydrateStorage: () => (_state, error) => {

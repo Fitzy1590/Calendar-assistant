@@ -7,18 +7,15 @@ import { highlightsSearch, kickoff, lastMatches, nextMatches, searchTeams, sport
 import { openUrl } from "../lib/platform";
 import { localIso, ymd } from "../lib/util";
 import { ICal, IPlay, IPlus, ISearch, ITrash } from "../components/Icons";
-import { PageHead } from "../components/ui";
+import { PageHead, Suggest } from "../components/ui";
+import { POPULAR_TEAMS } from "../lib/suggest";
+import { SportsUpcoming } from "../components/SportsUpcoming";
 
 export function Sports() {
   const s = useStore();
-  const focus =
-    s.sportFocus ??
-    (s.settings.teams[0]
-      ? { kind: "team" as const, id: s.settings.teams[0].id }
-      : s.settings.sports[0]
-        ? { kind: "sport" as const, id: s.settings.sports[0] }
-        : null);
-  const [custom, setCustom] = useState(!focus);
+  // no team or sport picked = the upcoming-games calendar for every team you follow
+  const focus = s.sportFocus;
+  const [custom, setCustom] = useState(!s.settings.teams.length && !s.settings.sports.length);
   return (
     <>
       <PageHead
@@ -28,7 +25,10 @@ export function Sports() {
         setOpen={setCustom}
         customise={<FollowPanel />}
       />
-      <div className="row" style={{ marginBottom: 16 }}>
+      <div className="row" style={{ marginBottom: 16, flexWrap: "wrap" }}>
+        <button className="chip" aria-pressed={!focus} onClick={() => s.setSportFocus(null)}>
+          Upcoming games
+        </button>
         {s.settings.teams.map((t) => (
           <button key={t.id} className="chip" aria-pressed={focus?.id === t.id} onClick={() => s.setSportFocus({ kind: "team", id: t.id })}>
             {t.badge && <img src={t.badge} alt="" width={16} height={16} />} {t.name}
@@ -42,7 +42,7 @@ export function Sports() {
       </div>
       {focus?.kind === "team" && <TeamView team={s.settings.teams.find((t) => t.id === focus.id)!} />}
       {focus?.kind === "sport" && <SportView sport={focus.id} />}
-      {!focus && <div className="empty">Follow a team or a sport above to get started.</div>}
+      {!focus && <SportsUpcoming />}
     </>
   );
 }
@@ -52,6 +52,14 @@ export function FollowPanel() {
   const [q, setQ] = useState("");
   const [results, setResults] = useState<Team[]>([]);
   const key = s.settings.sportsApiKey;
+  const find = async (query: string) => {
+    setQ(query);
+    try {
+      setResults(await searchTeams(query, key));
+    } catch (err) {
+      toast(String(err));
+    }
+  };
   const follow = (t: Team) => {
     if (s.settings.teams.some((x) => x.id === t.id)) return;
     s.updateSettings((st) => void st.teams.push({ id: t.id, name: t.name, sport: t.sport, league: t.league, badge: t.badge } as FavTeam));
@@ -86,13 +94,9 @@ export function FollowPanel() {
         </div>
         <form
           className="row"
-          onSubmit={async (e) => {
+          onSubmit={(e) => {
             e.preventDefault();
-            try {
-              setResults(await searchTeams(q, key));
-            } catch (err) {
-              toast(String(err));
-            }
+            void find(q);
           }}
         >
           <input
@@ -106,6 +110,13 @@ export function FollowPanel() {
             <ISearch size={16} /> Find
           </button>
         </form>
+        <Suggest
+          label="Popular"
+          items={POPULAR_TEAMS.filter((n) => !s.settings.teams.some((t) => t.name === n)).map((n) => ({
+            label: n,
+            onUse: () => void find(n),
+          }))}
+        />
         <div className="list" style={{ marginTop: 8 }}>
           {results.slice(0, 8).map((t) => (
             <div key={t.id} className="row" style={{ justifyContent: "space-between" }}>

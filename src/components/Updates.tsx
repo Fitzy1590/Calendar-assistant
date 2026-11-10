@@ -48,7 +48,11 @@ export function UpdatePrompt() {
             </button>
             {state.kind === "available" && (
               <button className="btn primary" onClick={installUpdate}>
-                {state.via === "updater" ? "Update and restart" : isAndroid() ? "Download update" : "Open download page"}
+                {state.via === "updater" || state.via === "installer"
+                  ? "Update and restart"
+                  : isAndroid()
+                    ? "Download update"
+                    : "Open download page"}
               </button>
             )}
           </>
@@ -124,7 +128,7 @@ export function UpdateSettings() {
         )}
         {state.kind === "available" && (
           <button className="btn sm" onClick={installUpdate}>
-            {state.via === "updater" ? "Update and restart" : "Download update"}
+            {state.via === "updater" || state.via === "installer" ? "Update and restart" : "Download update"}
           </button>
         )}
         <span
@@ -142,7 +146,7 @@ export function UpdateSettings() {
       {!isAndroid() && (
         <span className="row">
           <Toggle checked={u.installAutomatically} onChange={(v) => set({ installAutomatically: v })} label="Install automatically" />{" "}
-          Install updates automatically (the app restarts by itself)
+          Install updates automatically when the app starts (it restarts by itself)
         </span>
       )}
       {u.skipVersion && (
@@ -156,7 +160,7 @@ export function UpdateSettings() {
       <span className="faint" style={{ fontSize: 12.5 }}>
         {isAndroid()
           ? "Android asks you to confirm each install; it can't update apps silently."
-          : "Updates are checked against a signature built into the app, so only builds from your releases can install."}{" "}
+          : "Updates come only from your GitHub releases and are checked before they install (a signature, or GitHub's checksum for the file)."}{" "}
         <button className="btn sm ghost" onClick={() => openUrl(RELEASES_PAGE)}>
           All releases
         </button>

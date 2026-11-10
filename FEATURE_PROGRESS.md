@@ -144,3 +144,12 @@ Windows side and the shared engine first; Android joins next. Every stage also n
 3. UI change checked in `npm run dev` at desktop and 412 px width, light and dark.
 4. Item ticked here and README updated if user-visible.
 5. After a feature is published to the repo, show the user mock screenshots of it (desktop and phone width).
+
+## Updates, full screen and Sports calendar (v0.2.0)
+
+| | Item | Verification |
+|---|---|---|
+| [x] | **Auto-install updates (Windows, no key needed)**: `chooseDownload` picks the installer + GitHub's SHA-256; Rust `self_update.rs` downloads, checks, runs `/P /UPDATE /R`, exits; installs at launch only, later checks prompt. `scripts/setup-updates.mjs` makes the signed-update key | `updates.test.ts` (3 new), Rust `self_update_core.rs` 3 standalone tests; real update untested until the next release after this one |
+| [x] | **Full screen**: top-bar button and F11, Esc leaves (title bar hidden natively) | manual on Windows |
+| [x] | **Opens on Home**; Sports menu collapsed by default | manual |
+| [x] | **Sports: upcoming games** calendar (week/month), list view, team filter, day detail + Add to calendar (`lib/fixtures.ts`, `SportsUpcoming.tsx`) | `fixtures.test.ts` (5); screenshots |

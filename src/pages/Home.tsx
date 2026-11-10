@@ -16,6 +16,7 @@ import { openUrl } from "../lib/platform";
 import { MiniCalendar } from "../components/MiniCalendar";
 import { ICake, IDown, IPin, IPlus, WeatherIcon } from "../components/Icons";
 import { PageHead, Toggle } from "../components/ui";
+import { MailWidget } from "../components/mail/MailWidget";
 import { STEP_NAMES } from "./Wizard";
 
 const LABELS: Record<HomeWidget["id"], string> = {
@@ -29,6 +30,7 @@ const LABELS: Record<HomeWidget["id"], string> = {
   birthdays: "Birthdays",
   headlines: "Headlines",
   sports: "Your teams",
+  mail: "Important email",
 };
 
 export function Home() {
@@ -96,7 +98,7 @@ export function Home() {
       )}
       <div className="home">
         {widgets
-          .filter((w) => w.visible)
+          .filter((w) => w.visible && (w.id !== "mail" || s.settings.mail.alerts.homeCard))
           .map((w) => {
             const C = WIDGETS[w.id];
             return (
@@ -463,6 +465,7 @@ const WIDGETS: Record<HomeWidget["id"], () => React.JSX.Element> = {
   agenda: AgendaWidget,
   tasks: TasksWidget,
   birthdays: BirthdaysWidget,
+  mail: MailWidget,
   headlines: HeadlinesWidget,
   sports: SportsWidget,
   localEvents: LocalEventsWidget,

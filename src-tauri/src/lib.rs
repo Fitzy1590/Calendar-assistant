@@ -7,6 +7,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 #[cfg(windows)]
 mod browser_mode;
 mod crash;
+mod secure_store;
 #[cfg(windows)]
 mod webview_fix;
 
@@ -92,7 +93,10 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             set_close_to_tray,
             webview_status,
-            repair_webview
+            repair_webview,
+            secure_store::secure_store_get,
+            secure_store::secure_store_set,
+            secure_store::secure_store_delete
         ])
         .setup(|_app| {
             // Nice-to-haves never stop the app from opening: if one fails it's logged and skipped.

@@ -7,7 +7,7 @@ Follows the repo's real layout (npm, `src/lib/`, `src/pages/`), not `pnpm`/`src/
 
 | Area | Decision |
 |---|---|
-| Providers | Gmail API + Microsoft Graph (Outlook/Hotmail). Gmail first. **No IMAP/SMTP** in v1 (needs native Rust; revisit later). |
+| Providers | Gmail API + Microsoft Graph (Outlook/Hotmail). **Outlook built first** (your choice); Gmail next. **No IMAP/SMTP** in v1 (needs native Rust; revisit later). |
 | New mail | Polling every 1-5 min (`settings.mail.pollMins`, default 3). No push. |
 | Thread scan | Summarise the whole thread; trim/redact on device first; **ask before the first send** of each thread to an AI. |
 | AI | "Ask Claude" and "Ask Gemini" side by side; tones Professional / Brief / Friendly / Assertive; **draft only, never auto-send**; voice dictation. |

@@ -502,7 +502,7 @@ input[type="range"], input[type="checkbox"] { accent-color: var(--accent); }
 .guide li::marker { font-weight: 700; color: var(--accent-text, var(--accent)); }
 
 /* Sports: upcoming games calendar and list */
-.fx-grid { border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); overflow: hidden; }
+.fx-grid { display: block; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); overflow: hidden; }
 .fx-heads, .fx-weekrow { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
 .fx-heads > div { padding: 6px 8px; border-bottom: 1px solid var(--line); }
 .fx-weekrow + .fx-weekrow .fx-day { border-top: 1px solid var(--line); }

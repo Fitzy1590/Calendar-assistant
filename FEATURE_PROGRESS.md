@@ -22,6 +22,10 @@ Package manager is **npm** (`package-lock.json`, CI runs `npm ci`); commands bel
 
 **Not verified against real services** (say so in summaries): Gmail read/send, IMAP/SMTP (Bigpond), Outlook send, Claude/Gemini calls with real keys, the taskbar-hiding full screen option, Drive sync between PC and phone.
 
+**User said (2026-11-11): "Build all then release all at once. Notify when done."** So: build steps 1-7, run all checks, merge PR #16, release v0.2.3 (workflow_dispatch on main, release_version 0.2.3), PushNotification with the release link, then screenshots.
+**Voted:** email layout **B (tabs on top)** as default, with **sender avatars, date groups, search box, and a layout switcher** (so keep the classic three-pane as the other choice); assistant gets **Gemini** as a provider.
+Tick each step here as it lands (commit after each): [ ] 1 subscriptions  [ ] 2 unsubscribe  [ ] 3 alert sound + quick not-important  [ ] 4 shopping history  [ ] 5 email UI  [ ] 6 Gemini assistant  [ ] 7 guardrails
+
 **Next steps, in order**
 1. **Subscriptions tab (bank statement)**: a left-menu page. Import CSV/OFX/QIF (parser done) → detect recurring charges (`src/lib/subscriptions.ts`: normalise merchant, cadence weekly/fortnightly/monthly/quarterly/yearly, known-merchant list) → categories → monthly/yearly totals → "How to cancel" guide per subscription (official manage link when known, else a search link; Apple / Google Play / PayPal billing pages; mark as cancelled and warn if charged again). Local only; statement rows are not stored, only the detected list. Needs: `PageId` + Sidebar `META` + `PAGES` + `DEFAULT_SETTINGS.sidebar`, tests, screenshots at 1280 and 412.
 2. **Unsubscribe**: right-click item (and reader button) for mail with a `List-Unsubscribe` header: open the https link, or send the mailto through the account; add to `MENU_ITEMS`. Note: Graph adapter keeps the header; check Gmail/IMAP keep it too.

@@ -1,3 +1,5 @@
+import { readParts, toFunctionDeclarations, type ToolDef } from "./geminiSchema";
+import { realPost, type Post } from "./mail/ai";
 import type Anthropic from "@anthropic-ai/sdk";
 import { addDays, format, startOfDay } from "date-fns";
 import { live, useStore } from "../store";
@@ -384,6 +386,63 @@ export async function runClaude(input: string): Promise<A.ActionResult> {
   return { text: collected.join(" ") || "Done." };
 }
 
+let geminiHistory: { role: "user" | "model"; parts: unknown[] }[] = [];
+export const resetGemini = () => void (geminiHistory = []);
+
+/** The same assistant, answered by Gemini. It calls the same tools, so it can add events, tasks and so on. */
+export async function runGemini(input: string, post: Post = realPost): Promise<A.ActionResult> {
+  const s = useStore.getState();
+  const { geminiKey, geminiModel } = s.settings.assistant;
+  if (!geminiKey) throw new Error("Add your Gemini key in Settings → Assistant first.");
+  const contacts = live(s.contacts)
+    .map((c) => c.name)
+    .slice(0, 200)
+    .join(", ");
+  const ctx = `[Now: ${format(new Date(), "EEEE d MMMM yyyy, HH:mm")} (${todayYmd()}). Location: ${s.settings.location?.name ?? "unset"}. Contacts: ${contacts || "none"}]`;
+  geminiHistory.push({ role: "user", parts: [{ text: `${ctx}\n${input}` }] });
+  const collected: string[] = [];
+  const declarations = toFunctionDeclarations(TOOLS as unknown as ToolDef[]);
+
+  for (let turn = 0; turn < 8; turn++) {
+    const r = await post(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(geminiModel)}:generateContent`, {
+      headers: { "content-type": "application/json", "x-goog-api-key": geminiKey },
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: SYSTEM }] },
+        contents: geminiHistory,
+        tools: [{ functionDeclarations: declarations }],
+      }),
+    });
+    if (r.status < 200 || r.status >= 300) {
+      geminiHistory.pop();
+      if (r.status === 400 || r.status === 403)
+        throw new Error(`Gemini refused the request (${r.status}). Check the key and model in Settings → Assistant.`);
+      if (r.status === 404) throw new Error(`Gemini doesn't know the model “${geminiModel}” (404). Check it in Settings → Assistant.`);
+      throw new Error(`Gemini error ${r.status}`);
+    }
+    const j = JSON.parse(r.text);
+    const content = j.candidates?.[0]?.content;
+    if (!content) return { text: j.promptFeedback?.blockReason ? "I can't help with that one." : "Gemini sent back nothing. Try again." };
+    geminiHistory.push({ role: "model", parts: content.parts ?? [] }); // kept whole, so Gemini's own tool-call notes go back to it
+    const { text, calls } = readParts(content);
+    if (!calls.length) {
+      if (geminiHistory.length > 30) geminiHistory = geminiHistory.slice(-20).filter((_, i, a) => i > 0 || a[0].role === "user");
+      return { text: text || collected.join(" ") || "Done.", items: collected.length > 1 ? collected : undefined };
+    }
+    const responses: unknown[] = [];
+    for (const c of calls) {
+      try {
+        const res = await runTool(c.name, c.args);
+        collected.push(res.text);
+        responses.push({ functionResponse: { name: c.name, response: { content: [res.text, ...(res.items ?? [])].join("\n") } } });
+      } catch (e) {
+        responses.push({ functionResponse: { name: c.name, response: { error: String(e) } } });
+      }
+    }
+    geminiHistory.push({ role: "user", parts: responses });
+  }
+  return { text: collected.join(" ") || "Done." };
+}
+
 export async function runAssistant(input: string): Promise<A.ActionResult> {
   const s = useStore.getState().settings.assistant;
   if (s.provider === "claude" && s.apiKey) {
@@ -393,6 +452,15 @@ export async function runAssistant(input: string): Promise<A.ActionResult> {
       resetClaude();
       const r = await runLocal(input);
       return { ...r, text: `${r.text} (Claude was unavailable: ${(e as Error).message})` };
+    }
+  }
+  if (s.provider === "gemini" && s.geminiKey) {
+    try {
+      return await runGemini(input);
+    } catch (e) {
+      resetGemini();
+      const r = await runLocal(input);
+      return { ...r, text: `${r.text} (Gemini was unavailable: ${(e as Error).message})` };
     }
   }
   return runLocal(input);

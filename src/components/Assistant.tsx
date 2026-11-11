@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { create } from "zustand";
 import { useStore } from "../store";
-import { EXAMPLES, resetClaude, runAssistant, type ChatTurn } from "../lib/assistant";
+import { EXAMPLES, resetClaude, resetGemini, runAssistant, type ChatTurn } from "../lib/assistant";
 import { speak } from "../lib/voice";
 import { dictate, stopDictation, unsupportedMessage, useVoice, voiceReady } from "../lib/wake";
 import { IChat, IMic, ISend, IX } from "./Icons";
@@ -122,9 +122,15 @@ export function AssistantDrawer() {
       <header>
         <IChat />
         <h3>Assistant</h3>
-        <span className="tag">{s.settings.assistant.provider === "claude" && s.settings.assistant.apiKey ? "Claude" : "on-device"}</span>
+        <span className="tag">
+          {s.settings.assistant.provider === "claude" && s.settings.assistant.apiKey
+            ? "Claude"
+            : s.settings.assistant.provider === "gemini" && s.settings.assistant.geminiKey
+              ? "Gemini"
+              : "on-device"}
+        </span>
         <WakeBadge />
-        <button className="btn ghost sm" onClick={() => (clear(), resetClaude())}>
+        <button className="btn ghost sm" onClick={() => (clear(), resetClaude(), resetGemini())}>
           Clear
         </button>
         <button className="btn ghost icon" onClick={() => s.setUi({ assistantOpen: false })} aria-label="Close">

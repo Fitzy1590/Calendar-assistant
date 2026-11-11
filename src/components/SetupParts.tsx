@@ -666,7 +666,15 @@ export function AssistantSetup() {
         <button aria-pressed={a.provider === "claude"} onClick={() => set({ provider: "claude" })}>
           Claude (understands anything)
         </button>
+        <button aria-pressed={a.provider === "gemini"} onClick={() => set({ provider: "gemini" })}>
+          Gemini
+        </button>
       </div>
+      {a.provider === "gemini" && !a.geminiKey && (
+        <div className="alert bad" role="status">
+          Add your Gemini key below to use Gemini. Until then the on-device assistant answers.
+        </div>
+      )}
       {a.provider === "claude" && (
         <Field label="Anthropic API key (stored only on this device, never in backups)">
           <input

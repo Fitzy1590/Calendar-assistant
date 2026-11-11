@@ -250,7 +250,7 @@ export interface Settings {
     closeToTray: boolean; // Windows: keep running (and listening) in the tray when the window is closed
   };
   assistant: {
-    provider: "local" | "claude";
+    provider: "local" | "claude" | "gemini";
     apiKey: string;
     geminiKey: string; // for "Draft reply with Gemini"; kept out of backups
     geminiModel: string;

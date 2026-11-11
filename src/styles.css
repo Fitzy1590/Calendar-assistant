@@ -553,3 +553,17 @@ input[type="range"], input[type="checkbox"] { accent-color: var(--accent); }
 /* Subscriptions */
 .sub-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 0; flex-wrap: wrap; }
 .sub-row + .sub-row { border-top: 1px solid var(--line); }
+
+/* Email: avatars, date groups, tabs-on-top layout */
+.avatar { grid-row: 1 / span 3; align-self: start; width: 32px; height: 32px; border-radius: 50%; display: inline-grid; place-items: center; font: 600 12px var(--font-ui, inherit); color: var(--text); background: var(--surface-2); }
+.avatar.tone0 { background: color-mix(in srgb, var(--accent) 22%, var(--surface-2)); }
+.avatar.tone1 { background: color-mix(in srgb, var(--ok) 22%, var(--surface-2)); }
+.avatar.tone2 { background: color-mix(in srgb, var(--warn) 22%, var(--surface-2)); }
+.avatar.tone3 { background: color-mix(in srgb, var(--bad) 18%, var(--surface-2)); }
+.mail-row { grid-template-columns: 32px 1fr auto; column-gap: 10px; }
+.mail-row .mail-subject, .mail-row .mail-preview { grid-column: 2 / -1; }
+.mail-day { padding: 6px 12px 2px; background: var(--surface); position: sticky; top: 0; }
+.mail.tabs { grid-template-columns: minmax(300px, 440px) minmax(0, 1fr); }
+.mail.tabs .mail-folders { grid-column: 1 / -1; flex-direction: row; flex-wrap: wrap; }
+.mail.tabs .mail-folders .chip { text-align: center; }
+@media (max-width: 900px) { .mail, .mail.tabs { grid-template-columns: 1fr; } .mail-list, .mail-reader { max-height: none; } }

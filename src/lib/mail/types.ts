@@ -119,6 +119,7 @@ export interface MailSettings {
   folders: MailFolder[];
   /** The right-click menu: the order of its items and the ones you hid. */
   menu: { order: string[]; hidden: string[] };
+  layout: "tabs" | "classic"; // folders as tabs across the top, or down the left
   templates: MailTemplate[];
   followUps: FollowUp[];
   signatures: Record<string, string>; // per account id
@@ -140,6 +141,7 @@ export const DEFAULT_MAIL_SETTINGS: MailSettings = {
   rules: [],
   folders: [],
   menu: { order: [], hidden: [] },
+  layout: "tabs",
   templates: [],
   followUps: [],
   signatures: {},

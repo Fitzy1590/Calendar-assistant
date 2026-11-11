@@ -7,6 +7,8 @@ import { FolderRuleDialog } from "../components/mail/FolderRuleDialog";
 import { HandlePanel } from "../components/mail/HandlePanel";
 import { ReaderTools } from "../components/mail/ReaderTools";
 import { isSnoozed } from "../lib/mail/followups";
+import { groupRows, initials, searchMail, tone } from "../lib/mail/mailUi";
+import { Seg } from "../components/ui";
 import { newMail } from "../lib/mail/composeStore";
 import { MailContextMenu } from "../components/mail/MailContextMenu";
 import { BUCKET_LABEL } from "../lib/mail/classify";
@@ -36,6 +38,7 @@ export function Email() {
   const [ctx, setCtx] = useState<{ m: MailMessage; x: number; y: number } | null>(null);
   const [fileFor, setFileFor] = useState<MailMessage | null>(null);
   const [datesFor, setDatesFor] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
   const [body, setBody] = useState<{ id: string; text: string; loading: boolean } | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const accounts = s.settings.mail.accounts;
@@ -60,6 +63,8 @@ export function Email() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [messages, view, folderIds.join(",")],
   );
+  const shown = useMemo(() => groupRows(searchMail(rows, query)).flatMap((g) => g.rows), [rows, query]);
+  const groups = useMemo(() => groupRows(searchMail(rows, query)), [rows, query]);
   const counts = useMemo<Record<string, number>>(
     () => ({
       ...Object.fromEntries(VIEWS.map((v) => [v.id, messages.filter((m) => v.match(m) && !m.isRead && !filed(m) && !isSnoozed(m)).length])),
@@ -98,8 +103,8 @@ export function Email() {
   }, [selected?.id]);
 
   const move = (delta: number) => {
-    const i = rows.findIndex((m) => m.id === selectedId);
-    const next = rows[Math.max(0, Math.min(rows.length - 1, i < 0 ? 0 : i + delta))];
+    const i = shown.findIndex((m) => m.id === selectedId);
+    const next = shown[Math.max(0, Math.min(shown.length - 1, i < 0 ? 0 : i + delta))];
     if (next) {
       useMail.setState({ selectedId: next.id });
       requestAnimationFrame(() => listRef.current?.querySelector<HTMLElement>(`[data-id="${CSS.escape(next.id)}"]`)?.focus());
@@ -108,8 +113,8 @@ export function Email() {
   const onKey = (e: React.KeyboardEvent) => {
     if (e.key === "ArrowDown" || e.key === "j") (e.preventDefault(), move(1));
     else if (e.key === "ArrowUp" || e.key === "k") (e.preventDefault(), move(-1));
-    else if (e.key === "Home") (e.preventDefault(), useMail.setState({ selectedId: rows[0]?.id }));
-    else if (e.key === "End") (e.preventDefault(), useMail.setState({ selectedId: rows[rows.length - 1]?.id }));
+    else if (e.key === "Home") (e.preventDefault(), useMail.setState({ selectedId: shown[0]?.id }));
+    else if (e.key === "End") (e.preventDefault(), useMail.setState({ selectedId: shown[shown.length - 1]?.id }));
   };
 
   if (isAndroid())
@@ -184,7 +189,26 @@ export function Email() {
           {error}
         </div>
       )}
-      <div className="mail">
+      <div className="row" style={{ marginBottom: 10, flexWrap: "wrap", justifyContent: "space-between" }}>
+        <input
+          className="input"
+          type="search"
+          style={{ maxWidth: 360 }}
+          placeholder="Search mail"
+          aria-label="Search mail"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
+        <Seg
+          value={s.settings.mail.layout}
+          options={[
+            { value: "tabs", label: "Tabs on top" },
+            { value: "classic", label: "Classic" },
+          ]}
+          onChange={(v) => s.updateSettings((st) => void (st.mail.layout = v))}
+        />
+      </div>
+      <div className={"mail " + s.settings.mail.layout}>
         <nav className="mail-folders" aria-label="Mail folders">
           {VIEWS.filter((v) => v.id !== "spam" || messages.some((m) => m.bucket === "spam")).map((v) => (
             <button key={v.id} className="chip" aria-pressed={view === v.id} onClick={() => setView(v.id)}>
@@ -205,37 +229,47 @@ export function Email() {
           ))}
         </nav>
         <div className="mail-list card" role="listbox" aria-label={`${viewLabel} messages`} ref={listRef} onKeyDown={onKey}>
-          {rows.map((m, i) => (
-            <div
-              key={m.id}
-              data-id={m.id}
-              role="option"
-              aria-selected={m.id === selectedId}
-              tabIndex={m.id === selectedId || (!selectedId && i === 0) ? 0 : -1}
-              className={"mail-row" + (m.isRead || m.dismissed ? "" : " unread")}
-              aria-label={`${m.from.name || m.from.address}, ${m.subject}, ${when(m.receivedAt)}${m.isRead ? "" : ", unread"}${m.important ? ", important" : ""}`}
-              onClick={() => useMail.setState({ selectedId: m.id })}
-              onKeyDown={(e) => e.key === "Enter" && useMail.setState({ selectedId: m.id })}
-              onContextMenu={(e) => {
-                e.preventDefault();
-                useMail.setState({ selectedId: m.id });
-                setCtx({ m, x: e.clientX, y: e.clientY });
-              }}
-            >
-              <span className="mail-from ellipsis">{m.from.name || m.from.address}</span>
-              <span className="faint mono" style={{ fontSize: 11 }}>
-                {when(m.receivedAt)}
-              </span>
-              <span className="mail-subject ellipsis">{m.subject}</span>
-              <span className="muted ellipsis mail-preview">
-                {view !== "important" && view !== "action" && m.bucket !== "inbox" ? (
-                  <span className="tag">{BUCKET_LABEL[m.bucket]}</span>
-                ) : null}{" "}
-                {m.preview}
-              </span>
+          {groups.map((g) => (
+            <div key={g.label} role="group" aria-label={g.label}>
+              <div className="mail-day eyebrow" aria-hidden="true">
+                {g.label}
+              </div>
+              {g.rows.map((m) => (
+                <div
+                  key={m.id}
+                  data-id={m.id}
+                  role="option"
+                  aria-selected={m.id === selectedId}
+                  tabIndex={m.id === selectedId || (!selectedId && m.id === shown[0]?.id) ? 0 : -1}
+                  className={"mail-row" + (m.isRead || m.dismissed ? "" : " unread")}
+                  aria-label={`${m.from.name || m.from.address}, ${m.subject}, ${when(m.receivedAt)}${m.isRead ? "" : ", unread"}${m.important ? ", important" : ""}`}
+                  onClick={() => useMail.setState({ selectedId: m.id })}
+                  onKeyDown={(e) => e.key === "Enter" && useMail.setState({ selectedId: m.id })}
+                  onContextMenu={(e) => {
+                    e.preventDefault();
+                    useMail.setState({ selectedId: m.id });
+                    setCtx({ m, x: e.clientX, y: e.clientY });
+                  }}
+                >
+                  <span className={"avatar tone" + tone(m.from.address)} aria-hidden="true">
+                    {initials(m.from.name, m.from.address)}
+                  </span>
+                  <span className="mail-from ellipsis">{m.from.name || m.from.address}</span>
+                  <span className="faint mono" style={{ fontSize: 11 }}>
+                    {when(m.receivedAt)}
+                  </span>
+                  <span className="mail-subject ellipsis">{m.subject}</span>
+                  <span className="muted ellipsis mail-preview">
+                    {view !== "important" && view !== "action" && m.bucket !== "inbox" ? (
+                      <span className="tag">{BUCKET_LABEL[m.bucket]}</span>
+                    ) : null}{" "}
+                    {m.preview}
+                  </span>
+                </div>
+              ))}
             </div>
           ))}
-          {!rows.length && (
+          {!shown.length && (
             <div className="empty">
               {messages.length ? "Nothing here." : syncing ? "Fetching your mail…" : "No mail yet. Press Sync now."}
             </div>

@@ -81,7 +81,7 @@ beforeEach(async () => {
   useStore.setState({ contacts: {} });
   useStore.getState().updateSettings((s) => {
     s.mail.accounts = [{ ...ACC }];
-    s.mail.alerts = { homeCard: true, desktop: true, badge: true, dailySummary: true, summaryHour: 8 };
+    s.mail.alerts = { homeCard: true, desktop: true, sound: false, badge: true, dailySummary: true, summaryHour: 8 };
     s.mail.lastDigestOn = undefined;
   });
   useMail.setState({ messages: [] });

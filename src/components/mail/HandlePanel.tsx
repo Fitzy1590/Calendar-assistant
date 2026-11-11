@@ -7,7 +7,7 @@ import { Toggle } from "../ui";
 const WHAT: Record<SenderAction, string> = { important: "important", mute: "not important (muted)", bill: "a bill" };
 
 /** In the reader: change how this email, or everything from this sender, is handled. */
-export function HandlePanel({ m }: { m: MailMessage }) {
+export function HandlePanel({ m, onFile }: { m: MailMessage; onFile: () => void }) {
   const s = useStore();
   const who = m.from.name || m.from.address;
   const sug = suggestion(s.settings.mail.suggest, s.settings.mail.rules, m.from.address);
@@ -62,6 +62,9 @@ export function HandlePanel({ m }: { m: MailMessage }) {
       </div>
       <h4 style={{ margin: 0 }}>Everything from {who}</h4>
       <div className="row" style={{ flexWrap: "wrap" }}>
+        <button className="btn sm" onClick={onFile}>
+          Create rule + folder…
+        </button>
         <button className="btn sm" onClick={() => makeRule("important")}>
           Always important + notify
         </button>

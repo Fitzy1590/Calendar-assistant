@@ -6,11 +6,13 @@ import { isAndroid, notify } from "../platform";
 import { dueLabel, dueState, money } from "./bills";
 import { allMessages, deleteMessages, evictOver, getMessage, getMessages, putMessages } from "./cache";
 import { classify, type ClassifyContext } from "./classify";
+import { checkFollowUps, dueSnoozes, isSnoozed } from "./followups";
 import { graphProvider, type GraphApi } from "./graph";
 import type { MailProvider } from "./provider";
 import { providerFor } from "./providers";
-import { recordOverride, ruleForSender, type SenderAction } from "./rules";
-import type { MailAccountMeta, MailMessage, MailRule, RawMail } from "./types";
+import { sendDue } from "./sender";
+import { recordOverride, ruleForFolder, ruleForSender, type SenderAction } from "./rules";
+import type { MailAccountMeta, MailFolder, MailMessage, MailRule, RawMail } from "./types";
 
 /** Sync every connected account, sort the mail, and raise alerts for new important mail. Windows app / browser only. */
 
@@ -23,10 +25,12 @@ export const useMail = create<{ messages: MailMessage[]; syncing: boolean; error
 );
 
 /** Important, unread and not dismissed here: what the Home card, the badge and alerts are about. */
-export const needsAttention = (msgs: MailMessage[]) => msgs.filter((m) => m.important && !m.isRead && !m.dismissed && !m.paid && !m.muted);
+export const needsAttention = (msgs: MailMessage[]) =>
+  msgs.filter((m) => m.important && !m.isRead && !m.dismissed && !m.paid && !m.muted && !isSnoozed(m));
 
 /** Worth a desktop notification when it arrives: important, or one of your "always notify" rules. */
-export const shouldAlert = (m: MailMessage) => !m.muted && !m.paid && !m.isRead && !m.dismissed && (m.important || !!m.notify);
+export const shouldAlert = (m: MailMessage) =>
+  !m.muted && !m.paid && !m.isRead && !m.dismissed && !isSnoozed(m) && (m.important || !!m.notify);
 
 /** Unpaid bills, soonest due first (no due date last). */
 export const unpaidBills = (msgs: MailMessage[]) =>
@@ -72,6 +76,7 @@ const ctxFor = (me: string): ClassifyContext => ({
   contacts: contactSet(),
   rules: useStore.getState().settings.mail.important,
   userRules: useStore.getState().settings.mail.rules,
+  folderIds: useStore.getState().settings.mail.folders.map((f) => f.id),
 });
 
 /** Sort a raw message, keeping what only this device knows about it (text, dismissed). */
@@ -89,15 +94,18 @@ export const sortMail = (raw: RawMail, ctx: ClassifyContext, old?: MailMessage):
 
 type Notifier = (title: string, body: string) => void | Promise<void>;
 
+/** Mail alerts are silent unless you turned the sound on (Settings → Email). */
+const mailNotify: Notifier = (title, body) => notify(title, body, { silent: !useStore.getState().settings.mail.alerts.sound });
+
 /** Graph shortcut kept for tests. */
-export const syncAccountWith = (api: GraphApi, account: MailAccountMeta, alert: Notifier = notify) =>
+export const syncAccountWith = (api: GraphApi, account: MailAccountMeta, alert: Notifier = mailNotify) =>
   syncAccountWithProvider(graphProvider(api), account, alert);
 
 /** Sync one account through its provider. Returns the new important messages that were alerted. Exported for tests. */
 export async function syncAccountWithProvider(
   provider: MailProvider,
   account: MailAccountMeta,
-  alert: Notifier = notify,
+  alert: Notifier = mailNotify,
 ): Promise<MailMessage[]> {
   const settings = useStore.getState().settings.mail;
   try {
@@ -170,7 +178,7 @@ export async function reclassifyCached() {
 }
 
 /** Send the morning summary once a day, after the chosen hour. */
-export async function maybeDailyDigest(now = new Date(), alert: Notifier = notify): Promise<boolean> {
+export async function maybeDailyDigest(now = new Date(), alert: Notifier = mailNotify): Promise<boolean> {
   const m = useStore.getState().settings.mail;
   const today = format(now, "yyyy-MM-dd");
   if (!m.alerts.dailySummary || !m.accounts.length || m.lastDigestOn === today || now.getHours() < m.alerts.summaryHour) return false;
@@ -206,12 +214,12 @@ export const markPaid = (id: string, paid = true) =>
 /** "Just this email": change how one message is handled. `undefined` clears that setting. */
 export async function setOverride(id: string, patch: { important?: boolean | null; bill?: boolean | null }) {
   const next = await updateOne(id, (m) => {
-    const o = { ...(m.override ?? {}) };
-    for (const [k, v] of Object.entries(patch) as [keyof typeof o, boolean | null][]) {
+    const o: Record<string, unknown> = { ...(m.override ?? {}) };
+    for (const [k, v] of Object.entries(patch) as [string, boolean | null][]) {
       if (v === null) delete o[k];
       else o[k] = v;
     }
-    return resort({ ...m, override: Object.keys(o).length ? o : undefined });
+    return resort({ ...m, override: Object.keys(o).length ? (o as MailMessage["override"]) : undefined });
   });
   if (next) {
     const kind: SenderAction | null =
@@ -241,6 +249,78 @@ export async function addSenderRule(m: MailMessage, action: SenderAction) {
   const res = ruleForSender(mailSettings().rules, m, action);
   await saveRule(res.rule);
   return res;
+}
+
+/* ---------- snooze, follow-ups and the background tick ---------- */
+
+/** Hide an email until `at` (this device only). */
+export const snoozeMail = (id: string, at: number) => updateOne(id, (m) => ({ ...m, snoozedUntil: at }));
+export const unsnoozeMail = (id: string) => updateOne(id, (m) => ({ ...m, snoozedUntil: undefined }));
+
+/** Snoozed mail whose time has come comes back as unread with an alert; follow-ups with no reply raise a reminder. */
+export async function wakeAndRemind(alert: Notifier = mailNotify, now = Date.now()) {
+  const all = await allMessages();
+  const due = dueSnoozes(all, now);
+  if (due.length) {
+    await putMessages(
+      due.map((m) => ({ ...m, snoozedUntil: undefined, isRead: false, dismissed: false })),
+      keepText(),
+    );
+    await refreshMail();
+    for (const m of due.slice(0, 3)) await alert("Snoozed email is back", `${m.from.name || m.from.address}: ${m.subject}`);
+  }
+  const list = mailSettings().followUps;
+  if (list.length) {
+    const { answered, overdue } = checkFollowUps(list, all, now);
+    for (const f of overdue.slice(0, 3))
+      await alert("No reply yet", `${f.subject} (sent ${Math.max(1, Math.round((now - f.sentAt) / 864e5))} days ago)`);
+    const done = new Set([...answered, ...overdue].map((f) => f.id));
+    if (done.size) useStore.getState().updateSettings((s) => void (s.mail.followUps = s.mail.followUps.filter((f) => !done.has(f.id))));
+  }
+}
+
+/* ---------- folders (in this app only; your mailbox is not changed) ---------- */
+
+/** The folder with this name (any capitals), or a new one. */
+export function createFolder(name: string): MailFolder {
+  const clean = name.trim().slice(0, 40);
+  if (!clean) throw new Error("Give the folder a name.");
+  const have = mailSettings().folders.find((f) => f.name.toLowerCase() === clean.toLowerCase());
+  if (have) return have;
+  const folder = { id: crypto.randomUUID().slice(0, 8), name: clean };
+  useStore.getState().updateSettings((s) => void s.mail.folders.push(folder));
+  return folder;
+}
+
+export async function renameFolder(id: string, name: string) {
+  const clean = name.trim().slice(0, 40);
+  if (!clean) return;
+  useStore.getState().updateSettings((s) => {
+    const f = s.mail.folders.find((x) => x.id === id);
+    if (f) f.name = clean;
+  });
+}
+
+/** Delete a folder: its mail goes back to the Inbox views, and rules that filed into it stop filing. Nothing in your mailbox is touched. */
+export async function deleteFolder(id: string) {
+  useStore.getState().updateSettings((s) => {
+    s.mail.folders = s.mail.folders.filter((f) => f.id !== id);
+    for (const r of s.mail.rules) if (r.folderId === id) r.folderId = undefined;
+  });
+  await reclassifyCached();
+}
+
+/** Put one email in a folder by hand (`null` = back to the Inbox). */
+export async function moveToFolder(id: string, folderId: string | null) {
+  return updateOne(id, (m) => resort({ ...m, override: { ...(m.override ?? {}), folderId } }));
+}
+
+/** One step from a right-click: make (or reuse) the folder, add the rule for this sender or domain, and file the mail already here. */
+export async function createRuleAndFolder(m: MailMessage, folderName: string, scope: "sender" | "domain" = "sender") {
+  const folder = createFolder(folderName);
+  const rule = ruleForFolder(mailSettings().rules, m, folder, scope);
+  await saveRule(rule);
+  return { folder, rule };
 }
 
 export const dismissSuggestion = (address: string) =>
@@ -283,7 +363,7 @@ export async function billToTask(id: string) {
 }
 
 /** Remind about unpaid bills that are due soon (or overdue), once per bill. */
-export async function maybeBillReminders(alert: Notifier = notify, today = new Date()): Promise<number> {
+export async function maybeBillReminders(alert: Notifier = mailNotify, today = new Date()): Promise<number> {
   const m = mailSettings();
   if (!m.bills.remindDays || !m.alerts.desktop) return 0;
   const due = unpaidBills(useMail.getState().messages).filter(
@@ -343,12 +423,17 @@ export function startMailPolling(): () => void {
   refreshMail().catch(() => {});
   run(true);
   const timer = setInterval(() => run(), 30_000);
+  const tick = setInterval(() => {
+    sendDue().catch(() => {});
+    wakeAndRemind().catch(() => {});
+  }, 5_000);
   const onFocus = () => run(true);
   const onVisible = () => document.visibilityState === "visible" && run(true);
   window.addEventListener("focus", onFocus);
   document.addEventListener("visibilitychange", onVisible);
   return () => {
     clearInterval(timer);
+    clearInterval(tick);
     window.removeEventListener("focus", onFocus);
     document.removeEventListener("visibilitychange", onVisible);
   };

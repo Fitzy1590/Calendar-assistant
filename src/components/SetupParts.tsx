@@ -666,7 +666,15 @@ export function AssistantSetup() {
         <button aria-pressed={a.provider === "claude"} onClick={() => set({ provider: "claude" })}>
           Claude (understands anything)
         </button>
+        <button aria-pressed={a.provider === "gemini"} onClick={() => set({ provider: "gemini" })}>
+          Gemini
+        </button>
       </div>
+      {a.provider === "gemini" && !a.geminiKey && (
+        <div className="alert bad" role="status">
+          Add your Gemini key below to use Gemini. Until then the on-device assistant answers.
+        </div>
+      )}
       {a.provider === "claude" && (
         <Field label="Anthropic API key (stored only on this device, never in backups)">
           <input
@@ -682,6 +690,27 @@ export function AssistantSetup() {
           />
         </Field>
       )}
+      <Field label="Gemini API key (for “Draft reply with Gemini” in Email; stays on this device, never in backups)">
+        <input
+          className="input mono"
+          type="password"
+          value={a.geminiKey}
+          onChange={(e) => set({ geminiKey: e.target.value.trim() })}
+          placeholder="AIza…"
+        />
+        <Suggest
+          label="Where to get it"
+          items={[{ label: "Get a Gemini key", onUse: () => void openUrl("https://aistudio.google.com/apikey") }]}
+        />
+      </Field>
+      <Field label="Gemini model">
+        <input
+          className="input mono"
+          value={a.geminiModel}
+          onChange={(e) => set({ geminiModel: e.target.value.trim() })}
+          placeholder="gemini-2.5-flash"
+        />
+      </Field>
       <div className="row">
         <label className="row">
           Voice language

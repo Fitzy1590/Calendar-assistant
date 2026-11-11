@@ -1,5 +1,7 @@
 import type { DriveSyncMeta } from "./lib/driveSync";
 import type { MailSettings } from "./lib/mail/types";
+import type { Subscription } from "./lib/subscriptions";
+import type { SearchRecord } from "./lib/shoppingHistory";
 export type ID = string;
 
 /** Every synced record carries an id, a last-modified stamp and a tombstone flag. */
@@ -171,6 +173,7 @@ export type PageId =
   | "reminders"
   | "news"
   | "sports"
+  | "subscriptions"
   | "settings";
 
 export interface HomeWidget {
@@ -216,6 +219,7 @@ export interface Settings {
     onlineStores: string[];
     checkPricesDaily: boolean;
     notifyDrops: boolean;
+    history: SearchRecord[]; // what you searched for in Find, newest first
   };
   updates: {
     checkOnLaunch: boolean;
@@ -246,8 +250,10 @@ export interface Settings {
     closeToTray: boolean; // Windows: keep running (and listening) in the tray when the window is closed
   };
   assistant: {
-    provider: "local" | "claude";
+    provider: "local" | "claude" | "gemini";
     apiKey: string;
+    geminiKey: string; // for "Draft reply with Gemini"; kept out of backups
+    geminiModel: string;
     voiceLang: string;
     speakReplies: boolean;
   };
@@ -260,6 +266,8 @@ export interface Settings {
     microsoftClientId: string;
   };
   mail: MailSettings;
+  /** Found by scanning a bank statement on this device. Only the detected list is kept, never the statement. */
+  subscriptions: { items: Subscription[]; cancelled: Record<string, string>; importedAt?: string };
   /** Sync through the hidden Google Drive app folder (no server). Per device. */
   driveSync: {
     enabled: boolean;

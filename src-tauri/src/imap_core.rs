@@ -239,6 +239,9 @@ pub fn summarize(uid: u32, seen: bool, header: &[u8], text: &[u8], fallback_ms: 
         "list-id",
         "precedence",
         "auto-submitted",
+        "message-id",
+        "references",
+        "in-reply-to",
     ] {
         if let Some(v) = val(k) {
             headers.insert(k.to_string(), v);

@@ -29,6 +29,8 @@ tauri-plugin-process = "2"
 imap = "2.4.1"
 native-tls = "0.2"
 mailparse = "0.15"
+lettre = { version = "0.11", default-features = false, features = ["builder", "smtp-transport", "native-tls", "hostname"] }
+base64 = "0.22"
 
 # Windows: native message box for the crash / "can't start" dialog
 [target.'cfg(windows)'.dependencies]

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { newRule } from "./rules";
 import { classify, type ClassifyContext } from "./classify";
 import type { RawMail } from "./types";
 
@@ -140,5 +141,22 @@ describe("classify", () => {
       const b = mail({ from: { address: "bills@energy.com" }, subject: "Your bill is ready" });
       expect(classify({ ...b, override: { bill: false } }, ctx()).bill).toBe(false);
     });
+  });
+});
+
+describe("folders", () => {
+  const inFolder = newRule({ senders: ["@energyco.com"], folderId: "f1" });
+  const withFolders = (over: Partial<ReturnType<typeof ctx>> = {}) => ({ ...ctx(), userRules: [inFolder], folderIds: ["f1"], ...over });
+  it("a rule files the mail", () => {
+    expect(classify(mail({ from: { address: "bills@energyco.com" } }), withFolders()).folderId).toBe("f1");
+    expect(classify(mail({ from: { address: "x@other.com" } }), withFolders()).folderId).toBeUndefined();
+  });
+  it("your move by hand wins, and null returns it to the Inbox", () => {
+    const energy = mail({ from: { address: "bills@energyco.com" } });
+    expect(classify({ ...energy, override: { folderId: "f2" } }, withFolders({ folderIds: ["f1", "f2"] })).folderId).toBe("f2");
+    expect(classify({ ...energy, override: { folderId: null } }, withFolders()).folderId).toBeUndefined();
+  });
+  it("a deleted folder no longer holds mail", () => {
+    expect(classify(mail({ from: { address: "bills@energyco.com" } }), withFolders({ folderIds: [] })).folderId).toBeUndefined();
   });
 });

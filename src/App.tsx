@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { isFullscreen, setFullscreen, toggleFullscreen } from "./lib/fullscreen";
 import { isTyping, pageForKey } from "./lib/shortcuts";
+import { MailHost } from "./components/mail/OutboxBar";
 import { isAndroid, isTauri } from "./lib/platform";
 import { useStore } from "./store";
 import { Sidebar } from "./components/Sidebar";
@@ -22,6 +23,7 @@ import { Contacts } from "./pages/Contacts";
 import { Reminders } from "./pages/Reminders";
 import { News } from "./pages/News";
 import { Sports } from "./pages/Sports";
+import { Subscriptions } from "./pages/Subscriptions";
 import { Settings } from "./pages/Settings";
 import { Notes } from "./pages/Notes";
 import { Shopping } from "./pages/Shopping";
@@ -47,6 +49,7 @@ const PAGES = {
   reminders: Reminders,
   news: News,
   sports: Sports,
+  subscriptions: Subscriptions,
   settings: Settings,
 };
 
@@ -140,9 +143,24 @@ function useKeyboardShortcuts() {
   }, []);
 }
 
+/** In the Windows app, hide the web view's own right-click menu (Back, Refresh, Save as, Print…). Text boxes and selected text keep theirs. */
+function useNoBrowserMenu() {
+  useEffect(() => {
+    if (!isTauri()) return () => {};
+    const onMenu = (e: MouseEvent) => {
+      if (e.defaultPrevented) return; // a part of the app already showed its own menu
+      if (isTyping(e.target as HTMLElement | null) || window.getSelection()?.toString()) return;
+      e.preventDefault();
+    };
+    window.addEventListener("contextmenu", onMenu);
+    return () => window.removeEventListener("contextmenu", onMenu);
+  }, []);
+}
+
 export default function App() {
   const s = useStore();
   useKeyboardShortcuts();
+  useNoBrowserMenu();
   useTheme();
   useBackground();
   useFirstRunCheck();
@@ -187,6 +205,7 @@ export default function App() {
       {s.feedbackOpen && <FeedbackModal />}
       {s.emailImportOpen && <EmailImport />}
       <CarryOver />
+      <MailHost />
       <UpdatePrompt />
       <WhatsNew />
       <ErrorAlert />

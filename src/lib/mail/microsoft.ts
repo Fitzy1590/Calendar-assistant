@@ -15,7 +15,7 @@ import type { MailAccountMeta } from "./types";
 
 const AUTH = "https://login.microsoftonline.com/common/oauth2/v2.0";
 /** Read-only for now. Moving, replying and sending will ask for more later (Mail.ReadWrite, Mail.Send). */
-export const MS_SCOPES = "offline_access User.Read Mail.Read";
+export const MS_SCOPES = "offline_access User.Read Mail.Read Mail.Send";
 
 export const msSignInAvailable = () => isTauri() && !isAndroid();
 export const msConfigured = () => !!useStore.getState().settings.email.microsoftClientId;
@@ -134,7 +134,7 @@ export function graphApi(getToken: () => Promise<string>, fetchFn: typeof fetch 
         onUnauthorised?.();
         continue;
       }
-      if (r.status === 204 || r.status === 410) return null;
+      if (r.status === 202 || r.status === 204 || r.status === 410) return null;
       if (!r.ok) throw new Error(`Graph ${r.status}: ${(await r.text()).slice(0, 160)}`);
       return r.json();
     }
@@ -180,6 +180,7 @@ export async function connectOutlook(): Promise<MailAccountMeta> {
     enabled: true,
     status: "ok",
     deltaLink: undefined,
+    canSend: true, // this sign-in asked for Mail.Send
   };
   useStore.getState().updateSettings((s) => {
     const i = s.mail.accounts.findIndex((a) => a.id === id);

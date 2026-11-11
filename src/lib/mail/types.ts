@@ -38,9 +38,13 @@ export interface MailMessage {
   dismissed?: boolean; // seen or dismissed here
   paid?: boolean;
   paidAt?: number;
-  override?: { important?: boolean; bill?: boolean }; // "just this email"
+  override?: { important?: boolean; bill?: boolean; folderId?: string | null }; // "just this email" (folderId null = back to the Inbox)
+  /** The folder this mail is filed in (by a rule or by hand). Folders live in this app only; your mailbox is not changed. */
+  folderId?: string;
   linked?: { eventId?: string; taskId?: string }; // due date already added to Calendar / Tasks
   reminded?: string; // the due date a reminder was already sent for
+  snoozedUntil?: number; // hidden from the lists and alerts until then (this device)
+  followUpBy?: number; // remind me if nobody has replied by then (set when you send from here)
 }
 
 /** A rule you make. Sender and keywords must both match when both are given; for "either", make two rules. */
@@ -55,6 +59,31 @@ export interface MailRule {
   notify: boolean; // always notify
   mute: boolean; // never important, no alerts
   bill: boolean; // send to Bills
+  folderId?: string; // file the mail in this app folder
+}
+
+/** "Remind me if nobody replies": set when you send a message from here. */
+export interface FollowUp {
+  id: string;
+  accountId: string;
+  threadId?: string;
+  to: string[]; // addresses; a message from any of them after `sentAt` counts as a reply
+  subject: string;
+  sentAt: number;
+  due: number;
+}
+
+/** A saved reply. {first name}, {name}, {date}, {time} are filled in. */
+export interface MailTemplate {
+  id: string;
+  name: string;
+  body: string;
+}
+
+/** A folder that exists in this app only. */
+export interface MailFolder {
+  id: string;
+  name: string;
 }
 
 /** A message as the provider adapter returns it, before sorting. */
@@ -68,8 +97,10 @@ export interface MailAccountMeta {
   enabled: boolean;
   /** Where this provider left off: Graph's delta link, Gmail's historyId, IMAP's UIDVALIDITY. Opaque to the engine. */
   deltaLink?: string;
-  /** IMAP only. The password is in the secure store, never here. */
-  imap?: { host: string; port: number; user: string };
+  /** IMAP only. The password is in the secure store, never here. smtp* is the outgoing server used for sending. */
+  imap?: { host: string; port: number; user: string; smtpHost?: string; smtpPort?: number };
+  /** This account has been allowed to send (Outlook Mail.Send, Gmail gmail.send, or an outgoing server for IMAP). */
+  canSend?: boolean;
   lastSyncAt?: number;
   status: "ok" | "needs-reconnect" | "error";
   error?: string;
@@ -83,8 +114,17 @@ export interface MailSettings {
   /** Which mail counts as important. */
   important: { actionUrgent: boolean; contacts: boolean; financial: boolean; everything: boolean };
   /** How important mail shows up. */
-  alerts: { homeCard: boolean; desktop: boolean; badge: boolean; dailySummary: boolean; summaryHour: number };
+  alerts: { homeCard: boolean; desktop: boolean; sound: boolean; badge: boolean; dailySummary: boolean; summaryHour: number };
   rules: MailRule[];
+  folders: MailFolder[];
+  /** The right-click menu: the order of its items and the ones you hid. */
+  menu: { order: string[]; hidden: string[] };
+  layout: "tabs" | "classic"; // folders as tabs across the top, or down the left
+  templates: MailTemplate[];
+  followUps: FollowUp[];
+  signatures: Record<string, string>; // per account id
+  undoSeconds: number; // how long Send waits so it can be undone
+  aiConfirmed: { claude?: boolean; gemini?: boolean }; // you've seen what gets sent to this AI
   bills: { remindDays: number }; // remind this many days before an unpaid bill is due (0 = off)
   /** How often you changed a sender by hand, to suggest making it a rule. */
   suggest: { counts: Record<string, Partial<Record<"important" | "mute" | "bill", number>>>; dismissed: string[] };
@@ -97,8 +137,16 @@ export const DEFAULT_MAIL_SETTINGS: MailSettings = {
   cacheText: true,
   cacheMaxMB: 300,
   important: { actionUrgent: true, contacts: true, financial: true, everything: false },
-  alerts: { homeCard: true, desktop: true, badge: true, dailySummary: true, summaryHour: 8 },
+  alerts: { homeCard: true, desktop: true, sound: false, badge: true, dailySummary: true, summaryHour: 8 },
   rules: [],
+  folders: [],
+  menu: { order: [], hidden: [] },
+  layout: "tabs",
+  templates: [],
+  followUps: [],
+  signatures: {},
+  undoSeconds: 10,
+  aiConfirmed: {},
   bills: { remindDays: 2 },
   suggest: { counts: {}, dismissed: [] },
 };

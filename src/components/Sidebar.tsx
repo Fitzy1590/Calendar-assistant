@@ -9,7 +9,24 @@ import { needsAttention, useMail } from "../lib/mail/engine";
 import { SyncPanel } from "./SyncPanel";
 import { upcomingReminders } from "../lib/reminders";
 import { todayYmd } from "../lib/util";
-import { IBell, ICal, IMail, ICart, IChat, ICog, IDown, IHome, IIdea, INews, INote, IPeople, IRight, ISport, ITasks } from "./Icons";
+import {
+  IBell,
+  ICal,
+  IMail,
+  ICart,
+  IChat,
+  ICog,
+  IDown,
+  IHome,
+  IIdea,
+  INews,
+  INote,
+  IPeople,
+  IRight,
+  ISport,
+  ITasks,
+  IRepeat,
+} from "./Icons";
 
 const META: Record<PageId, { label: string; icon: (p: { size?: number }) => React.JSX.Element }> = {
   home: { label: "Home", icon: IHome },
@@ -22,6 +39,7 @@ const META: Record<PageId, { label: string; icon: (p: { size?: number }) => Reac
   contacts: { label: "Contacts", icon: IPeople },
   news: { label: "News", icon: INews },
   sports: { label: "Sports", icon: ISport },
+  subscriptions: { label: "Subscriptions", icon: IRepeat },
   settings: { label: "Settings", icon: ICog },
 };
 

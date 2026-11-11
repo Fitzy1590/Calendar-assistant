@@ -20,11 +20,12 @@ import {
 } from "../lib/shopping";
 import { openUrl } from "../lib/platform";
 import { localIso, todayYmd } from "../lib/util";
+import { addSearch, cheapest as cheapestPrice, groupLabel, removeSearch } from "../lib/shoppingHistory";
 import { EventEditor } from "../components/EventEditor";
 import { ICal, ICart, IExternal, INavigate, IPhone, ISearch, ITasks, ITrash, ITrend } from "../components/Icons";
 import { PageHead, Seg } from "../components/ui";
 
-type Tab = "find" | "list" | "tracking";
+type Tab = "find" | "list" | "history" | "tracking";
 const money = (n?: number, cur = "AUD") => (n == null ? "–" : `${cur === "AUD" ? "$" : cur + " "}${n.toFixed(2)}`);
 
 /** The three follow-ups offered for anything you find: go now, put it in the calendar, or make it a task. */
@@ -100,6 +101,7 @@ export function Shopping() {
             options={[
               { value: "find", label: "Find" },
               { value: "list", label: `List${open ? ` (${open})` : ""}` },
+              { value: "history", label: "History" },
               { value: "tracking", label: "Price tracking" },
             ]}
           />
@@ -107,6 +109,7 @@ export function Shopping() {
       />
       {tab === "find" && <Finder initial={query} key={query} />}
       {tab === "list" && <ListView onFind={(q) => (setQuery(q), setTab("find"))} />}
+      {tab === "history" && <History onFind={(q) => (setQuery(q), setTab("find"))} />}
       {tab === "tracking" && <Tracking />}
     </>
   );
@@ -148,14 +151,25 @@ function Finder({ initial }: { initial: string }) {
       setStores([]);
       setErr("Couldn't reach the store directory (OpenStreetMap). Online comparison still works.");
     }
+    let hits: PriceHit[] = [];
     if (pricesAvailable()) {
       setBusy("prices");
       try {
-        setPrices(await comparePrices(term, found, pos));
+        hits = await comparePrices(term, found, pos);
+        setPrices(hits);
       } catch (e) {
         setErr((e as Error).message);
       }
     }
+    s.updateSettings(
+      (st) =>
+        void (st.shopping.history = addSearch(st.shopping.history ?? [], {
+          term,
+          at: Date.now(),
+          stores: found.length,
+          best: cheapestPrice(hits),
+        })),
+    );
     setBusy("");
   };
   useEffect(() => {
@@ -665,6 +679,57 @@ function Tracking() {
           Nothing tracked yet. In Find, choose “Add & track” on a price, or paste a product link on any list item.
         </div>
       )}
+    </div>
+  );
+}
+
+/* --------------------------------------------------------------- history */
+
+/** Everything you've searched for in Find, so you can run it again. */
+function History({ onFind }: { onFind: (q: string) => void }) {
+  const s = useStore();
+  const history = s.settings.shopping.history ?? [];
+  const set = (next: typeof history) => s.updateSettings((st) => void (st.shopping.history = next));
+  const groups = (["Today", "Yesterday", "This week", "Earlier"] as const)
+    .map((g) => ({ g, items: history.filter((h) => groupLabel(h.at) === g) }))
+    .filter((x) => x.items.length);
+  if (!history.length) return <div className="empty">Your searches will be listed here. Search in Find and they appear straight away.</div>;
+  return (
+    <div className="stack" style={{ gap: 14 }}>
+      <div className="row" style={{ justifyContent: "space-between" }}>
+        <span className="muted">
+          {history.length} search{history.length === 1 ? "" : "es"} kept on this device
+        </span>
+        <button className="btn sm ghost" onClick={() => set([])}>
+          Clear history
+        </button>
+      </div>
+      {groups.map(({ g, items }) => (
+        <section key={g} className="card stack" style={{ gap: 2 }} aria-label={g}>
+          <div className="eyebrow">{g}</div>
+          {items.map((h) => (
+            <div key={h.term} className="sub-row">
+              <div style={{ minWidth: 0 }}>
+                <b>{h.term}</b>
+                <div className="faint" style={{ fontSize: 12.5 }}>
+                  {format(h.at, "EEE d MMM, h:mm a")} · {h.stores} shop{h.stores === 1 ? "" : "s"} found
+                  {h.best
+                    ? ` · cheapest ${h.best.currency === "AUD" ? "$" : h.best.currency + " "}${h.best.price.toFixed(2)} at ${h.best.retailer}`
+                    : ""}
+                </div>
+              </div>
+              <div className="row" style={{ flex: "none" }}>
+                <button className="btn sm" onClick={() => onFind(h.term)}>
+                  Search again
+                </button>
+                <button className="btn sm ghost" aria-label={`Remove ${h.term}`} onClick={() => set(removeSearch(history, h.term))}>
+                  Remove
+                </button>
+              </div>
+            </div>
+          ))}
+        </section>
+      ))}
     </div>
   );
 }

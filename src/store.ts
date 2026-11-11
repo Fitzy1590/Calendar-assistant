@@ -41,11 +41,13 @@ export const DEFAULT_SETTINGS: Settings = {
     onlineStores: ["Amazon AU", "Officeworks", "Bunnings", "eBay AU", "JB Hi-Fi", "Kmart"],
     checkPricesDaily: true,
     notifyDrops: true,
+    history: [],
   },
   updates: { checkOnLaunch: true, installAutomatically: true, autoDefaultApplied: true },
   sync: { shareSettings: true, enabled: false, serverUrl: "", pairingCode: pairingCode(), deviceName: "" },
   phone: { route: "companion" },
-  assistant: { provider: "local", apiKey: "", voiceLang: "en-AU", speakReplies: false },
+  subscriptions: { items: [], cancelled: {} },
+  assistant: { provider: "local", apiKey: "", geminiKey: "", geminiModel: "gemini-2.5-flash", voiceLang: "en-AU", speakReplies: false },
   email: {
     googleClientId: "",
     googleDesktopClientId: "",
@@ -61,7 +63,20 @@ export const DEFAULT_SETTINGS: Settings = {
   google: { calendarSync: false, calendarId: "primary", driveBackup: false, syncEveryMins: 15 },
   backup: { autoLocal: true },
   sidebar: (
-    ["home", "calendar", "email", "tasks", "notes", "shopping", "reminders", "contacts", "news", "sports", "settings"] as PageId[]
+    [
+      "home",
+      "calendar",
+      "email",
+      "tasks",
+      "notes",
+      "shopping",
+      "subscriptions",
+      "reminders",
+      "contacts",
+      "news",
+      "sports",
+      "settings",
+    ] as PageId[]
   ).map((id) => ({
     id,
     visible: true,

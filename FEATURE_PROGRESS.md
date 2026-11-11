@@ -3,9 +3,44 @@
 Audited 2026-11-08 against `main` @ 6db1ed2 (release v0.1.2) + `CLAUDE.md`.
 Package manager is **npm** (`package-lock.json`, CI runs `npm ci`); commands below use npm/npx.
 
+## Checkpoint (2026-11-11): resume here after `/clear`
+
+**Where things are**
+- Released: **v0.2.2** (main @ 362dc9e). Windows auto-updates itself from v0.2.0 on.
+- Branch `claude/windows-android-planner-app-92z03q` @ 55c5a4e, **PR #16 open, not merged, not released**. It holds: in-app email folders + right-click "Create rule + folder", IMAP connection guide, reply / reply all / forward / new email and sending (Outlook Graph, Gmail, SMTP for Bigpond), outbox with Undo and Send later, Claude/Gemini drafts with local redaction and `[CHECK:]` blocking, quick replies, thread summary, dates to calendar/tasks, snooze, follow-ups, templates, signatures, attachments, reorderable right-click menu, WebView2 "damaged" false alarm fix, web view's own right-click menu hidden. 293 tests passing at that commit; What's new entry is 0.2.3.
+- On disk, uncommitted until this checkpoint's commit: `src/lib/bankStatement.ts` + test (CSV / OFX / QIF statement parser, 8 tests). Nothing else of the Subscriptions feature exists yet.
+
+**Decisions made (don't re-ask)**
+- npm, not pnpm. Logic in `src/lib`, screens in `src/pages`. Never Prettier `styles.css`.
+- Drive sync uses `drive.file` + a "Calendar Assistant (sync)" folder (device flow rejects `drive.appdata`).
+- Email folders live in the app only; the real mailbox is never changed. Sending is allowed from all three account kinds.
+- AI drafts are draft-only; the first use of each AI shows the exact text sent. Keys stay on the device and out of backups.
+- Windows updates: direct installer with GitHub SHA-256 check (no signing key yet); `scripts/setup-updates.mjs` sets up signed updates.
+- Full screen = borderless maximised window (system full screen broke the mouse on the user's rotated display); taskbar hiding is opt-in.
+- Microsoft token request runs natively (`oauth_proxy.rs`) because the web view adds an Origin header (AADSTS90023).
+- Voting cards (AskUserQuestion) with mock screenshots for choices; mock screenshots after each release; merge/release only when the user says so.
+
+**Not verified against real services** (say so in summaries): Gmail read/send, IMAP/SMTP (Bigpond), Outlook send, Claude/Gemini calls with real keys, the taskbar-hiding full screen option, Drive sync between PC and phone.
+
+**User said (2026-11-11): "Build all then release all at once. Notify when done."** So: build steps 1-7, run all checks, merge PR #16, release v0.2.3 (workflow_dispatch on main, release_version 0.2.3), PushNotification with the release link, then screenshots.
+**Voted:** email layout **B (tabs on top)** as default, with **sender avatars, date groups, search box, and a layout switcher** (so keep the classic three-pane as the other choice); assistant gets **Gemini** as a provider.
+Tick each step here as it lands (commit after each): [x] 1 subscriptions  [x] 2 unsubscribe  [x] 3 alert sound + quick not-important  [x] 4 shopping history  [x] 5 email UI (tabs/classic, avatars, date groups, search)  [x] 6 Gemini assistant  [x] 7 guardrails. NEXT: final checks, push, CI, merge PR #16, release v0.2.3, notify, screenshots.
+
+**Next steps, in order**
+1. **Subscriptions tab (bank statement)**: a left-menu page. Import CSV/OFX/QIF (parser done) → detect recurring charges (`src/lib/subscriptions.ts`: normalise merchant, cadence weekly/fortnightly/monthly/quarterly/yearly, known-merchant list) → categories → monthly/yearly totals → "How to cancel" guide per subscription (official manage link when known, else a search link; Apple / Google Play / PayPal billing pages; mark as cancelled and warn if charged again). Local only; statement rows are not stored, only the detected list. Needs: `PageId` + Sidebar `META` + `PAGES` + `DEFAULT_SETTINGS.sidebar`, tests, screenshots at 1280 and 412.
+2. **Unsubscribe**: right-click item (and reader button) for mail with a `List-Unsubscribe` header: open the https link, or send the mailto through the account; add to `MENU_ITEMS`. Note: Graph adapter keeps the header; check Gmail/IMAP keep it too.
+3. **Important-mail alerts**: desktop alerts already exist. Add a sound toggle (off by default) and a quick "Not important" / "Mute sender" action on the alert/Home card.
+4. **Shopping search history**: a "History" option beside Find and List on the Shopping page.
+5. **Nicer email UI**: make mock screenshots of 3-4 layout options and ask with a voting card before building.
+6. **Assistant + Gemini** (user asked if possible): yes; add Gemini as an assistant provider beside Claude (`lib/assistant.ts` `runClaude`), reusing the Gemini key already in settings. Ask before building.
+7. **Guardrails (Phase 2 request)**: mostly present. Gaps: add `Read(signing/*.p12)` to `.claude/settings.json` deny; add package id `com.fitzy.calendarassistant` and a "hard boundaries" list to `CLAUDE.md`; add a `.claude/skills/release/SKILL.md` runbook and a Rust rules file scoped to `src-tauri/**`.
+8. Then: all checks, push, tell the user PR #16 is ready; merge + release v0.2.3 only on their word.
+
+---
+
 **Baseline checks** (run for every item, in addition to its own check):
 - `B1` `npx tsc --noEmit` exits 0
-- `B2` `npm test`, all suites pass (currently 189 tests in 20 files)
+- `B2` `npm test`, all suites pass (331 tests at this checkpoint)
 - `B3` `npm run build` succeeds
 - `B4` Rust touched: `rustfmt --edition 2021 --check src-tauri/src/*.rs`, plus a green GitHub `build` run (check, windows, android jobs)
 - `B5` `npx prettier --check "src/**/*.{ts,tsx}"` clean
@@ -157,3 +192,16 @@ Windows side and the shared engine first; Android joins next. Every stage also n
 | [x] | **Drag to reorder the left menu** (+ Alt+Up/Down); `lib/order.ts` | `order.test.ts` (3); browser drag test; screenshots |
 | [x] | **Sports fixtures hidden from Tasks** (`taskBoardEvents`) | `taskBoard.test.ts` |
 | [x] | **Keyboard shortcuts**: F toggles full screen; 1-9 and 0 open the matching left-menu item (numbers shown beside each item, follow your order); ignored while typing or in a dialog | `shortcuts.test.ts` (3); browser key test; screenshot |
+| [x] | **Email folders (in-app)**: right-click menu, "Create rule + new folder", move by hand, rules can file into a folder, folder chips, Settings folder manager; mailbox never changed | `rules.test.ts` (4), `classify.test.ts` (3); screenshots (menu, dialog, folder view) |
+| [x] | **IMAP connection guide**: error → plain-English steps and links; tries alternate servers; raw text under "Technical detail" | `imapHelp.test.ts` (5); screenshot |
+| [~] | **Reply, forward, new email, send** (Outlook Graph `reply/replyAll/forward/sendMail`, Gmail `messages.send`, SMTP in Rust `smtp_core.rs`), outbox with Undo and Send later (IndexedDB), check before sending, attachments, templates and signatures, customisable right-click menu | `compose.test.ts` (12), `rfc822.test.ts` (4), `send.test.ts` (9), `outbox.test.ts` (4), `menu.test.ts` (5); Rust SMTP 3 standalone tests; browser run-through (menu, AI draft, `[CHECK:]` blocks Send, undo). NOT verified against real Outlook/Gmail/SMTP servers; no Sent copy for IMAP; no Drive attachments (drive.file can't see your Drive) |
+| [~] | **AI drafts (Claude, Gemini), smart replies, thread summary** with local redaction (`thread.ts`), exact-payload confirmation, `[CHECK:]` blocking | `ai.test.ts` (10) with fake HTTP; real keys untested |
+| [x] | **Snooze, follow-up reminders, email to event/task** (local) | `followups.test.ts`, `ai.test.ts` (dates) |
+| [x] | **WebView2 check** no longer calls a working install damaged; the web view's own right-click menu is hidden in the Windows app | Rust standalone test |
+| [x] | **Subscriptions page**: statement parser (CSV/OFX/QIF), recurring-charge detection, categories, totals, price changes, cancel guides, charged-after-cancel warning | `bankStatement.test.ts` (8), `subscriptions.test.ts` (11); screenshots; real bank exports untested beyond the formats handled |
+| [x] | **Unsubscribe** (List-Unsubscribe https page, or a mailto draft you send) in the right-click menu and reader | `unsubscribe.test.ts` (3) |
+| [x] | **Mail alert sound toggle (off by default)** and quick Not important / Mute sender / type on Home | `quick.test.ts` (2); the Windows toast sound itself is untested here |
+| [x] | **Shopping History tab** | `shoppingHistory.test.ts` (4) |
+| [x] | **Email layout**: tabs on top (default) or Classic, avatars, date groups, search | `mailUi.test.ts` (4); screenshots |
+| [x] | **Assistant with Gemini** (function calling through the same tools) | `geminiSchema.test.ts` (3), `geminiAssistant.test.ts` (3) with a fake HTTP; real key untested |
+| [x] | **Guardrails**: `.p12` deny rules, CLAUDE.md hard boundaries, `.claude/skills/release`, `.claude/rules/rust.md` | files on disk |

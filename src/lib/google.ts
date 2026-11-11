@@ -23,6 +23,7 @@ import { isAndroid, isTauri, openUrl } from "./platform";
 
 export const SCOPES = {
   gmail: "https://www.googleapis.com/auth/gmail.readonly",
+  gmailSend: "https://www.googleapis.com/auth/gmail.send", // send mail you write here; it can't read or delete
   calendar: "https://www.googleapis.com/auth/calendar.events",
   drive: "https://www.googleapis.com/auth/drive.file", // only files this app created: can't see your other files
   contacts: "https://www.googleapis.com/auth/contacts.readonly", // names, numbers and birthdays for "Sync birthdays"

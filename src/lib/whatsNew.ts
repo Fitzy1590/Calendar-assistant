@@ -13,6 +13,15 @@ export interface WhatsNewEntry {
 
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    version: "0.2.3",
+    title: "Send email, Subscriptions and more",
+    points: [
+      "Write, reply and forward email from Outlook, Gmail and Bigpond, with Undo send, Send later and drafts from Claude or Gemini. The email page has a new tabs-on-top layout with search, avatars and date groups (switch back to Classic any time).",
+      "New Subscriptions page: import a bank statement (CSV, OFX or QIF) and it finds what you pay for, sorts it into categories and guides you through cancelling. Right-click a newsletter to Unsubscribe.",
+      "Mail alerts are silent unless you turn the sound on, with quick Not important and Mute buttons on Home. Shopping has a History tab, and the assistant can use Gemini.",
+    ],
+  },
+  {
     version: "0.2.2",
     title: "Outlook / Hotmail sign-in fixed",
     points: [

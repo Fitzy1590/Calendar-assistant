@@ -377,6 +377,11 @@ function BackupPanel() {
       toast((e as Error).message);
     }
   };
+  const saveThen = (fn: () => Promise<string>) =>
+    fn().then(
+      (m) => m && toast(m),
+      (e: Error) => toast(e.message),
+    );
   return (
     <div className="stack">
       <div>
@@ -384,13 +389,13 @@ function BackupPanel() {
           Export
         </div>
         <div className="row">
-          <button className="btn primary" onClick={exportJsonFile}>
+          <button className="btn primary" onClick={() => saveThen(exportJsonFile)}>
             Full backup (.json)
           </button>
-          <button className="btn" onClick={exportIcs}>
+          <button className="btn" onClick={() => saveThen(exportIcs)}>
             Calendar (.ics)
           </button>
-          <button className="btn" onClick={exportCsvTasks}>
+          <button className="btn" onClick={() => saveThen(exportCsvTasks)}>
             Tasks (.csv)
           </button>
         </div>

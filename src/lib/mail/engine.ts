@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { format } from "date-fns";
 import { live, useStore } from "../../store";
 import { addDays, format as fmt, parse as parseD } from "date-fns";
-import { isAndroid, notify } from "../platform";
+import { notify } from "../platform";
 import { dueLabel, dueState, money } from "./bills";
 import { allMessages, deleteMessages, evictOver, getMessage, getMessages, putMessages } from "./cache";
 import { classify, type ClassifyContext } from "./classify";
@@ -411,7 +411,6 @@ export function syncMail(): Promise<string> {
 
 /** Start background sync: when the app opens, when its window returns, and every `pollMins`. Returns the cleanup. */
 export function startMailPolling(): () => void {
-  if (isAndroid()) return () => {};
   let last = 0;
   const run = (onOpen = false) => {
     const m = useStore.getState().settings.mail;

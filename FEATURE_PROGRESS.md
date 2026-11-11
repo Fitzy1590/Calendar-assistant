@@ -3,6 +3,10 @@
 Audited 2026-11-08 against `main` @ 6db1ed2 (release v0.1.2) + `CLAUDE.md`.
 Package manager is **npm** (`package-lock.json`, CI runs `npm ci`); commands below use npm/npx.
 
+## Update (2026-11-11, later): v0.2.3 released; next release v0.2.4 (not yet merged or released)
+- Built on branch: Outlook/Hotmail on Android (device-code sign-in: `lib/mail/microsoftDevice.ts` + Rust `ms_device_code`, modal in `EmailSetup.tsx`, Email page and polling enabled on Android) and backups via a Save window on both apps (`saveFile` in `lib/backup.ts`, plugins dialog + fs, capabilities `dialog:allow-save`, `fs:allow-write-text-file`).
+- Untested here: Android sign-in and Android Save/write to a content URI (relies on the dialog plugin adding the chosen file to the fs scope), Rust build (CI). Android refresh token sits in app-private localStorage.
+
 ## Checkpoint (2026-11-11): resume here after `/clear`
 
 **Where things are**

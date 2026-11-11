@@ -16,7 +16,6 @@ import { dismissMail, needsAttention, refreshMail, syncMail, unpaidBills, useMai
 import { getMessage, putMessages } from "../lib/mail/cache";
 import { providerFor } from "../lib/mail/providers";
 import type { MailMessage } from "../lib/mail/types";
-import { isAndroid } from "../lib/platform";
 
 type View = string; // a built-in view id, or `folder:<id>`
 const VIEWS: { id: View; label: string; match: (m: MailMessage) => boolean }[] = [
@@ -117,15 +116,6 @@ export function Email() {
     else if (e.key === "End") (e.preventDefault(), useMail.setState({ selectedId: shown[shown.length - 1]?.id }));
   };
 
-  if (isAndroid())
-    return (
-      <>
-        <PageHead title="Email" />
-        <div className="card">
-          <div className="empty">Email runs in the Windows app for now. Important mail alerts appear there.</div>
-        </div>
-      </>
-    );
   if (!accounts.length)
     return (
       <>

@@ -4,6 +4,7 @@ import { httpGet } from "../http";
 import { isAndroid, isTauri, openUrl } from "../platform";
 import { secretDelete, secretGet, secretSet } from "../secureStore";
 import { clearAccount } from "./cache";
+import { pollMsToken, requestMsDeviceCode, type MsDeviceCode, type MsPost } from "./microsoftDevice";
 import { fetchProfile, GRAPH, type GraphApi } from "./graph";
 import type { MailAccountMeta } from "./types";
 
@@ -17,7 +18,9 @@ const AUTH = "https://login.microsoftonline.com/common/oauth2/v2.0";
 /** Read-only for now. Moving, replying and sending will ask for more later (Mail.ReadWrite, Mail.Send). */
 export const MS_SCOPES = "offline_access User.Read Mail.Read Mail.Send";
 
-export const msSignInAvailable = () => isTauri() && !isAndroid();
+export const msSignInAvailable = () => isTauri();
+/** Android signs in with a code typed at microsoft.com/devicelogin; Windows uses the loopback sign-in. */
+export const msUsesDeviceCode = () => isAndroid();
 export const msConfigured = () => !!useStore.getState().settings.email.microsoftClientId;
 
 const access = new Map<string, { value: string; expires: number }>();
@@ -106,6 +109,38 @@ async function loopbackSignIn(): Promise<{ access: string; refresh?: string; exp
   }
 }
 
+const devicePost: MsPost = async (kind, form) => {
+  const { invoke } = await import("@tauri-apps/api/core");
+  const [status, text] = await invoke<[number, string]>(kind === "devicecode" ? "ms_device_code" : "ms_token_request", { form });
+  let json: any = {};
+  try {
+    json = JSON.parse(text);
+  } catch {
+    /* not JSON */
+  }
+  return { status, json };
+};
+const sleep = (ms: number) => new Promise<void>((res) => setTimeout(res, ms));
+
+/** Android, step 1: get a code to show. `done` resolves with the new account once the code has been entered. */
+export async function beginOutlookDeviceSignIn(): Promise<{ code: MsDeviceCode; done: Promise<MailAccountMeta>; cancel: () => void }> {
+  if (!msConfigured()) throw new Error("Add your Microsoft app (client) ID first: Settings → Email.");
+  const clientId = useStore.getState().settings.email.microsoftClientId.trim();
+  let code: MsDeviceCode;
+  try {
+    code = await requestMsDeviceCode(devicePost, clientId, MS_SCOPES);
+  } catch (e) {
+    throw new Error(explainMicrosoftError((e as Error).message));
+  }
+  const flag = { cancelled: false };
+  const done = pollMsToken(devicePost, sleep, clientId, code, flag)
+    .catch((e: Error) => {
+      throw new Error(explainMicrosoftError(e.message));
+    })
+    .then(registerOutlook);
+  return { code, done, cancel: () => void (flag.cancelled = true) };
+}
+
 async function accessToken(accountId: string): Promise<string> {
   const have = access.get(accountId);
   if (have && have.expires > Date.now() + 60e3) return have.value;
@@ -151,9 +186,9 @@ export const msApiFor = (accountId: string): GraphApi =>
     () => access.delete(accountId),
   );
 
-/** Sign in, learn who it is, and add the account. Returns it (the caller runs the first sync). */
+/** Windows: sign in in the browser, then add the account. Returns it (the caller runs the first sync). */
 export async function connectOutlook(): Promise<MailAccountMeta> {
-  if (!msSignInAvailable()) throw new Error("Outlook sign-in runs in the installed Windows app.");
+  if (!msSignInAvailable() || msUsesDeviceCode()) throw new Error("Outlook sign-in runs in the installed app.");
   if (!msConfigured()) throw new Error("Add your Microsoft app (client) ID first: Settings → Email.");
   let t: Awaited<ReturnType<typeof loopbackSignIn>>;
   try {
@@ -161,6 +196,11 @@ export async function connectOutlook(): Promise<MailAccountMeta> {
   } catch (e) {
     throw new Error(explainMicrosoftError((e as Error).message));
   }
+  return registerOutlook(t);
+}
+
+/** Learn who signed in, save the tokens and add (or refresh) the account. Shared by both sign-in flows. */
+async function registerOutlook(t: { access: string; refresh?: string; expiresIn: number }): Promise<MailAccountMeta> {
   let profile: { address: string; name: string };
   try {
     profile = await fetchProfile(graphApi(async () => t.access, nativeFetch));

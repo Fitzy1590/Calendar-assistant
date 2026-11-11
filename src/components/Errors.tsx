@@ -104,7 +104,7 @@ function CrashScreen({ error, where, onRetry, tried }: { error: Error; where: st
               {ex.fix.label}
             </button>
           )}
-          <button className="btn" onClick={() => exportJsonFile()}>
+          <button className="btn" onClick={() => exportJsonFile().catch(() => {})}>
             Back up my data
           </button>
           <button className="btn" onClick={() => openUrl(reportUrl({ ...entry, title: ex.title }))}>

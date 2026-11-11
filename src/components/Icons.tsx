@@ -57,6 +57,11 @@ export const IFullscreen = (p: P) => (
     <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" />
   </S>
 );
+export const IRepeat = (p: P) => (
+  <S {...p}>
+    <path d="M17 2l4 4-4 4M3 11V9a3 3 0 0 1 3-3h15M7 22l-4-4 4-4M21 13v2a3 3 0 0 1-3 3H3" />
+  </S>
+);
 export const ISport = (p: P) => (
   <S {...p}>
     <circle cx="12" cy="12" r="8.5" />

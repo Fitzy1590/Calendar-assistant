@@ -1,5 +1,6 @@
 import type { DriveSyncMeta } from "./lib/driveSync";
 import type { MailSettings } from "./lib/mail/types";
+import type { Subscription } from "./lib/subscriptions";
 export type ID = string;
 
 /** Every synced record carries an id, a last-modified stamp and a tombstone flag. */
@@ -171,6 +172,7 @@ export type PageId =
   | "reminders"
   | "news"
   | "sports"
+  | "subscriptions"
   | "settings";
 
 export interface HomeWidget {
@@ -262,6 +264,8 @@ export interface Settings {
     microsoftClientId: string;
   };
   mail: MailSettings;
+  /** Found by scanning a bank statement on this device. Only the detected list is kept, never the statement. */
+  subscriptions: { items: Subscription[]; cancelled: Record<string, string>; importedAt?: string };
   /** Sync through the hidden Google Drive app folder (no server). Per device. */
   driveSync: {
     enabled: boolean;

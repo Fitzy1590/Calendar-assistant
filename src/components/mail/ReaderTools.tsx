@@ -3,7 +3,9 @@ import { useMemo, useState } from "react";
 import { toast, useStore } from "../../store";
 import { ask, parseSummary, summaryPrompt, type AiProvider } from "../../lib/mail/ai";
 import { allMessages } from "../../lib/mail/cache";
-import { replyTo } from "../../lib/mail/composeStore";
+import { openCompose, replyTo } from "../../lib/mail/composeStore";
+import { openUrl } from "../../lib/platform";
+import { unsubscribeDraft, unsubscribeFor } from "../../lib/mail/unsubscribe";
 import { snoozeMail } from "../../lib/mail/engine";
 import { snoozeOptions } from "../../lib/mail/followups";
 import { dateIdeas, type DateIdea } from "../../lib/mail/mailDates";
@@ -27,6 +29,7 @@ export function ReaderTools({ m, showDates }: { m: MailMessage; showDates: boole
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   const ideas = useMemo(() => dateIdeas(m.text || m.preview || m.subject), [m.id, m.text, m.preview, m.subject]); // eslint-disable-line react-hooks/exhaustive-deps
+  const unsub = unsubscribeFor(m);
   const who: AiProvider | null = keys.claude ? "claude" : keys.gemini ? "gemini" : null;
 
   const summarise = async () => {
@@ -73,6 +76,20 @@ export function ReaderTools({ m, showDates }: { m: MailMessage; showDates: boole
         <button className="btn sm" onClick={() => replyTo("reply", m, { ai: "gemini" })}>
           Draft with Gemini
         </button>
+        {unsub && (
+          <button
+            className="btn sm"
+            onClick={() => {
+              if (unsub.web) void openUrl(unsub.web).then(() => toast("Opened the unsubscribe page. Follow it to finish."));
+              else {
+                const d = unsubscribeDraft(unsub, m.accountId);
+                if (d) openCompose(d);
+              }
+            }}
+          >
+            Unsubscribe
+          </button>
+        )}
         <select
           className="input"
           style={{ width: "auto" }}

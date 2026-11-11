@@ -3,7 +3,9 @@ import { toast, useStore } from "../../store";
 import { addSenderRule, moveToFolder, snoozeMail } from "../../lib/mail/engine";
 import { snoozeOptions } from "../../lib/mail/followups";
 import { dateIdeas } from "../../lib/mail/mailDates";
-import { replyTo } from "../../lib/mail/composeStore";
+import { openCompose, replyTo } from "../../lib/mail/composeStore";
+import { openUrl } from "../../lib/platform";
+import { unsubscribeDraft, unsubscribeFor } from "../../lib/mail/unsubscribe";
 import { visibleMenu } from "../../lib/mail/menu";
 import type { MailMessage } from "../../lib/mail/types";
 
@@ -185,6 +187,24 @@ export function MailContextMenu({
                 {it.label}: {who}
               </Item>
             );
+          case "unsubscribe": {
+            const u = unsubscribeFor(m);
+            if (!u) return null; // only newsletters and mailing lists have one
+            return (
+              <Item
+                key={it.id}
+                onClick={run(() => {
+                  if (u.web) void openUrl(u.web).then(() => toast("Opened the unsubscribe page. Follow it to finish."));
+                  else {
+                    const d = unsubscribeDraft(u, m.accountId);
+                    if (d) openCompose(d);
+                  }
+                })}
+              >
+                Unsubscribe from {who}
+              </Item>
+            );
+          }
           default:
             return null;
         }

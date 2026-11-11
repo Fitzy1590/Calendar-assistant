@@ -327,6 +327,7 @@ const NAMES: Record<PageId, string> = {
   contacts: "Contacts",
   news: "News",
   sports: "Sports",
+  subscriptions: "Subscriptions",
   settings: "Settings",
 };
 

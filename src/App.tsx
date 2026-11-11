@@ -23,6 +23,7 @@ import { Contacts } from "./pages/Contacts";
 import { Reminders } from "./pages/Reminders";
 import { News } from "./pages/News";
 import { Sports } from "./pages/Sports";
+import { Subscriptions } from "./pages/Subscriptions";
 import { Settings } from "./pages/Settings";
 import { Notes } from "./pages/Notes";
 import { Shopping } from "./pages/Shopping";
@@ -48,6 +49,7 @@ const PAGES = {
   reminders: Reminders,
   news: News,
   sports: Sports,
+  subscriptions: Subscriptions,
   settings: Settings,
 };
 

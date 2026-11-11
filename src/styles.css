@@ -549,3 +549,7 @@ input[type="range"], input[type="checkbox"] { accent-color: var(--accent); }
 .outbox-item.bad { background: var(--bad); color: var(--bg); }
 .outbox-item .btn { flex: none; }
 .outbox-item .btn { background: var(--bg); color: var(--text); border-color: transparent; }
+
+/* Subscriptions */
+.sub-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 0; flex-wrap: wrap; }
+.sub-row + .sub-row { border-top: 1px solid var(--line); }

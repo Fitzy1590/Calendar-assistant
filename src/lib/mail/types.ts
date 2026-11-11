@@ -114,7 +114,7 @@ export interface MailSettings {
   /** Which mail counts as important. */
   important: { actionUrgent: boolean; contacts: boolean; financial: boolean; everything: boolean };
   /** How important mail shows up. */
-  alerts: { homeCard: boolean; desktop: boolean; badge: boolean; dailySummary: boolean; summaryHour: number };
+  alerts: { homeCard: boolean; desktop: boolean; sound: boolean; badge: boolean; dailySummary: boolean; summaryHour: number };
   rules: MailRule[];
   folders: MailFolder[];
   /** The right-click menu: the order of its items and the ones you hid. */
@@ -136,7 +136,7 @@ export const DEFAULT_MAIL_SETTINGS: MailSettings = {
   cacheText: true,
   cacheMaxMB: 300,
   important: { actionUrgent: true, contacts: true, financial: true, everything: false },
-  alerts: { homeCard: true, desktop: true, badge: true, dailySummary: true, summaryHour: 8 },
+  alerts: { homeCard: true, desktop: true, sound: false, badge: true, dailySummary: true, summaryHour: 8 },
   rules: [],
   folders: [],
   menu: { order: [], hidden: [] },

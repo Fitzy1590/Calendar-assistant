@@ -287,6 +287,10 @@ export function EmailSetup() {
         notification when new important mail arrives
       </span>
       <span className="row">
+        <Toggle checked={m.alerts.sound} onChange={(v) => set((x) => void (x.alerts.sound = v))} label="Alert sound" /> Play the Windows
+        notification sound (off by default: alerts are silent)
+      </span>
+      <span className="row">
         <Toggle checked={m.alerts.badge} onChange={(v) => set((x) => void (x.alerts.badge = v))} label="Menu badge" /> Unread count next to
         Email in the left menu
       </span>

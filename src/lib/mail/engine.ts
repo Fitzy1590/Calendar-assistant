@@ -94,15 +94,18 @@ export const sortMail = (raw: RawMail, ctx: ClassifyContext, old?: MailMessage):
 
 type Notifier = (title: string, body: string) => void | Promise<void>;
 
+/** Mail alerts are silent unless you turned the sound on (Settings → Email). */
+const mailNotify: Notifier = (title, body) => notify(title, body, { silent: !useStore.getState().settings.mail.alerts.sound });
+
 /** Graph shortcut kept for tests. */
-export const syncAccountWith = (api: GraphApi, account: MailAccountMeta, alert: Notifier = notify) =>
+export const syncAccountWith = (api: GraphApi, account: MailAccountMeta, alert: Notifier = mailNotify) =>
   syncAccountWithProvider(graphProvider(api), account, alert);
 
 /** Sync one account through its provider. Returns the new important messages that were alerted. Exported for tests. */
 export async function syncAccountWithProvider(
   provider: MailProvider,
   account: MailAccountMeta,
-  alert: Notifier = notify,
+  alert: Notifier = mailNotify,
 ): Promise<MailMessage[]> {
   const settings = useStore.getState().settings.mail;
   try {
@@ -175,7 +178,7 @@ export async function reclassifyCached() {
 }
 
 /** Send the morning summary once a day, after the chosen hour. */
-export async function maybeDailyDigest(now = new Date(), alert: Notifier = notify): Promise<boolean> {
+export async function maybeDailyDigest(now = new Date(), alert: Notifier = mailNotify): Promise<boolean> {
   const m = useStore.getState().settings.mail;
   const today = format(now, "yyyy-MM-dd");
   if (!m.alerts.dailySummary || !m.accounts.length || m.lastDigestOn === today || now.getHours() < m.alerts.summaryHour) return false;
@@ -255,7 +258,7 @@ export const snoozeMail = (id: string, at: number) => updateOne(id, (m) => ({ ..
 export const unsnoozeMail = (id: string) => updateOne(id, (m) => ({ ...m, snoozedUntil: undefined }));
 
 /** Snoozed mail whose time has come comes back as unread with an alert; follow-ups with no reply raise a reminder. */
-export async function wakeAndRemind(alert: Notifier = notify, now = Date.now()) {
+export async function wakeAndRemind(alert: Notifier = mailNotify, now = Date.now()) {
   const all = await allMessages();
   const due = dueSnoozes(all, now);
   if (due.length) {
@@ -360,7 +363,7 @@ export async function billToTask(id: string) {
 }
 
 /** Remind about unpaid bills that are due soon (or overdue), once per bill. */
-export async function maybeBillReminders(alert: Notifier = notify, today = new Date()): Promise<number> {
+export async function maybeBillReminders(alert: Notifier = mailNotify, today = new Date()): Promise<number> {
   const m = mailSettings();
   if (!m.bills.remindDays || !m.alerts.desktop) return 0;
   const due = unpaidBills(useMail.getState().messages).filter(

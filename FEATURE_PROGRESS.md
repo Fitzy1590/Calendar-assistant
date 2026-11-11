@@ -24,7 +24,7 @@ Package manager is **npm** (`package-lock.json`, CI runs `npm ci`); commands bel
 
 **User said (2026-11-11): "Build all then release all at once. Notify when done."** So: build steps 1-7, run all checks, merge PR #16, release v0.2.3 (workflow_dispatch on main, release_version 0.2.3), PushNotification with the release link, then screenshots.
 **Voted:** email layout **B (tabs on top)** as default, with **sender avatars, date groups, search box, and a layout switcher** (so keep the classic three-pane as the other choice); assistant gets **Gemini** as a provider.
-Tick each step here as it lands (commit after each): [ ] 1 subscriptions  [ ] 2 unsubscribe  [ ] 3 alert sound + quick not-important  [ ] 4 shopping history  [ ] 5 email UI  [ ] 6 Gemini assistant  [ ] 7 guardrails
+Tick each step here as it lands (commit after each): [x] 1 subscriptions  [x] 2 unsubscribe  [x] 3 alert sound + quick not-important  [x] 4 shopping history  [x] 5 email UI (tabs/classic, avatars, date groups, search)  [x] 6 Gemini assistant  [x] 7 guardrails. NEXT: final checks, push, CI, merge PR #16, release v0.2.3, notify, screenshots.
 
 **Next steps, in order**
 1. **Subscriptions tab (bank statement)**: a left-menu page. Import CSV/OFX/QIF (parser done) → detect recurring charges (`src/lib/subscriptions.ts`: normalise merchant, cadence weekly/fortnightly/monthly/quarterly/yearly, known-merchant list) → categories → monthly/yearly totals → "How to cancel" guide per subscription (official manage link when known, else a search link; Apple / Google Play / PayPal billing pages; mark as cancelled and warn if charged again). Local only; statement rows are not stored, only the detected list. Needs: `PageId` + Sidebar `META` + `PAGES` + `DEFAULT_SETTINGS.sidebar`, tests, screenshots at 1280 and 412.
@@ -40,7 +40,7 @@ Tick each step here as it lands (commit after each): [ ] 1 subscriptions  [ ] 2 
 
 **Baseline checks** (run for every item, in addition to its own check):
 - `B1` `npx tsc --noEmit` exits 0
-- `B2` `npm test`, all suites pass (301 tests at this checkpoint)
+- `B2` `npm test`, all suites pass (331 tests at this checkpoint)
 - `B3` `npm run build` succeeds
 - `B4` Rust touched: `rustfmt --edition 2021 --check src-tauri/src/*.rs`, plus a green GitHub `build` run (check, windows, android jobs)
 - `B5` `npx prettier --check "src/**/*.{ts,tsx}"` clean
@@ -198,3 +198,10 @@ Windows side and the shared engine first; Android joins next. Every stage also n
 | [~] | **AI drafts (Claude, Gemini), smart replies, thread summary** with local redaction (`thread.ts`), exact-payload confirmation, `[CHECK:]` blocking | `ai.test.ts` (10) with fake HTTP; real keys untested |
 | [x] | **Snooze, follow-up reminders, email to event/task** (local) | `followups.test.ts`, `ai.test.ts` (dates) |
 | [x] | **WebView2 check** no longer calls a working install damaged; the web view's own right-click menu is hidden in the Windows app | Rust standalone test |
+| [x] | **Subscriptions page**: statement parser (CSV/OFX/QIF), recurring-charge detection, categories, totals, price changes, cancel guides, charged-after-cancel warning | `bankStatement.test.ts` (8), `subscriptions.test.ts` (11); screenshots; real bank exports untested beyond the formats handled |
+| [x] | **Unsubscribe** (List-Unsubscribe https page, or a mailto draft you send) in the right-click menu and reader | `unsubscribe.test.ts` (3) |
+| [x] | **Mail alert sound toggle (off by default)** and quick Not important / Mute sender / type on Home | `quick.test.ts` (2); the Windows toast sound itself is untested here |
+| [x] | **Shopping History tab** | `shoppingHistory.test.ts` (4) |
+| [x] | **Email layout**: tabs on top (default) or Classic, avatars, date groups, search | `mailUi.test.ts` (4); screenshots |
+| [x] | **Assistant with Gemini** (function calling through the same tools) | `geminiSchema.test.ts` (3), `geminiAssistant.test.ts` (3) with a fake HTTP; real key untested |
+| [x] | **Guardrails**: `.p12` deny rules, CLAUDE.md hard boundaries, `.claude/skills/release`, `.claude/rules/rust.md` | files on disk |

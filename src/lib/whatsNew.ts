@@ -14,11 +14,11 @@ export interface WhatsNewEntry {
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
     version: "0.2.3",
-    title: "Reply, forward and send email",
+    title: "Send email, Subscriptions and more",
     points: [
-      "Reply, reply all, forward and write new email from Outlook, Gmail and Bigpond: right-click an email or use the buttons under it. Send has an undo, Send later, and a check before it goes. Allow sending once per account in Settings → Email.",
-      "Draft replies with Claude or Gemini (you edit and send; nothing sends itself), plus quick replies, thread summaries, dates to calendar or tasks, snooze, follow-up reminders, templates, signatures and attachments.",
-      "Folders and rules in this app, and a right-click menu you can reorder (Settings → Email). Add other email explains connection errors.",
+      "Write, reply and forward email from Outlook, Gmail and Bigpond, with Undo send, Send later and drafts from Claude or Gemini. The email page has a new tabs-on-top layout with search, avatars and date groups (switch back to Classic any time).",
+      "New Subscriptions page: import a bank statement (CSV, OFX or QIF) and it finds what you pay for, sorts it into categories and guides you through cancelling. Right-click a newsletter to Unsubscribe.",
+      "Mail alerts are silent unless you turn the sound on, with quick Not important and Mute buttons on Home. Shopping has a History tab, and the assistant can use Gemini.",
     ],
   },
   {

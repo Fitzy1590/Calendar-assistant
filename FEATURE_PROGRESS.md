@@ -3,51 +3,28 @@
 Audited 2026-11-08 against `main` @ 6db1ed2 (release v0.1.2) + `CLAUDE.md`.
 Package manager is **npm** (`package-lock.json`, CI runs `npm ci`); commands below use npm/npx.
 
-## Update (2026-11-11, later): v0.2.3 released; next release v0.2.4 (not yet merged or released)
-- Built on branch: Outlook/Hotmail on Android (device-code sign-in: `lib/mail/microsoftDevice.ts` + Rust `ms_device_code`, modal in `EmailSetup.tsx`, Email page and polling enabled on Android) and backups via a Save window on both apps (`saveFile` in `lib/backup.ts`, plugins dialog + fs, capabilities `dialog:allow-save`, `fs:allow-write-text-file`).
-- Untested here: Android sign-in and Android Save/write to a content URI (relies on the dialog plugin adding the chosen file to the fs scope), Rust build (CI). Android refresh token sits in app-private localStorage.
-
 ## Checkpoint (2026-11-11): resume here after `/clear`
 
 **Where things are**
-- Released: **v0.2.2** (main @ 362dc9e). Windows auto-updates itself from v0.2.0 on.
-- Branch `claude/windows-android-planner-app-92z03q` @ 55c5a4e, **PR #16 open, not merged, not released**. It holds: in-app email folders + right-click "Create rule + folder", IMAP connection guide, reply / reply all / forward / new email and sending (Outlook Graph, Gmail, SMTP for Bigpond), outbox with Undo and Send later, Claude/Gemini drafts with local redaction and `[CHECK:]` blocking, quick replies, thread summary, dates to calendar/tasks, snooze, follow-ups, templates, signatures, attachments, reorderable right-click menu, WebView2 "damaged" false alarm fix, web view's own right-click menu hidden. 293 tests passing at that commit; What's new entry is 0.2.3.
-- On disk, uncommitted until this checkpoint's commit: `src/lib/bankStatement.ts` + test (CSV / OFX / QIF statement parser, 8 tests). Nothing else of the Subscriptions feature exists yet.
+- Released: **v0.2.3** (all email send/Subscriptions/Gemini/etc. work). Branch `claude/windows-android-planner-app-92z03q` holds **v0.2.4 work, pushed, no PR yet, not merged or released**: Hotmail on Android (device-code sign-in: `lib/mail/microsoftDevice.ts`, Rust `ms_device_code`, modal in `EmailSetup.tsx`, Email page and polling on Android) and backups through a Save window on both apps (`saveFile` in `lib/backup.ts`, dialog + fs plugins). 335 tests pass; What's new entry is 0.2.4.
+- Untested: Android sign-in, Android Save/write to a content URI, Rust build (CI decides). Android refresh token sits in app-private localStorage.
+- NEXT: open a PR, watch the `build` run, then merge + release v0.2.4 only on the user's word (workflow_dispatch on main, release_version 0.2.4), notify, screenshots.
 
 **Decisions made (don't re-ask)**
 - npm, not pnpm. Logic in `src/lib`, screens in `src/pages`. Never Prettier `styles.css`.
 - Drive sync uses `drive.file` + a "Calendar Assistant (sync)" folder (device flow rejects `drive.appdata`).
-- Email folders live in the app only; the real mailbox is never changed. Sending is allowed from all three account kinds.
-- AI drafts are draft-only; the first use of each AI shows the exact text sent. Keys stay on the device and out of backups.
-- Windows updates: direct installer with GitHub SHA-256 check (no signing key yet); `scripts/setup-updates.mjs` sets up signed updates.
-- Full screen = borderless maximised window (system full screen broke the mouse on the user's rotated display); taskbar hiding is opt-in.
-- Microsoft token request runs natively (`oauth_proxy.rs`) because the web view adds an Origin header (AADSTS90023).
-- Voting cards (AskUserQuestion) with mock screenshots for choices; mock screenshots after each release; merge/release only when the user says so.
+- Email folders live in the app only; the real mailbox is never changed. Sending allowed from Outlook, Gmail and SMTP accounts.
+- AI drafts are draft-only; first use of each AI shows the exact text sent. Keys stay on the device and out of backups.
+- Windows updates: direct installer with GitHub SHA-256 check; `scripts/setup-updates.mjs` sets up signed updates.
+- Full screen = borderless maximised window; taskbar hiding is opt-in.
+- Microsoft token and device-code requests run natively (`oauth_proxy.rs`): the web view adds an Origin header (AADSTS90023).
+- Voting cards with mock screenshots for UX choices; mock screenshots after each release; merge/release only when asked.
 
-**Not verified against real services** (say so in summaries): Gmail read/send, IMAP/SMTP (Bigpond), Outlook send, Claude/Gemini calls with real keys, the taskbar-hiding full screen option, Drive sync between PC and phone.
-
-**User said (2026-11-11): "Build all then release all at once. Notify when done."** So: build steps 1-7, run all checks, merge PR #16, release v0.2.3 (workflow_dispatch on main, release_version 0.2.3), PushNotification with the release link, then screenshots.
-**Voted:** email layout **B (tabs on top)** as default, with **sender avatars, date groups, search box, and a layout switcher** (so keep the classic three-pane as the other choice); assistant gets **Gemini** as a provider.
-Tick each step here as it lands (commit after each): [x] 1 subscriptions  [x] 2 unsubscribe  [x] 3 alert sound + quick not-important  [x] 4 shopping history  [x] 5 email UI (tabs/classic, avatars, date groups, search)  [x] 6 Gemini assistant  [x] 7 guardrails. NEXT: final checks, push, CI, merge PR #16, release v0.2.3, notify, screenshots.
-
-**Next steps, in order**
-1. **Subscriptions tab (bank statement)**: a left-menu page. Import CSV/OFX/QIF (parser done) → detect recurring charges (`src/lib/subscriptions.ts`: normalise merchant, cadence weekly/fortnightly/monthly/quarterly/yearly, known-merchant list) → categories → monthly/yearly totals → "How to cancel" guide per subscription (official manage link when known, else a search link; Apple / Google Play / PayPal billing pages; mark as cancelled and warn if charged again). Local only; statement rows are not stored, only the detected list. Needs: `PageId` + Sidebar `META` + `PAGES` + `DEFAULT_SETTINGS.sidebar`, tests, screenshots at 1280 and 412.
-2. **Unsubscribe**: right-click item (and reader button) for mail with a `List-Unsubscribe` header: open the https link, or send the mailto through the account; add to `MENU_ITEMS`. Note: Graph adapter keeps the header; check Gmail/IMAP keep it too.
-3. **Important-mail alerts**: desktop alerts already exist. Add a sound toggle (off by default) and a quick "Not important" / "Mute sender" action on the alert/Home card.
-4. **Shopping search history**: a "History" option beside Find and List on the Shopping page.
-5. **Nicer email UI**: make mock screenshots of 3-4 layout options and ask with a voting card before building.
-6. **Assistant + Gemini** (user asked if possible): yes; add Gemini as an assistant provider beside Claude (`lib/assistant.ts` `runClaude`), reusing the Gemini key already in settings. Ask before building.
-7. **Guardrails (Phase 2 request)**: mostly present. Gaps: add `Read(signing/*.p12)` to `.claude/settings.json` deny; add package id `com.fitzy.calendarassistant` and a "hard boundaries" list to `CLAUDE.md`; add a `.claude/skills/release/SKILL.md` runbook and a Rust rules file scoped to `src-tauri/**`.
-8. Then: all checks, push, tell the user PR #16 is ready; merge + release v0.2.3 only on their word.
+**Not verified against real services** (say so in summaries): Gmail read/send, IMAP/SMTP (Bigpond), Outlook send, Claude/Gemini with real keys, taskbar-hiding full screen, Drive sync PC<->phone, Android Hotmail sign-in and file save.
 
 ---
 
-**Baseline checks** (run for every item, in addition to its own check):
-- `B1` `npx tsc --noEmit` exits 0
-- `B2` `npm test`, all suites pass (331 tests at this checkpoint)
-- `B3` `npm run build` succeeds
-- `B4` Rust touched: `rustfmt --edition 2021 --check src-tauri/src/*.rs`, plus a green GitHub `build` run (check, windows, android jobs)
-- `B5` `npx prettier --check "src/**/*.{ts,tsx}"` clean
+**Baseline checks** (every item): `npx tsc --noEmit`; `npm test` (335 tests); `npm run build`; Rust touched: `rustfmt --edition 2021 --check src-tauri/src/*.rs` + green GitHub `build` run; `npx prettier --check "src/**/*.{ts,tsx}"`.
 
 ---
 

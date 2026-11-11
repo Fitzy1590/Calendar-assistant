@@ -12,7 +12,12 @@
       "Read(./**/*.keystore)",
       "Read(./secrets/**)",
       "Read(signing/*.p12)",
-      "Read(./signing/*.p12)"
+      "Read(./signing/*.p12)",
+      "Read(./package-lock.json)",
+      "Read(./dist/**)",
+      "Read(./src-tauri/target/**)",
+      "Read(./src-tauri/gen/**)",
+      "Read(./node_modules/**)"
     ]
   },
   "hooks": {

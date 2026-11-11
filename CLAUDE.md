@@ -77,6 +77,7 @@ src/lib/subscriptions.ts + bankStatement.ts   bank statement scan; pages/Subscri
   Account metadata is in `settings.mail`; **tokens only in the OS secure store** (`lib/secureStore.ts`), never settings or logs.
 - Never mutate a thread or message object; build new ones. Sanitise HTML before rendering. AI drafts are draft-only: nothing is
   sent without an explicit Send press. Trim and redact a thread locally before it goes to Claude or Gemini.
+- Never read `package-lock.json`, `dist/`, `src-tauri/target|gen` or `src/styles.css` whole (denied or huge): grep, or read a line range.
 - Token hygiene for sessions: keep this file under 200 lines, search the repo with subagents, `/clear` near 80% context and
   resume from `FEATURE_PROGRESS.md`.
 

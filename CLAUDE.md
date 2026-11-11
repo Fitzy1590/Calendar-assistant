@@ -70,7 +70,7 @@ src/lib/subscriptions.ts + bankStatement.ts   bank statement scan; pages/Subscri
 ## Email module (in progress: see `SPEC.md`, stages in `FEATURE_PROGRESS.md`)
 
 - Code: `src/lib/mail/` built: `provider.ts` (the interface every adapter implements; `providers.ts` picks one per account), `graph.ts` (Outlook), `gmail.ts`, `imap.ts` + Rust `src-tauri/src/imap_core.rs` (any IMAP mailbox), `accounts.ts` (add/remove Gmail/IMAP), `microsoft.ts` (sign-in), `classify.ts` (buckets +
-  importance), `rules.ts` (your rules, suggestions), `bills.ts` (amount/due date), `cache.ts` (IndexedDB), `engine.ts` (sync, alerts, bills, summary); planned: `thread.ts`, `drafts.ts`
+  importance), `rules.ts` (your rules, suggestions), `bills.ts` (amount/due date), `cache.ts` (IndexedDB), `engine.ts` (sync, alerts, bills, summary), `thread.ts`, `compose.ts`/`ai.ts` (drafts), `send.ts`/`outbox.ts`, `microsoftDevice.ts` (Android sign-in code)
   (Claude/Gemini). Page `src/pages/Email.tsx`, parts in `src/components/mail/`. Sign-in setup: `docs/EMAIL_SETUP.md`.
 - Never run Prettier on `styles.css` (it is excluded; it would rewrite the whole file).
 - Mail is **not** a store collection: bodies live in IndexedDB on this device only (never synced, never in backups).

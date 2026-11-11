@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { format } from "date-fns";
 import { useStore } from "../../store";
 import { createFolder, deleteFolder, reclassifyCached, renameFolder, syncMail } from "../../lib/mail/engine";
@@ -7,11 +7,12 @@ import { allowSending } from "../../lib/mail/accounts";
 import { connectGmail, connectImap, disconnectAccount, otherMailAvailable } from "../../lib/mail/accounts";
 import { domainOf, guessImap } from "../../lib/mail/imapPresets";
 import { explainImapError } from "../../lib/mail/imapHelp";
-import { connectOutlook, msConfigured, msSignInAvailable } from "../../lib/mail/microsoft";
+import { beginOutlookDeviceSignIn, connectOutlook, msConfigured, msSignInAvailable, msUsesDeviceCode } from "../../lib/mail/microsoft";
+import type { MsDeviceCode } from "../../lib/mail/microsoftDevice";
 import { googleConfigured } from "../../lib/google";
 import { toast } from "../../store";
 import { SetupGuideButton } from "../SetupGuide";
-import { Field, Suggest, Toggle } from "../ui";
+import { Field, Modal, Suggest, Toggle } from "../ui";
 import { KEY_LINKS } from "../../lib/suggest";
 import { openUrl } from "../../lib/platform";
 import { RulesEditor } from "./RulesEditor";
@@ -42,11 +43,14 @@ export function EmailSetup() {
     s.updateSettings((st) => fn(st.mail));
     if (resort) reclassifyCached().catch(() => {});
   };
+  const [deviceOpen, setDeviceOpen] = useState(false);
   const connect = () =>
-    run("connect", async () => {
-      await connectOutlook();
-      return syncMail();
-    });
+    msUsesDeviceCode()
+      ? setDeviceOpen(true)
+      : run("connect", async () => {
+          await connectOutlook();
+          return syncMail();
+        });
   const canConnect = msSignInAvailable() && msConfigured();
   const [imap, setImap] = useState<{ open: boolean; address: string; password: string; host: string; port: number; edited: boolean }>({
     open: false,
@@ -143,7 +147,13 @@ export function EmailSetup() {
         <button className="btn primary" disabled={!canConnect || !!busy} onClick={connect}>
           {busy === "connect" ? "Waiting for your browser…" : "Add Outlook / Hotmail account"}
         </button>
-        {!msSignInAvailable() && <span className="faint">Sign-in runs in the installed Windows app.</span>}
+        {!msSignInAvailable() && <span className="faint">Sign-in runs in the installed app.</span>}
+        {deviceOpen && (
+          <OutlookCodeModal
+            onClose={() => setDeviceOpen(false)}
+            onDone={() => (setDeviceOpen(false), toast("Signed in."), syncMail().then(toast, () => {}))}
+          />
+        )}
       </div>
       <div className="row" style={{ flexWrap: "wrap" }}>
         <button className="btn" disabled={!otherMailAvailable() || !googleConfigured() || !!busy} onClick={addGmail}>
@@ -621,5 +631,82 @@ function WritingEditor() {
         </span>
       </div>
     </div>
+  );
+}
+
+function useTick(ms: number) {
+  const [, set] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => set((n) => n + 1), ms);
+    return () => clearInterval(t);
+  }, [ms]);
+}
+
+/** Android: shows the code to type at microsoft.com/devicelogin, and waits for it. */
+function OutlookCodeModal({ onClose, onDone }: { onClose: () => void; onDone: () => void }) {
+  const [state, setState] = useState<{ code?: MsDeviceCode; error?: string }>({});
+  useTick(1000);
+  useEffect(() => {
+    let alive = true;
+    let cancel = () => {};
+    beginOutlookDeviceSignIn().then(
+      ({ code, done, cancel: c }) => {
+        cancel = c;
+        if (!alive) return c();
+        setState({ code });
+        done.then(
+          () => alive && onDone(),
+          (e: Error) => alive && setState((x) => ({ ...x, error: e.message })),
+        );
+      },
+      (e: Error) => alive && setState({ error: e.message }),
+    );
+    return () => {
+      alive = false;
+      cancel();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const left = state.code ? Math.max(0, Math.round((state.code.expiresAt - Date.now()) / 1000)) : 0;
+  return (
+    <Modal
+      title="Sign in to Outlook / Hotmail"
+      onClose={onClose}
+      footer={
+        <>
+          <button className="btn ghost" onClick={onClose}>
+            Cancel
+          </button>
+          {state.code && (
+            <button className="btn primary" onClick={() => openUrl(state.code!.url)}>
+              Open the Microsoft page
+            </button>
+          )}
+        </>
+      }
+    >
+      <div className="stack" role="status" aria-live="polite">
+        {state.error ? (
+          <div role="alert" style={{ color: "var(--bad)" }}>
+            {state.error}
+          </div>
+        ) : !state.code ? (
+          <div className="muted">Getting a code from Microsoft…</div>
+        ) : (
+          <>
+            <div>
+              On any device, open <b>{state.code.url.replace(/^https:\/\//, "")}</b> and enter this code:
+            </div>
+            <div className="mono" style={{ fontSize: 32, fontWeight: 700, letterSpacing: ".08em" }}>
+              {state.code.userCode}
+            </div>
+            <div className="faint" style={{ fontSize: 12.5 }}>
+              Sign in with your Hotmail or Outlook account and accept the permissions. This window closes by itself when it's done. The code
+              works for {Math.floor(left / 60)}:{String(left % 60).padStart(2, "0")}.
+            </div>
+          </>
+        )}
+      </div>
+    </Modal>
   );
 }

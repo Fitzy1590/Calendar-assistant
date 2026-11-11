@@ -1,6 +1,6 @@
 ---
 name: calendar-api
-description: Google Calendar / Drive / People and Outlook (Microsoft Graph) integration for this app — OAuth (loopback + PKCE, popup), token storage, scopes, two-way calendar sync, RRULE mapping, Drive appdata backup, birthdays. Load when editing src/lib/google.ts, src/lib/email.ts, sync of events with an outside calendar, or OAuth/token code.
+description: Google Calendar / Drive / People and Outlook (Microsoft Graph) integration for this app — OAuth (loopback + PKCE, popup), token storage, scopes, two-way calendar sync, RRULE mapping, Drive drive.file backup/sync, birthdays. Load when editing src/lib/google.ts, src/lib/email.ts, sync of events with an outside calendar, or OAuth/token code.
 ---
 
 # Calendar API procedures
@@ -28,7 +28,7 @@ All requests go through `gfetch(url, scope, init)` (Google) — it gets a token 
 
 ### Scopes (`SCOPES`) — request the narrowest
 - `calendar.events` — read/write events (not calendar list/ACLs)
-- `drive.appdata` — hidden per-app folder only
+- `drive.file` — only files this app created (we avoid `drive.appdata`: Google's device flow rejects it)
 - `contacts.readonly` — birthdays for "Sync birthdays"
 - `gmail.readonly` — email scan
 Adding a scope: add to `SCOPES`, update `docs/GOOGLE_AND_OUTLOOK.md` (consent screen list), request it lazily at the

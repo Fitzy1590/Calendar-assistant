@@ -2,6 +2,7 @@ import { format } from "date-fns";
 import { DEFAULT_SETTINGS, live, useStore, type Change } from "../store";
 import type { CollectionName, Settings } from "../types";
 import { fromYmd } from "./util";
+import { isTauri } from "./platform";
 import { backupToDrive, googleConnected, quietly, SCOPES } from "./google";
 
 /**
@@ -82,11 +83,36 @@ export function download(name: string, text: string, type = "application/json") 
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-export function exportJsonFile() {
-  download(`calendar-assistant-backup-${format(new Date(), "yyyy-MM-dd")}.json`, JSON.stringify(makeBackup(), null, 1));
+/**
+ * Save a file where the person chooses. In the apps (Windows and Android) that is the system "Save as" window; in a browser
+ * it is a normal download. Resolves to a short message for a toast ("" when they cancelled the window).
+ */
+export async function saveFile(name: string, text: string, type = "application/json"): Promise<string> {
+  if (isTauri()) {
+    try {
+      const { save } = await import("@tauri-apps/plugin-dialog");
+      const { writeTextFile } = await import("@tauri-apps/plugin-fs");
+      const ext = name.split(".").pop() ?? "json";
+      const path = await save({ defaultPath: name, filters: [{ name: ext.toUpperCase(), extensions: [ext] }] });
+      if (!path) return "";
+      await writeTextFile(path, text);
+      return `Saved ${name}.`;
+    } catch (e) {
+      throw new Error(`Couldn't save the file: ${(e as Error)?.message ?? String(e)}`.slice(0, 200));
+    }
+  }
+  download(name, text, type);
+  return `Downloaded ${name}.`;
 }
 
-export function exportIcs() {
+export const backupFileName = () => `calendar-assistant-backup-${format(new Date(), "yyyy-MM-dd")}.json`;
+
+/** Every collection and your settings, as one file you choose the place for. Keys and secrets are blanked (see makeBackup). */
+export function exportJsonFile(): Promise<string> {
+  return saveFile(backupFileName(), JSON.stringify(makeBackup(), null, 1));
+}
+
+export function exportIcs(): Promise<string> {
   const s = useStore.getState();
   const dt = (iso: string, allDay: boolean) =>
     allDay ? `;VALUE=DATE:${iso.slice(0, 10).replace(/-/g, "")}` : `:${format(fromYmd(iso), "yyyyMMdd'T'HHmmss")}`;
@@ -114,15 +140,15 @@ export function exportIcs() {
     lines.push("END:VEVENT");
   }
   lines.push("END:VCALENDAR");
-  download(`calendar-${format(new Date(), "yyyy-MM-dd")}.ics`, lines.join("\r\n"), "text/calendar");
+  return saveFile(`calendar-${format(new Date(), "yyyy-MM-dd")}.ics`, lines.join("\r\n"), "text/calendar");
 }
 
-export function exportCsvTasks() {
+export function exportCsvTasks(): Promise<string> {
   const rows = [
     ["title", "due", "time", "priority", "done", "notes"],
     ...live(useStore.getState().tasks).map((t) => [t.title, t.due ?? "", t.time ?? "", t.priority, String(t.done), t.notes ?? ""]),
   ];
-  download(
+  return saveFile(
     `tasks-${format(new Date(), "yyyy-MM-dd")}.csv`,
     rows.map((r) => r.map((c) => `"${c.replace(/"/g, '""')}"`).join(",")).join("\n"),
     "text/csv",

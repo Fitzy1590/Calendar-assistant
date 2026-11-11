@@ -70,13 +70,14 @@ src/lib/subscriptions.ts + bankStatement.ts   bank statement scan; pages/Subscri
 ## Email module (in progress: see `SPEC.md`, stages in `FEATURE_PROGRESS.md`)
 
 - Code: `src/lib/mail/` built: `provider.ts` (the interface every adapter implements; `providers.ts` picks one per account), `graph.ts` (Outlook), `gmail.ts`, `imap.ts` + Rust `src-tauri/src/imap_core.rs` (any IMAP mailbox), `accounts.ts` (add/remove Gmail/IMAP), `microsoft.ts` (sign-in), `classify.ts` (buckets +
-  importance), `rules.ts` (your rules, suggestions), `bills.ts` (amount/due date), `cache.ts` (IndexedDB), `engine.ts` (sync, alerts, bills, summary); planned: `thread.ts`, `drafts.ts`
+  importance), `rules.ts` (your rules, suggestions), `bills.ts` (amount/due date), `cache.ts` (IndexedDB), `engine.ts` (sync, alerts, bills, summary), `thread.ts`, `compose.ts`/`ai.ts` (drafts), `send.ts`/`outbox.ts`, `microsoftDevice.ts` (Android sign-in code)
   (Claude/Gemini). Page `src/pages/Email.tsx`, parts in `src/components/mail/`. Sign-in setup: `docs/EMAIL_SETUP.md`.
 - Never run Prettier on `styles.css` (it is excluded; it would rewrite the whole file).
 - Mail is **not** a store collection: bodies live in IndexedDB on this device only (never synced, never in backups).
   Account metadata is in `settings.mail`; **tokens only in the OS secure store** (`lib/secureStore.ts`), never settings or logs.
 - Never mutate a thread or message object; build new ones. Sanitise HTML before rendering. AI drafts are draft-only: nothing is
   sent without an explicit Send press. Trim and redact a thread locally before it goes to Claude or Gemini.
+- Never read `package-lock.json`, `dist/`, `src-tauri/target|gen` or `src/styles.css` whole (denied or huge): grep, or read a line range.
 - Token hygiene for sessions: keep this file under 200 lines, search the repo with subagents, `/clear` near 80% context and
   resume from `FEATURE_PROGRESS.md`.
 

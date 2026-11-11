@@ -13,6 +13,14 @@ export interface WhatsNewEntry {
 
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    version: "0.2.4",
+    title: "Hotmail on Android and backups to a file",
+    points: [
+      "Outlook / Hotmail email now works on Android: Settings → Email shows a short code to enter at microsoft.com/devicelogin, and mail syncs and alerts like on Windows.",
+      "Full backup, calendar (.ics) and tasks (.csv) now open a Save window on Windows and Android, so you choose where the file goes. Keys and sign-in tokens are left out of backups.",
+    ],
+  },
+  {
     version: "0.2.3",
     title: "Send email, Subscriptions and more",
     points: [

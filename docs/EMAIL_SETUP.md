@@ -28,6 +28,13 @@ You do not need a client secret, and you don't need to add permissions by hand: 
 2. Press **Add Outlook / Hotmail account**. Your browser opens Microsoft's sign-in; approve it, then come back to the app.
 3. The first sync pulls your last 30 days. After that it checks every few minutes (Settings → Email → *Check for new mail*).
 
+## Hotmail / Outlook on Android
+
+Use the same Microsoft app and client ID as on Windows (Entra → Authentication → turn on **Allow public client flows**; the Android sign-in needs no extra redirect).
+In the Android app: Settings → Email → paste the client ID → **Add Outlook / Hotmail account**. The app shows a short code; open the page it names
+(microsoft.com/devicelogin) on any device, enter the code, sign in and accept. The window closes by itself and mail syncs. Gmail and other
+(IMAP) accounts are still Windows only. The sign-in token is kept in the app's private storage on the phone and is never synced or backed up.
+
 ## Gmail
 
 1. Do the Google setup first (Settings → Email, Google & Outlook: the in-app guide shows how).

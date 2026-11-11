@@ -99,6 +99,8 @@ pub fn run() {
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_http::init())
         .plugin(tauri_plugin_oauth::init())
+        .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_fs::init())
         .invoke_handler(tauri::generate_handler![
             set_close_to_tray,
             webview_status,
@@ -111,7 +113,8 @@ pub fn run() {
             imap_mail::imap_body,
             imap_mail::smtp_send,
             self_update::install_update_direct,
-            oauth_proxy::ms_token_request
+            oauth_proxy::ms_token_request,
+            oauth_proxy::ms_device_code
         ])
         .setup(|_app| {
             // Nice-to-haves never stop the app from opening: if one fails it's logged and skipped.

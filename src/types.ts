@@ -1,6 +1,7 @@
 import type { DriveSyncMeta } from "./lib/driveSync";
 import type { MailSettings } from "./lib/mail/types";
 import type { Subscription } from "./lib/subscriptions";
+import type { SearchRecord } from "./lib/shoppingHistory";
 export type ID = string;
 
 /** Every synced record carries an id, a last-modified stamp and a tombstone flag. */
@@ -218,6 +219,7 @@ export interface Settings {
     onlineStores: string[];
     checkPricesDaily: boolean;
     notifyDrops: boolean;
+    history: SearchRecord[]; // what you searched for in Find, newest first
   };
   updates: {
     checkOnLaunch: boolean;

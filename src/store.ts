@@ -41,6 +41,7 @@ export const DEFAULT_SETTINGS: Settings = {
     onlineStores: ["Amazon AU", "Officeworks", "Bunnings", "eBay AU", "JB Hi-Fi", "Kmart"],
     checkPricesDaily: true,
     notifyDrops: true,
+    history: [],
   },
   updates: { checkOnLaunch: true, installAutomatically: true, autoDefaultApplied: true },
   sync: { shareSettings: true, enabled: false, serverUrl: "", pairingCode: pairingCode(), deviceName: "" },

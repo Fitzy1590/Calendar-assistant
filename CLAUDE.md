@@ -98,7 +98,8 @@ scripts/ docs/ .github/workflows/build.yml   versioning, setup guides, CI + rele
   are blanked in backups (`backup.ts makeBackup`). Never log them or put them in the repo.
 - Errors: unhandled ones go through `lib/errors.ts` (plain-English explanation) and `lib/autofix.ts`
   (safe automatic fixes). Auto-fixes must never delete user data or change OS settings without asking.
-- UI: follow `.claude/rules/calendar-ui.md` (tokens in `styles.css`, accessible controls, no AI-slop look).
+- Path-scoped rules load on demand from `.claude/rules/`: `calendar-ui.md` (UI), `mail.md` (email module), `tauri-rust.md` (src-tauri).
+- Release runbook: `.claude/skills/release/SKILL.md`.
 - Google/Outlook sync and OAuth details: `.claude/skills/calendar-api/SKILL.md` and
   `docs/GOOGLE_AND_OUTLOOK.md`.
 

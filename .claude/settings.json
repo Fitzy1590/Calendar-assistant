@@ -10,7 +10,8 @@
       "Read(./**/client_secret*.json)",
       "Read(./**/*.p12)",
       "Read(./**/*.keystore)",
-      "Read(./secrets/**)"
+      "Read(./secrets/**)",
+      "Read(./signing/**)"
     ]
   },
   "hooks": {

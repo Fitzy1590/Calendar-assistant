@@ -397,7 +397,14 @@ export function syncMail(): Promise<string> {
         fresh += (await syncAccountWithProvider(providerFor(a), a)).length;
       } catch (e) {
         failed++;
-        useMail.setState({ error: `${a.address}: ${(e as Error).message.slice(0, 120)}` });
+        const m = (e as Error).message;
+        const lost =
+          /invalid_grant|Graph 401|Google 401|AADSTS|AUTHENTICATIONFAILED|Invalid credentials|LOGIN failed|authentication failed/i.test(m);
+        useMail.setState({
+          error: lost
+            ? `${a.address}: your sign-in has expired. Open Settings → Email and press Reconnect.`
+            : `${a.address}: ${m.slice(0, 120)}`,
+        });
       }
     }
     await refreshMail();

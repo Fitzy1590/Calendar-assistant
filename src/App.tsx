@@ -88,7 +88,7 @@ function useBackground() {
       const st = useStore.getState();
       if (!st.settings.onboarded) return;
       for (const t of tasksToRelease(live(st.tasks), todayYmd(), st.settings.weekStartsOn))
-        st.upsert("tasks", { id: t.id, due: undefined, carryPromptedOn: undefined });
+        st.upsert("tasks", { id: t.id, plannedFor: undefined });
     };
     const tickSync = () => {
       releaseOldTasks();

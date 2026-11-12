@@ -6,7 +6,7 @@ import { live, toast, useStore } from "../store";
 import { cleanTitle, parseWhen } from "../lib/nlp";
 import { planWeek, taskBoardEvents, type PlanItem } from "../lib/planner";
 import { occurrencesOnDay } from "../lib/recurrence";
-import { isUnassigned, nextDays } from "../lib/taskWeek";
+import { isUnassigned, nextDays, workDay } from "../lib/taskWeek";
 import { cx, fromYmd, todayYmd, ymd } from "../lib/util";
 import { ICheck, IPlus, ITrash } from "../components/Icons";
 import { Modal, PageHead, Seg, Toggle } from "../components/ui";
@@ -110,7 +110,7 @@ export function Tasks() {
                 className="btn primary"
                 disabled={!plan.length}
                 onClick={() => {
-                  plan.forEach((p) => s.upsert("tasks", { id: p.task.id, due: p.day, ignored: false }));
+                  plan.forEach((p) => s.upsert("tasks", { id: p.task.id, plannedFor: p.day, ignored: false }));
                   toast(`Scheduled ${plan.length} tasks`);
                   setPlan(null);
                 }}
@@ -191,7 +191,7 @@ function TaskRow({ t }: { t: Task }) {
             className="input"
             style={{ width: 118, padding: "2px 6px", fontSize: 12 }}
             value=""
-            onChange={(e) => e.target.value && s.upsert("tasks", { id: t.id, due: e.target.value, ignored: false })}
+            onChange={(e) => e.target.value && s.upsert("tasks", { id: t.id, plannedFor: e.target.value, ignored: false })}
             aria-label={`Assign "${t.title}" to a day`}
           >
             <option value="">Assign to…</option>
@@ -206,9 +206,19 @@ function TaskRow({ t }: { t: Task }) {
           type="date"
           className="input"
           style={{ width: 132, padding: "2px 6px", fontSize: 12 }}
+          value={t.plannedFor ?? ""}
+          onChange={(e) => s.upsert("tasks", { id: t.id, plannedFor: e.target.value || undefined, ignored: false })}
+          aria-label="Do on (day to work on it)"
+          title="Do on: the day you plan to work on it, even in an earlier week than the deadline"
+        />
+        <input
+          type="date"
+          className="input"
+          style={{ width: 132, padding: "2px 6px", fontSize: 12 }}
           value={t.due ?? ""}
           onChange={(e) => s.upsert("tasks", { id: t.id, due: e.target.value || undefined, ignored: false })}
-          aria-label="Due date"
+          aria-label="Due date (deadline)"
+          title="Due: the deadline"
         />
         <button className="btn ghost icon sm" onClick={() => s.remove("tasks", t.id)} aria-label="Delete">
           <ITrash size={15} />
@@ -225,14 +235,15 @@ function TaskList({ tasks, groupBy }: { tasks: Task[]; groupBy: "day" | "priorit
     const key = (t: Task) =>
       groupBy === "priority"
         ? { high: "High priority", med: "Normal", low: "Low" }[t.priority]
-        : !t.due
+        : !workDay(t)
           ? "Unassigned"
-          : t.due < today
+          : workDay(t)! < today
             ? "Overdue"
-            : t.due === today
+            : workDay(t) === today
               ? "Today"
-              : format(fromYmd(t.due), "EEEE d MMM");
-    for (const t of [...tasks].sort((a, b) => (a.due ?? "0").localeCompare(b.due ?? "0"))) g.set(key(t), [...(g.get(key(t)) ?? []), t]);
+              : format(fromYmd(workDay(t)!), "EEEE d MMM");
+    for (const t of [...tasks].sort((a, b) => (workDay(a) ?? "0").localeCompare(workDay(b) ?? "0")))
+      g.set(key(t), [...(g.get(key(t)) ?? []), t]);
     return [...g];
   }, [tasks, groupBy]);
   return (
@@ -260,12 +271,16 @@ function WeekBoard({ tasks }: { tasks: Task[] }) {
   const [over, setOver] = useState<string | null>(null);
   const days = Array.from({ length: 7 }, (_, i) => addDays(new Date(), i));
   const today = todayYmd();
-  const unscheduled = tasks.filter((t) => !t.due || (t.due < today && !t.done));
+  const unscheduled = tasks.filter((t) => !workDay(t) || (workDay(t)! < today && !t.done));
   const drop = (day: string | undefined) => (e: React.DragEvent) => {
     e.preventDefault();
     setOver(null);
     const id = e.dataTransfer.getData("text/task");
-    if (id) s.upsert("tasks", { id, due: day, ignored: false });
+    if (!id) return;
+    const t = s.tasks[id];
+    // onto a day: plan it for that day (the deadline stays). Onto the waiting list: clear the plan, or the day if it had no plan.
+    if (day) s.upsert("tasks", { id, plannedFor: day, ignored: false });
+    else s.upsert("tasks", t?.plannedFor ? { id, plannedFor: undefined } : { id, due: undefined, plannedFor: undefined });
   };
   const events = taskBoardEvents(live(s.events));
   return (
@@ -274,7 +289,7 @@ function WeekBoard({ tasks }: { tasks: Task[] }) {
         {days.map((d) => {
           const k = ymd(d);
           const occ = occurrencesOnDay(events, d);
-          const list = tasks.filter((t) => t.due === k);
+          const list = tasks.filter((t) => workDay(t) === k);
           return (
             <div
               key={k}

@@ -59,7 +59,8 @@ export type Priority = "low" | "med" | "high";
 
 export interface Task extends Synced {
   title: string;
-  due?: string; // yyyy-mm-dd
+  due?: string; // yyyy-mm-dd deadline
+  plannedFor?: string; // yyyy-mm-dd day to work on it; can be in an earlier week than `due`
   time?: string; // HH:mm
   done: boolean;
   doneAt?: number;

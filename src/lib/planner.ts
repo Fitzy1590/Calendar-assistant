@@ -1,3 +1,4 @@
+import { workDay } from "./taskWeek";
 import { addDays, areIntervalsOverlapping, differenceInMinutes, format, startOfDay } from "date-fns";
 import type { CalEvent, Task } from "../types";
 import { live, useStore } from "../store";
@@ -43,9 +44,12 @@ export function planWeek(now = new Date()): PlanItem[] {
   }
   const tasks = live(s.tasks).filter((t) => !t.done && !t.ignored);
   const todayKey = ymd(today);
-  for (const t of tasks) if (t.due && t.due >= todayKey && load.has(t.due)) load.set(t.due, load.get(t.due)! + (t.estimateMins ?? 30));
+  for (const t of tasks) {
+    const d = workDay(t);
+    if (d && d >= todayKey && load.has(d)) load.set(d, load.get(d)! + (t.estimateMins ?? 30));
+  }
 
-  const toPlace = tasks.filter((t) => !t.due || t.due < todayKey).sort((a, b) => rank(b) - rank(a));
+  const toPlace = tasks.filter((t) => !workDay(t) || workDay(t)! < todayKey).sort((a, b) => rank(b) - rank(a));
   const plan: PlanItem[] = [];
   for (const t of toPlace) {
     // weekends weigh a little heavier so chores don't all land on Saturday
@@ -55,7 +59,7 @@ export function planWeek(now = new Date()): PlanItem[] {
     plan.push({
       task: t,
       day,
-      reason: `${format(fromYmd(day), "EEEE")} has ${Math.round(mins / 60)}h booked${t.due && t.due < todayKey ? " · was overdue" : ""}`,
+      reason: `${format(fromYmd(day), "EEEE")} has ${Math.round(mins / 60)}h booked${workDay(t) && workDay(t)! < todayKey ? " · was overdue" : ""}`,
     });
   }
   return plan;

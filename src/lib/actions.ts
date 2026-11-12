@@ -215,7 +215,7 @@ export function showDay(date: string): ActionResult {
 export function planMyWeek(apply: boolean): ActionResult {
   const plan = planWeek();
   if (!plan.length) return { text: "Nothing to plan: every open task already has a day." };
-  if (apply) for (const p of plan) st().upsert("tasks", { id: p.task.id, due: p.day });
+  if (apply) for (const p of plan) st().upsert("tasks", { id: p.task.id, plannedFor: p.day });
   return {
     text: apply ? `Scheduled ${plan.length} task${plan.length > 1 ? "s" : ""} across the week:` : "Here's a suggested plan:",
     items: plan.map((p) => `${format(fromYmd(p.day), "EEE")} — ${p.task.title} (${p.reason})`),

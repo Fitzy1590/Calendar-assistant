@@ -14,7 +14,7 @@ Package manager is **npm** (`package-lock.json`, CI runs `npm ci`); commands bel
 - npm, not pnpm. Logic in `src/lib`, screens in `src/pages`. Never Prettier `styles.css`.
 - Drive sync uses `drive.file` + a "Calendar Assistant (sync)" folder (device flow rejects `drive.appdata`).
 - Email folders live in the app only; the real mailbox is never changed. Sending allowed from Outlook, Gmail and SMTP accounts.
-- Email page: All / Unread / Read tabs, "Mark all as read" (or unread on the Read tab), "Mark as read/unread" in the right-click menu, and a Select mode with bulk read/unread/move. Read state is app-only. Not yet looked at in a browser.
+- Email page: All / Unread / Read tabs, "Mark all as read" (or unread on the Read tab), "Mark as read/unread" in the right-click menu, and a Select mode with bulk read/unread/move. Read state is app-only. Checked in Playwright at 1280 px and 412 px, light and dark; engine tests cover read/unread and bulk move (338 tests).
 - AI drafts are draft-only; first use of each AI shows the exact text sent. Keys stay on the device and out of backups.
 - Windows updates: direct installer with GitHub SHA-256 check; `scripts/setup-updates.mjs` sets up signed updates.
 - Full screen = borderless maximised window; taskbar hiding is opt-in.

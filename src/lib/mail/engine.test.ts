@@ -1,12 +1,16 @@
 import "fake-indexeddb/auto";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useStore } from "../../store";
-import { allMessages, clearAccount, getMessage, resetCacheConnection } from "./cache";
+import { allMessages, clearAccount, getMessage, putMessages, resetCacheConnection } from "./cache";
 import {
   addSenderRule,
   billToCalendar,
   billToTask,
+  createFolder,
   deleteRule,
+  isSeen,
+  moveManyToFolder,
+  setReadMany,
   digestText,
   markPaid,
   maybeBillReminders,
@@ -363,5 +367,37 @@ describe("provider-based sync", () => {
     };
     await expect(syncAccountWithProvider(provider, ACC, async () => {})).rejects.toThrow();
     expect(useStore.getState().settings.mail.accounts.find((a) => a.id === "acc")?.status).toBe("needs-reconnect");
+  });
+});
+
+describe("read state and bulk actions", () => {
+  const seed = () =>
+    putMessages([mm({ id: "acc:1" }), mm({ id: "acc:2", providerId: "2" }), mm({ id: "acc:3", providerId: "3", isRead: true })], true);
+
+  it("isSeen counts the mailbox flag and opening it here", () => {
+    expect(isSeen(mm())).toBe(false);
+    expect(isSeen(mm({ isRead: true }))).toBe(true);
+    expect(isSeen(mm({ dismissed: true }))).toBe(true);
+  });
+
+  it("marks several as read, then unread, and counts only the ones that changed", async () => {
+    await seed();
+    expect(await setReadMany(["acc:1", "acc:2", "acc:3", "acc:missing"], true)).toBe(2);
+    expect((await allMessages()).every(isSeen)).toBe(true);
+    expect(useMail.getState().messages.every(isSeen)).toBe(true);
+    expect(await setReadMany(["acc:1", "acc:3"], false)).toBe(2);
+    expect(isSeen((await getMessage("acc:1"))!)).toBe(false);
+    expect(isSeen((await getMessage("acc:2"))!)).toBe(true);
+    expect(await setReadMany([], true)).toBe(0);
+  });
+
+  it("moves several to a folder and back to the Inbox", async () => {
+    await seed();
+    const f = createFolder("Receipts");
+    expect(await moveManyToFolder(["acc:1", "acc:2"], f.id)).toBe(2);
+    expect((await getMessage("acc:1"))?.folderId).toBe(f.id);
+    expect((await getMessage("acc:3"))?.folderId).toBeUndefined();
+    await moveManyToFolder(["acc:1"], null);
+    expect((await getMessage("acc:1"))?.folderId).toBeFalsy();
   });
 });

@@ -157,3 +157,9 @@ Windows side and the shared engine first; Android joins next. Every stage also n
 | [x] | **Drag to reorder the left menu** (+ Alt+Up/Down); `lib/order.ts` | `order.test.ts` (3); browser drag test; screenshots |
 | [x] | **Sports fixtures hidden from Tasks** (`taskBoardEvents`) | `taskBoard.test.ts` |
 | [x] | **Keyboard shortcuts**: F toggles full screen; 1-9 and 0 open the matching left-menu item (numbers shown beside each item, follow your order); ignored while typing or in a dialog | `shortcuts.test.ts` (3); browser key test; screenshot |
+
+## Task weeks
+
+| | Item | Verification |
+|---|---|---|
+| [x] | **Unassigned tasks in the List view** (first group, "Unassigned") with an "Assign to…" day picker on every undated open task; **new week releases leftovers**: open, unparked tasks planned for an earlier week lose their day and return to the unassigned list (`lib/taskWeek.ts`, run from the background tick in `App.tsx`; week start follows Settings) | `taskWeek.test.ts` (4); manual: give a task last week's date, reload, it appears under Unassigned |

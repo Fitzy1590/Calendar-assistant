@@ -6,6 +6,7 @@ import { live, toast, useStore } from "../store";
 import { cleanTitle, parseWhen } from "../lib/nlp";
 import { planWeek, taskBoardEvents, type PlanItem } from "../lib/planner";
 import { occurrencesOnDay } from "../lib/recurrence";
+import { isUnassigned, nextDays } from "../lib/taskWeek";
 import { cx, fromYmd, todayYmd, ymd } from "../lib/util";
 import { ICheck, IPlus, ITrash } from "../components/Icons";
 import { Modal, PageHead, Seg, Toggle } from "../components/ui";
@@ -185,6 +186,22 @@ function TaskRow({ t }: { t: Task }) {
         </span>
       )}
       <span className="row" style={{ gap: 2 }}>
+        {isUnassigned(t) && (
+          <select
+            className="input"
+            style={{ width: 118, padding: "2px 6px", fontSize: 12 }}
+            value=""
+            onChange={(e) => e.target.value && s.upsert("tasks", { id: t.id, due: e.target.value, ignored: false })}
+            aria-label={`Assign "${t.title}" to a day`}
+          >
+            <option value="">Assign to…</option>
+            {nextDays(todayYmd()).map((d, i) => (
+              <option key={d} value={d}>
+                {i === 0 ? "Today" : i === 1 ? "Tomorrow" : format(fromYmd(d), "EEE d MMM")}
+              </option>
+            ))}
+          </select>
+        )}
         <input
           type="date"
           className="input"
@@ -209,13 +226,13 @@ function TaskList({ tasks, groupBy }: { tasks: Task[]; groupBy: "day" | "priorit
       groupBy === "priority"
         ? { high: "High priority", med: "Normal", low: "Low" }[t.priority]
         : !t.due
-          ? "Someday"
+          ? "Unassigned"
           : t.due < today
             ? "Overdue"
             : t.due === today
               ? "Today"
               : format(fromYmd(t.due), "EEEE d MMM");
-    for (const t of [...tasks].sort((a, b) => (a.due ?? "9").localeCompare(b.due ?? "9"))) g.set(key(t), [...(g.get(key(t)) ?? []), t]);
+    for (const t of [...tasks].sort((a, b) => (a.due ?? "0").localeCompare(b.due ?? "0"))) g.set(key(t), [...(g.get(key(t)) ?? []), t]);
     return [...g];
   }, [tasks, groupBy]);
   return (

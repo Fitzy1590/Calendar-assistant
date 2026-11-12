@@ -2,7 +2,9 @@ import { useEffect } from "react";
 import { isFullscreen, setFullscreen, toggleFullscreen } from "./lib/fullscreen";
 import { isTyping, pageForKey } from "./lib/shortcuts";
 import { isAndroid, isTauri } from "./lib/platform";
-import { useStore } from "./store";
+import { live, useStore } from "./store";
+import { tasksToRelease } from "./lib/taskWeek";
+import { todayYmd } from "./lib/util";
 import { Sidebar } from "./components/Sidebar";
 import { AssistantDrawer, CommandBar } from "./components/Assistant";
 import { DayPanel } from "./components/DayPanel";
@@ -81,7 +83,15 @@ function useBackground() {
       if (!s.onboarded || !s.reminders.desktopNotifications) return;
       for (const r of dueNow()) notify(r.title, r.detail);
     };
+    // A new week starts: open tasks planned for an earlier week go back to the unassigned list.
+    const releaseOldTasks = () => {
+      const st = useStore.getState();
+      if (!st.settings.onboarded) return;
+      for (const t of tasksToRelease(live(st.tasks), todayYmd(), st.settings.weekStartsOn))
+        st.upsert("tasks", { id: t.id, due: undefined, carryPromptedOn: undefined });
+    };
     const tickSync = () => {
+      releaseOldTasks();
       const sh = useStore.getState().settings.shopping;
       if (sh.checkPricesDaily)
         checkTrackedPrices()

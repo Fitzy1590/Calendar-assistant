@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { toast, useStore } from "../../store";
-import { addSenderRule, moveToFolder, snoozeMail } from "../../lib/mail/engine";
+import { addSenderRule, isSeen, moveToFolder, setReadMany, snoozeMail } from "../../lib/mail/engine";
 import { snoozeOptions } from "../../lib/mail/followups";
 import { dateIdeas } from "../../lib/mail/mailDates";
 import { openCompose, replyTo } from "../../lib/mail/composeStore";
@@ -70,6 +70,14 @@ export function MailContextMenu({
     <div ref={ref} className="ctx-menu" role="menu" aria-label={`Actions for ${m.subject}`} style={{ left, top }}>
       {items.map((it) => {
         switch (it.id) {
+          case "markRead": {
+            const seen = isSeen(m);
+            return (
+              <Item key={it.id} onClick={run(() => setReadMany([m.id], !seen))}>
+                {seen ? "Mark as unread" : "Mark as read"}
+              </Item>
+            );
+          }
           case "reply":
           case "replyAll":
           case "forward":

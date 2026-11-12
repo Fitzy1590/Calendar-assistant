@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { format, formatDistanceToNowStrict, isToday } from "date-fns";
-import { useStore } from "../store";
+import { toast, useStore } from "../store";
 import { PageHead } from "../components/ui";
 import { Bills } from "../components/mail/Bills";
 import { FolderRuleDialog } from "../components/mail/FolderRuleDialog";
@@ -12,7 +12,17 @@ import { Seg } from "../components/ui";
 import { newMail } from "../lib/mail/composeStore";
 import { MailContextMenu } from "../components/mail/MailContextMenu";
 import { BUCKET_LABEL } from "../lib/mail/classify";
-import { dismissMail, needsAttention, refreshMail, syncMail, unpaidBills, useMail } from "../lib/mail/engine";
+import {
+  dismissMail,
+  isSeen,
+  moveManyToFolder,
+  needsAttention,
+  refreshMail,
+  setReadMany,
+  syncMail,
+  unpaidBills,
+  useMail,
+} from "../lib/mail/engine";
 import { getMessage, putMessages } from "../lib/mail/cache";
 import { providerFor } from "../lib/mail/providers";
 import type { MailMessage } from "../lib/mail/types";
@@ -38,6 +48,9 @@ export function Email() {
   const [fileFor, setFileFor] = useState<MailMessage | null>(null);
   const [datesFor, setDatesFor] = useState<string | null>(null);
   const [query, setQuery] = useState("");
+  const [readTab, setReadTab] = useState<"all" | "unread" | "read">("all");
+  const [selecting, setSelecting] = useState(false);
+  const [picked, setPicked] = useState<Set<string>>(new Set());
   const [body, setBody] = useState<{ id: string; text: string; loading: boolean } | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const accounts = s.settings.mail.accounts;
@@ -62,8 +75,31 @@ export function Email() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [messages, view, folderIds.join(",")],
   );
-  const shown = useMemo(() => groupRows(searchMail(rows, query)).flatMap((g) => g.rows), [rows, query]);
-  const groups = useMemo(() => groupRows(searchMail(rows, query)), [rows, query]);
+  const byRead = useMemo(
+    () => searchMail(rows, query).filter((m) => readTab === "all" || (readTab === "read") === isSeen(m)),
+    [rows, query, readTab],
+  );
+  const groups = useMemo(() => groupRows(byRead), [byRead]);
+  const shown = useMemo(() => groups.flatMap((g) => g.rows), [groups]);
+  const unreadHere = useMemo(() => searchMail(rows, query).filter((m) => !isSeen(m)).length, [rows, query]);
+  const readHere = rows.length - rows.filter((m) => !isSeen(m)).length;
+  const run = (p: Promise<unknown>) => p.catch((e: Error) => toast(e.message));
+  const markShown = (read: boolean) =>
+    run(
+      setReadMany(
+        shown.map((m) => m.id),
+        read,
+      ).then((n) => toast(n ? `Marked ${n} as ${read ? "read" : "unread"}.` : "Nothing to change.")),
+    );
+  const pickedIds = shown.filter((m) => picked.has(m.id)).map((m) => m.id);
+  const toggle = (id: string) =>
+    setPicked((p) => {
+      const n = new Set(p);
+      if (!n.delete(id)) n.add(id);
+      return n;
+    });
+  const stopSelecting = () => (setSelecting(false), setPicked(new Set()));
+  const bulk = (fn: () => Promise<unknown>, msg: string) => run(fn().then(() => (toast(msg), stopSelecting())));
   const counts = useMemo<Record<string, number>>(
     () => ({
       ...Object.fromEntries(VIEWS.map((v) => [v.id, messages.filter((m) => v.match(m) && !m.isRead && !filed(m) && !isSnoozed(m)).length])),
@@ -198,6 +234,78 @@ export function Email() {
           onChange={(v) => s.updateSettings((st) => void (st.mail.layout = v))}
         />
       </div>
+      <div className="row" style={{ marginBottom: 10, flexWrap: "wrap", justifyContent: "space-between" }}>
+        <div className="seg" role="group" aria-label="Read state">
+          <button aria-pressed={readTab === "all"} onClick={() => setReadTab("all")}>
+            All
+          </button>
+          <button aria-pressed={readTab === "unread"} onClick={() => setReadTab("unread")}>
+            Unread{unreadHere ? ` ${unreadHere}` : ""}
+          </button>
+          <button aria-pressed={readTab === "read"} onClick={() => setReadTab("read")}>
+            Read{readHere ? ` ${readHere}` : ""}
+          </button>
+        </div>
+        <span className="row" style={{ flexWrap: "wrap" }}>
+          {readTab === "read" ? (
+            <button className="btn" disabled={!shown.length} onClick={() => markShown(false)}>
+              Mark all as unread
+            </button>
+          ) : (
+            <button className="btn" disabled={!shown.some((m) => !isSeen(m))} onClick={() => markShown(true)}>
+              Mark all as read
+            </button>
+          )}
+          <button className="btn" aria-pressed={selecting} onClick={() => (selecting ? stopSelecting() : setSelecting(true))}>
+            {selecting ? "Cancel select" : "Select"}
+          </button>
+        </span>
+      </div>
+      {selecting && (
+        <div className="row" role="toolbar" aria-label="Bulk actions" style={{ marginBottom: 10, flexWrap: "wrap" }}>
+          <button className="btn" onClick={() => setPicked(new Set(pickedIds.length === shown.length ? [] : shown.map((m) => m.id)))}>
+            {pickedIds.length === shown.length && shown.length ? "Select none" : "Select all"}
+          </button>
+          <span className="muted" role="status" style={{ fontSize: 13 }}>
+            {pickedIds.length} selected
+          </span>
+          <button
+            className="btn"
+            disabled={!pickedIds.length}
+            onClick={() => bulk(() => setReadMany(pickedIds, true), `Marked ${pickedIds.length} as read.`)}
+          >
+            Mark as read
+          </button>
+          <button
+            className="btn"
+            disabled={!pickedIds.length}
+            onClick={() => bulk(() => setReadMany(pickedIds, false), `Marked ${pickedIds.length} as unread.`)}
+          >
+            Mark as unread
+          </button>
+          <select
+            className="input"
+            style={{ maxWidth: 200 }}
+            aria-label="Move selected to folder"
+            disabled={!pickedIds.length}
+            value=""
+            onChange={(e) => {
+              const v = e.target.value;
+              if (!v) return;
+              const id = v === "__inbox" ? null : v;
+              void bulk(() => moveManyToFolder(pickedIds, id), `Moved ${pickedIds.length}. Only in this app.`);
+            }}
+          >
+            <option value="">Move to…</option>
+            <option value="__inbox">Back to Inbox</option>
+            {folders.map((f) => (
+              <option key={f.id} value={f.id}>
+                {f.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
       <div className={"mail " + s.settings.mail.layout}>
         <nav className="mail-folders" aria-label="Mail folders">
           {VIEWS.filter((v) => v.id !== "spam" || messages.some((m) => m.bucket === "spam")).map((v) => (
@@ -229,21 +337,38 @@ export function Email() {
                   key={m.id}
                   data-id={m.id}
                   role="option"
-                  aria-selected={m.id === selectedId}
+                  aria-selected={selecting ? picked.has(m.id) : m.id === selectedId}
                   tabIndex={m.id === selectedId || (!selectedId && m.id === shown[0]?.id) ? 0 : -1}
-                  className={"mail-row" + (m.isRead || m.dismissed ? "" : " unread")}
-                  aria-label={`${m.from.name || m.from.address}, ${m.subject}, ${when(m.receivedAt)}${m.isRead ? "" : ", unread"}${m.important ? ", important" : ""}`}
-                  onClick={() => useMail.setState({ selectedId: m.id })}
-                  onKeyDown={(e) => e.key === "Enter" && useMail.setState({ selectedId: m.id })}
+                  className={"mail-row" + (isSeen(m) ? "" : " unread")}
+                  aria-label={`${m.from.name || m.from.address}, ${m.subject}, ${when(m.receivedAt)}${isSeen(m) ? "" : ", unread"}${selecting && picked.has(m.id) ? ", selected" : ""}${m.important ? ", important" : ""}`}
+                  onClick={() => (selecting ? toggle(m.id) : useMail.setState({ selectedId: m.id }))}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || (selecting && e.key === " ")) {
+                      e.preventDefault();
+                      if (selecting) toggle(m.id);
+                      else useMail.setState({ selectedId: m.id });
+                    }
+                  }}
                   onContextMenu={(e) => {
                     e.preventDefault();
                     useMail.setState({ selectedId: m.id });
                     setCtx({ m, x: e.clientX, y: e.clientY });
                   }}
                 >
-                  <span className={"avatar tone" + tone(m.from.address)} aria-hidden="true">
-                    {initials(m.from.name, m.from.address)}
-                  </span>
+                  {selecting ? (
+                    <input
+                      type="checkbox"
+                      tabIndex={-1}
+                      aria-hidden="true"
+                      checked={picked.has(m.id)}
+                      readOnly
+                      style={{ width: 20, height: 20 }}
+                    />
+                  ) : (
+                    <span className={"avatar tone" + tone(m.from.address)} aria-hidden="true">
+                      {initials(m.from.name, m.from.address)}
+                    </span>
+                  )}
                   <span className="mail-from ellipsis">{m.from.name || m.from.address}</span>
                   <span className="faint mono" style={{ fontSize: 11 }}>
                     {when(m.receivedAt)}

@@ -21,6 +21,7 @@ export const MENU_ITEMS: MenuItemDef[] = [
   { id: "important", label: "Always important from the sender" },
   { id: "mute", label: "Mute the sender" },
   { id: "unsubscribe", label: "Unsubscribe" },
+  { id: "markRead", label: "Mark as read" },
 ];
 
 const known = new Set(MENU_ITEMS.map((i) => i.id));

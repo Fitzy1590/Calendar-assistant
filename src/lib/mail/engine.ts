@@ -168,6 +168,29 @@ export async function dismissMail(id: string) {
   }
 }
 
+/** Is it read here? Opening a message counts, as does the mailbox's own flag. */
+export const isSeen = (m: MailMessage) => m.isRead || !!m.dismissed;
+
+/** Mark messages read or unread in this app only (the mailbox is not changed). One write, one refresh. */
+export async function setReadMany(ids: string[], read: boolean) {
+  const found = await Promise.all(ids.map((id) => getMessage(id)));
+  const next = found.filter((m): m is MailMessage => !!m && isSeen(m) !== read).map((m) => ({ ...m, isRead: read, dismissed: read }));
+  if (!next.length) return 0;
+  await putMessages(next, keepText());
+  await refreshMail();
+  return next.length;
+}
+
+/** Put several emails in a folder (`null` = back to the Inbox). */
+export async function moveManyToFolder(ids: string[], folderId: string | null) {
+  const found = await Promise.all(ids.map((id) => getMessage(id)));
+  const next = found.filter((m): m is MailMessage => !!m).map((m) => resort({ ...m, override: { ...(m.override ?? {}), folderId } }));
+  if (!next.length) return 0;
+  await putMessages(next, keepText());
+  await refreshMail();
+  return next.length;
+}
+
 /** Re-sort cached mail after the rules or Contacts change (no network). */
 export async function reclassifyCached() {
   const all = await allMessages();

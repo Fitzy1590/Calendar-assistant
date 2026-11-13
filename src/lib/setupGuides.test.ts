@@ -1,11 +1,12 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { GUIDE_HOSTS, googleSteps, guideDoc, microsoftSteps, type GuideStep } from "./setupGuides";
+import { GUIDE_HOSTS, gmailSteps, googleSteps, guideDoc, microsoftSteps, type GuideStep } from "./setupGuides";
 
 const all: [string, GuideStep[]][] = [
   ["Google, PC", googleSteps("windows")],
   ["Google, phone", googleSteps("android")],
+  ["Gmail", gmailSteps()],
   ["Microsoft", microsoftSteps()],
 ];
 
@@ -50,6 +51,10 @@ describe("setup guides", () => {
   });
   it("turns on the Drive API, which sync needs", () => {
     expect(googleSteps("windows").some((s) => s.links?.some((l) => l.url.includes("drive.googleapis.com")))).toBe(true);
+  });
+  it("the Gmail guide turns on the Gmail API", () => {
+    expect(gmailSteps().some((x) => x.links?.some((l) => l.url.includes("gmail.googleapis.com")))).toBe(true);
+    expect(guideDoc("gmail")).toMatch(/EMAIL_SETUP\.md#gmail$/);
   });
   it("links to the written guides on GitHub", () => {
     expect(guideDoc("google")).toMatch(/github\.com\/.+\/docs\/DRIVE_SYNC\.md$/);

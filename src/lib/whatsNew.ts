@@ -13,6 +13,14 @@ export interface WhatsNewEntry {
 
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    version: "0.2.5",
+    title: "Starts properly on locked-down PCs",
+    points: [
+      "If Windows blocks the app's window (a clean-up tool or a policy blocking WebView2), the app now explains why and offers to open in your web browser, instead of opening File Explorer.",
+      "Weather, Sports and other online pages now load on PCs where the app's built-in web client was being refused. Errors name the service that failed.",
+    ],
+  },
+  {
     version: "0.2.4",
     title: "Hotmail on Android and backups to a file",
     points: [

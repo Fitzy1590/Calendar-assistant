@@ -308,6 +308,13 @@ pub fn install_panic_hook() {
             .location()
             .map(|l| format!(" (at {}:{})", l.file(), l.line()))
             .unwrap_or_default();
+        // The window is built inside Tauri's setup, so a WebView2 failure arrives here as a panic.
+        // Give it the WebView2 options (repair, or open in the browser) instead of a generic crash box.
+        #[cfg(windows)]
+        if looks_like_webview(&msg) {
+            crate::webview_unavailable(&msg);
+            return;
+        }
         report(Problem::Panic(format!("{msg}{at}")));
     }));
 }

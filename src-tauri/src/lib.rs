@@ -188,10 +188,36 @@ fn start_browser_mode() {
 
 /// WebView2 can't be used: show what's wrong and the ways forward.
 #[cfg(windows)]
-fn webview_unavailable(detail: &str) {
+pub(crate) fn webview_unavailable(detail: &str) {
     use crash::{ask_with, Buttons, NO, YES};
     if prefer_browser_flag().map(|p| p.exists()).unwrap_or(false) {
         return start_browser_mode();
+    }
+    // 0x800704EC: a Windows group policy (AppLocker / Software Restriction) stops WebView2 starting.
+    // The automatic repair can't change that, so go straight to the browser option.
+    let d = detail.to_lowercase();
+    if d.contains("0x800704ec") || d.contains("blocked by group policy") {
+        let text = "Calendar Assistant draws its window with Microsoft Edge WebView2, but a Windows \
+                    group policy on this PC (AppLocker or Software Restriction) is blocking it from \
+                    starting. The automatic repair can't change that.\n\n\
+                    • Yes: Open Calendar Assistant in your web browser, now and every time. Nothing on \
+                    this PC is changed.\n\
+                    • No: Close\n\n\
+                    To use the normal window instead, allow msedgewebview2.exe in the policy.";
+        if ask_with(
+            "Calendar Assistant can't open its window",
+            text,
+            Buttons::YesNo,
+            true,
+        ) == YES
+        {
+            if let Some(p) = prefer_browser_flag() {
+                let _ = std::fs::create_dir_all(p.parent().unwrap_or(&p));
+                let _ = std::fs::write(&p, "1");
+            }
+            start_browser_mode();
+        }
+        return;
     }
     let found = webview_fix::diagnose();
     let text = format!(

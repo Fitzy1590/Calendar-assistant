@@ -7,17 +7,38 @@ import { useStore } from "../store";
  *  - in a browser it goes through the sync server's /proxy endpoint when one is configured;
  *  - otherwise it tries a direct fetch (fine for CORS-enabled APIs such as Open-Meteo).
  */
+const TIMEOUT_MS = 12000;
+
+/** fetch that gives up after a while, so a hung connection becomes an error instead of an endless spinner. */
+async function withTimeout(f: typeof fetch, url: string, init?: RequestInit): Promise<Response> {
+  const ctl = new AbortController();
+  const outer = init?.signal;
+  if (outer) outer.addEventListener("abort", () => ctl.abort(), { once: true });
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => {
+      ctl.abort();
+      reject(new Error(`no answer after ${TIMEOUT_MS / 1000}s`));
+    }, TIMEOUT_MS);
+  });
+  try {
+    return await Promise.race([f(url, { ...init, signal: ctl.signal }), timeout]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export async function httpGet(url: string, init?: RequestInit): Promise<Response> {
   if (isTauri()) {
     try {
       const { fetch: tfetch } = await import("@tauri-apps/plugin-http");
-      return await tfetch(url, init);
+      return await withTimeout(tfetch as typeof fetch, url, init);
     } catch (e) {
       // The native client can fail on some PCs (security software, odd proxies). Try a plain request from the
       // window instead: it works for CORS-enabled APIs (Open-Meteo, TheSportsDB…). Where the site refuses
       // that too, report the native client's original error.
       try {
-        return await fetch(url, init);
+        return await withTimeout(fetch, url, init);
       } catch {
         throw hostError(url, e);
       }
@@ -26,9 +47,9 @@ export async function httpGet(url: string, init?: RequestInit): Promise<Response
   const server = useStore.getState().settings.sync.serverUrl;
   if (server && !/open-meteo\.com|anthropic\.com|googleapis\.com|graph\.microsoft\.com/.test(url)) {
     const base = server.replace(/^ws/, "http").replace(/\/$/, "");
-    return fetch(`${base}/proxy?url=${encodeURIComponent(url)}`, init);
+    return withTimeout(fetch, `${base}/proxy?url=${encodeURIComponent(url)}`, init);
   }
-  return fetch(url, init);
+  return withTimeout(fetch, url, init);
 }
 
 /** Say which service failed, not just a bare message. */

@@ -9,8 +9,19 @@ import { useStore } from "../store";
  */
 export async function httpGet(url: string, init?: RequestInit): Promise<Response> {
   if (isTauri()) {
-    const { fetch: tfetch } = await import("@tauri-apps/plugin-http");
-    return tfetch(url, init);
+    try {
+      const { fetch: tfetch } = await import("@tauri-apps/plugin-http");
+      return await tfetch(url, init);
+    } catch (e) {
+      // The native client can fail on some PCs (security software, odd proxies). CORS-enabled APIs such as
+      // Open-Meteo work straight from the window, so try that before giving up.
+      if (!/open-meteo\.com|googleapis\.com/.test(url)) throw hostError(url, e);
+      try {
+        return await fetch(url, init);
+      } catch {
+        throw hostError(url, e);
+      }
+    }
   }
   const server = useStore.getState().settings.sync.serverUrl;
   if (server && !/open-meteo\.com|anthropic\.com|googleapis\.com|graph\.microsoft\.com/.test(url)) {
@@ -18,6 +29,17 @@ export async function httpGet(url: string, init?: RequestInit): Promise<Response
     return fetch(`${base}/proxy?url=${encodeURIComponent(url)}`, init);
   }
   return fetch(url, init);
+}
+
+/** Say which service failed, not just a bare message. */
+function hostError(url: string, e: unknown) {
+  let host = url;
+  try {
+    host = new URL(url).host;
+  } catch {
+    /* keep the raw text */
+  }
+  return new Error(`${host}: ${String((e as Error)?.message ?? e)}`);
 }
 
 export async function getJson<T>(url: string, init?: RequestInit): Promise<T> {

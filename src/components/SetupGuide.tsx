@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { guideDoc, googleSteps, microsoftSteps } from "../lib/setupGuides";
+import { guideDoc, gmailSteps, googleSteps, microsoftSteps } from "../lib/setupGuides";
 import { isAndroid, openUrl } from "../lib/platform";
 import { Modal } from "./ui";
 
 /** "Step-by-step setup guide": plain instructions with buttons that open the exact Google or Microsoft pages. */
-export function SetupGuideButton({ kind, label = "Step-by-step setup guide" }: { kind: "google" | "microsoft"; label?: string }) {
+export function SetupGuideButton({ kind, label = "Step-by-step setup guide" }: { kind: "google" | "microsoft" | "gmail"; label?: string }) {
   const [open, setOpen] = useState(false);
   return (
     <>
@@ -16,12 +16,18 @@ export function SetupGuideButton({ kind, label = "Step-by-step setup guide" }: {
   );
 }
 
-function SetupGuide({ kind, onClose }: { kind: "google" | "microsoft"; onClose: () => void }) {
+function SetupGuide({ kind, onClose }: { kind: "google" | "microsoft" | "gmail"; onClose: () => void }) {
   const [target, setTarget] = useState<"windows" | "android">(isAndroid() ? "android" : "windows");
-  const steps = kind === "google" ? googleSteps(target) : microsoftSteps();
+  const steps = kind === "google" ? googleSteps(target) : kind === "gmail" ? gmailSteps() : microsoftSteps();
   return (
     <Modal
-      title={kind === "google" ? "Set up Google sync, step by step" : "Connect Outlook, step by step"}
+      title={
+        kind === "google"
+          ? "Set up Google sync, step by step"
+          : kind === "gmail"
+            ? "Connect Gmail, step by step"
+            : "Connect Outlook, step by step"
+      }
       wide
       onClose={onClose}
       footer={
@@ -38,7 +44,7 @@ function SetupGuide({ kind, onClose }: { kind: "google" | "microsoft"; onClose: 
       <div className="stack">
         <div className="faint" style={{ fontSize: 12.5 }}>
           Free, about 10 minutes, and you only do it once.{" "}
-          {kind === "google" ? "You'll need a Google account." : "You'll need your Outlook or Hotmail account."}
+          {kind === "microsoft" ? "You'll need your Outlook or Hotmail account." : "You'll need a Google account."}
         </div>
         {kind === "google" && (
           <div className="seg" role="group" aria-label="Which device are you setting up?">

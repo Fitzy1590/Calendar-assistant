@@ -108,4 +108,22 @@ export const microsoftSteps = (): GuideStep[] => [
   },
 ];
 
-export const guideDoc = (kind: "google" | "microsoft") => docsUrl(kind === "google" ? "DRIVE_SYNC.md" : "EMAIL_SETUP.md");
+/** Gmail reuses the Google project, sign-in screen and PC key, but turns on the Gmail API instead of Drive. */
+export const gmailSteps = (): GuideStep[] => [
+  projectSteps[0],
+  {
+    title: "Turn on the Gmail API",
+    body: "On the page that opens, check “Calendar Assistant” is chosen at the top, then press Enable. Without this, Google refuses to let the app read your mail.",
+    links: [{ label: "Turn on Gmail", url: `${CLOUD}/apis/library/gmail.googleapis.com` }],
+  },
+  projectSteps[2],
+  windowsSteps[0],
+  {
+    title: "Paste them into the app and add Gmail",
+    body: "In Settings → Email, paste the Client ID and Client secret into the Google boxes, then press “Add Gmail account”. Choose your account in the browser, and allow reading (and sending, if you want to write mail here). If Google says the app isn't verified, press Advanced, then Continue: it's your own app. Mail stays on this PC.",
+    ui: ["Add Gmail account", "Google client ID (Desktop app)", "Google client secret (Desktop app)"],
+  },
+];
+
+export const guideDoc = (kind: "google" | "microsoft" | "gmail") =>
+  docsUrl(kind === "google" ? "DRIVE_SYNC.md" : "EMAIL_SETUP.md") + (kind === "gmail" ? "#gmail" : "");

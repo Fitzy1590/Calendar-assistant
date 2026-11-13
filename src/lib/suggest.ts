@@ -42,6 +42,7 @@ export const KEY_LINKS = {
   picovoice: { label: "Get a Picovoice AccessKey", url: "https://console.picovoice.ai/" },
   ticketmaster: { label: "Get a Ticketmaster key", url: "https://developer.ticketmaster.com/user/register" },
   googleCloud: { label: "Open Google Cloud credentials", url: "https://console.cloud.google.com/apis/credentials" },
+  gmailApi: { label: "Turn on the Gmail API", url: "https://console.cloud.google.com/apis/library/gmail.googleapis.com" },
   entra: {
     label: "Open Microsoft Entra app registrations",
     url: "https://entra.microsoft.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade",

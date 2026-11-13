@@ -37,7 +37,7 @@ In the Android app: Settings → Email → paste the client ID → **Add Outlook
 
 ## Gmail
 
-1. Do the Google setup first (Settings → Email, Google & Outlook: the in-app guide shows how).
+1. Do the Google setup first. Settings → Email shows **Step-by-step Gmail setup guide** (with buttons that open the right Google pages) and boxes for the Desktop-app client ID and secret; "Add Gmail account" stays greyed until both are filled in.
 2. In Google Cloud (same project) enable the **Gmail API**: https://console.cloud.google.com/apis/library/gmail.googleapis.com → Enable.
 3. In the app: Settings → Email → **Add Gmail account**. Google asks to let the app **read** your Gmail. Gmail uses the same Google sign-in as
    Calendar and Drive, so it is the Google account you signed in with there.

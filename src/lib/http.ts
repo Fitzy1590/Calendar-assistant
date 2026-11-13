@@ -13,9 +13,9 @@ export async function httpGet(url: string, init?: RequestInit): Promise<Response
       const { fetch: tfetch } = await import("@tauri-apps/plugin-http");
       return await tfetch(url, init);
     } catch (e) {
-      // The native client can fail on some PCs (security software, odd proxies). CORS-enabled APIs such as
-      // Open-Meteo work straight from the window, so try that before giving up.
-      if (!/open-meteo\.com|googleapis\.com/.test(url)) throw hostError(url, e);
+      // The native client can fail on some PCs (security software, odd proxies). Try a plain request from the
+      // window instead: it works for CORS-enabled APIs (Open-Meteo, TheSportsDB…). Where the site refuses
+      // that too, report the native client's original error.
       try {
         return await fetch(url, init);
       } catch {

@@ -6,7 +6,7 @@ Package manager is **npm** (`package-lock.json`, CI runs `npm ci`); commands bel
 ## Checkpoint (2026-11-11): resume here after `/clear`
 
 **Where things are**
-- Released: **v0.2.3** (all email send/Subscriptions/Gemini/etc. work). Branch `claude/windows-android-planner-app-92z03q` holds **v0.2.4 work, pushed, no PR yet, not merged or released**: Hotmail on Android (device-code sign-in: `lib/mail/microsoftDevice.ts`, Rust `ms_device_code`, modal in `EmailSetup.tsx`, Email page and polling on Android) and backups through a Save window on both apps (`saveFile` in `lib/backup.ts`, dialog + fs plugins). 335 tests pass; What's new entry is 0.2.4.
+- Released: **v0.2.4** (Hotmail on Android, Save-window backups). **v0.2.5** (this release): browser mode opens the browser not File Explorer (`crash::open` uses ShellExecute), WebView2 panics show the WebView2 options, group-policy block (0x800704EC) offers browser mode, `httpGet` retries a failed native request from the window. What's new entry is 0.2.5.
 - Untested: Android sign-in, Android Save/write to a content URI, Rust build (CI decides). Android refresh token sits in app-private localStorage.
 - NEXT: open a PR, watch the `build` run, then merge + release v0.2.4 only on the user's word (workflow_dispatch on main, release_version 0.2.4), notify, screenshots.
 

@@ -363,7 +363,10 @@ label.field > span { font-weight: 500; }
 .week-board .daycol.today { border: 2px solid var(--accent); background: color-mix(in srgb, var(--accent) 8%, var(--surface)); }
 .week-board .daycol.today h4 { color: var(--accent-text, var(--accent)); }
 .week-board .daycol .list { gap: 6px; }
-.board-card { display: grid; grid-template-columns: 18px minmax(0, 1fr) auto; gap: 6px; align-items: start; padding: 6px 8px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 6px; cursor: grab; overflow-wrap: anywhere; }
+.board-card { position: relative; display: grid; grid-template-columns: 18px minmax(0, 1fr); gap: 6px; align-items: start; padding: 6px 8px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 6px; cursor: grab; overflow-wrap: break-word; }
+.board-card .board-del { position: absolute; top: 2px; right: 2px; background: var(--surface-2); opacity: 0; }
+.board-card:hover .board-del, .board-card:focus-within .board-del { opacity: 1; }
+@media (hover: none) { .board-card { grid-template-columns: 18px minmax(0, 1fr) auto; } .board-card .board-del { position: static; opacity: 1; } }
 .board-card:active { cursor: grabbing; opacity: .6; }
 .board-card .t.done { text-decoration: line-through; color: var(--faint); }
 .board-add { margin-top: 6px; width: 100%; justify-content: flex-start; color: var(--muted); }

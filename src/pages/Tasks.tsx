@@ -235,7 +235,7 @@ function BoardCard({ t }: { t: Task }) {
           {t.title}
         </span>
       )}
-      <button className="btn ghost icon sm" onClick={() => s.remove("tasks", t.id)} aria-label={`Delete ${t.title}`}>
+      <button className="btn ghost icon sm board-del" onClick={() => s.remove("tasks", t.id)} aria-label={`Delete ${t.title}`}>
         <ITrash size={14} />
       </button>
     </div>

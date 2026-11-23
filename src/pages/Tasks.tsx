@@ -202,18 +202,28 @@ function TaskRow({ t }: { t: Task }) {
 }
 
 /** A compact draggable task for the week board: drag it to another day, or the Unscheduled box. */
-function BoardCard({ t }: { t: Task }) {
+function BoardCard({ t, onGrab }: { t: Task; onGrab: (e: React.PointerEvent<HTMLElement>, t: Task) => void }) {
   const s = useStore();
   const [editing, setEditing] = useState(false);
+  // keyboard way to move a task: Alt + Left / Right shifts it a day (an undated task goes to today)
+  const shift = (dir: -1 | 1) => {
+    const base = t.due ? fromYmd(t.due) : new Date();
+    s.upsert("tasks", { id: t.id, due: ymd(t.due ? addDays(base, dir) : base), ignored: false });
+  };
   return (
     <div
       className={cx("board-card", t.done && "done")}
-      draggable={!editing}
-      onDragStart={(e) => {
-        e.dataTransfer.setData("text/task", t.id);
-        e.dataTransfer.effectAllowed = "move";
+      tabIndex={0}
+      aria-keyshortcuts="Alt+ArrowLeft Alt+ArrowRight"
+      onPointerDown={(e) => !editing && onGrab(e, t)}
+      onKeyDown={(e) => {
+        if (e.altKey && (e.key === "ArrowLeft" || e.key === "ArrowRight") && e.target === e.currentTarget) {
+          e.preventDefault();
+          shift(e.key === "ArrowLeft" ? -1 : 1);
+        }
       }}
     >
+      <span className="board-grip" aria-hidden="true" />
       <button
         className={cx("check", t.done && "on")}
         onClick={() => s.upsert("tasks", { id: t.id, done: !t.done, doneAt: Date.now() })}
@@ -286,11 +296,46 @@ function WeekBoard({ tasks }: { tasks: Task[] }) {
   const days = Array.from({ length: 7 }, (_, i) => addDays(new Date(), i));
   const today = todayYmd();
   const unscheduled = tasks.filter((t) => !t.due || (t.due < today && !t.done));
-  const drop = (day: string | undefined) => (e: React.DragEvent) => {
-    e.preventDefault();
-    setOver(null);
-    const id = e.dataTransfer.getData("text/task");
-    if (id) s.upsert("tasks", { id, due: day, ignored: false });
+  // Drag with pointer events, not HTML5 drag-and-drop: it works the same in the Windows and Android webviews and with touch.
+  // Mouse and pen can grab anywhere on a card; touch grabs the dotted handle so the page can still scroll.
+  const grab = (e: React.PointerEvent<HTMLElement>, t: Task) => {
+    const el = e.target as HTMLElement;
+    if (e.button !== 0 || el.closest("button, input")) return;
+    if (e.pointerType === "touch" && !el.closest(".board-grip")) return;
+    const card = e.currentTarget;
+    const startX = e.clientX;
+    const startY = e.clientY;
+    let ghost: HTMLElement | null = null;
+    const dayAt = (x: number, y: number) =>
+      document.elementFromPoint(x, y)?.closest<HTMLElement>("[data-drop-day]")?.dataset.dropDay ?? null;
+    const move = (ev: PointerEvent) => {
+      if (!ghost) {
+        if (Math.hypot(ev.clientX - startX, ev.clientY - startY) < 5) return;
+        ghost = card.cloneNode(true) as HTMLElement;
+        ghost.classList.add("board-ghost");
+        ghost.style.width = `${card.offsetWidth}px`;
+        document.body.appendChild(ghost);
+        card.classList.add("dragging");
+      }
+      ghost.style.transform = `translate(${ev.clientX + 8}px, ${ev.clientY + 8}px)`;
+      setOver(dayAt(ev.clientX, ev.clientY));
+    };
+    const finish = (ev: PointerEvent, drop: boolean) => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+      window.removeEventListener("pointercancel", cancel);
+      const dragged = !!ghost;
+      ghost?.remove();
+      card.classList.remove("dragging");
+      setOver(null);
+      const day = drop && dragged ? dayAt(ev.clientX, ev.clientY) : null;
+      if (day !== null) s.upsert("tasks", { id: t.id, due: day === "none" ? undefined : day, ignored: false });
+    };
+    const up = (ev: PointerEvent) => finish(ev, true);
+    const cancel = (ev: PointerEvent) => finish(ev, false);
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+    window.addEventListener("pointercancel", cancel);
   };
   const addTo = (day: string, title: string) => {
     setAdding(null);
@@ -307,11 +352,9 @@ function WeekBoard({ tasks }: { tasks: Task[] }) {
           return (
             <div
               key={k}
+              data-drop-day={k}
               className={cx("daycol", k === today && "today", over === k && "drop")}
               aria-label={`${format(d, "EEEE d MMMM")}${k === today ? ", today" : ""}. Double-click to add a task.`}
-              onDragOver={(e) => (e.preventDefault(), setOver(k))}
-              onDragLeave={(e) => !e.currentTarget.contains(e.relatedTarget as Node | null) && setOver(null)}
-              onDrop={drop(k)}
               onDoubleClick={(e) => {
                 if (!(e.target as HTMLElement).closest(".board-card, button, input")) setAdding(k);
               }}
@@ -329,7 +372,7 @@ function WeekBoard({ tasks }: { tasks: Task[] }) {
               ))}
               <div className="list" style={{ marginTop: 6 }}>
                 {list.map((t) => (
-                  <BoardCard key={t.id} t={t} />
+                  <BoardCard key={t.id} t={t} onGrab={grab} />
                 ))}
               </div>
               {adding === k ? (
@@ -354,11 +397,7 @@ function WeekBoard({ tasks }: { tasks: Task[] }) {
           );
         })}
       </div>
-      <section
-        className={cx("card", over === "none" && "drop")}
-        onDragOver={(e) => (e.preventDefault(), setOver("none"))}
-        onDrop={drop(undefined)}
-      >
+      <section data-drop-day="none" className={cx("card", over === "none" && "drop")}>
         <h2>
           Unscheduled & overdue <span className="faint">{unscheduled.length}</span> <span className="spacer" />
           <span className="faint" style={{ textTransform: "none", letterSpacing: 0, fontWeight: 400 }}>
@@ -367,7 +406,7 @@ function WeekBoard({ tasks }: { tasks: Task[] }) {
         </h2>
         <div className="list">
           {unscheduled.map((t) => (
-            <BoardCard key={t.id} t={t} />
+            <BoardCard key={t.id} t={t} onGrab={grab} />
           ))}
         </div>
         {!unscheduled.length && <div className="empty">Nothing waiting.</div>}

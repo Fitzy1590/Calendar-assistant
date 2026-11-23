@@ -13,6 +13,14 @@ export interface WhatsNewEntry {
 
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    version: "0.2.7",
+    title: "Drag tasks between days",
+    points: [
+      "Tasks: dragging a task to another day, or to Unscheduled, now works on Windows and Android. On a phone, drag by the dotted handle. With the keyboard, press Alt + Left or Right on a task.",
+      "Task cards in the week plan wrap their text at spaces, and the delete button shows when you point at a card.",
+    ],
+  },
+  {
     version: "0.2.6",
     title: "Easier email, task planning and menu",
     points: [

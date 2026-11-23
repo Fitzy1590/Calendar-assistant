@@ -16,7 +16,75 @@ import { localIso, ymd } from "../../lib/util";
 
 const QUICK = ["Thanks, got it.", "Sounds good.", "I'll get back to you shortly."];
 
-/** Under an open email: reply buttons, quick replies, snooze, a thread summary, and dates it mentions as calendar ideas. */
+/** Top of the reader: reply, forward, AI drafts, unsubscribe and snooze in one toolbar. */
+export function ReaderActions({ m }: { m: MailMessage }) {
+  const unsub = unsubscribeFor(m);
+  return (
+    <div className="reader-actions" role="toolbar" aria-label="Message actions">
+      <button className="btn sm primary" onClick={() => replyTo("reply", m)}>
+        Reply
+      </button>
+      <button className="btn sm" onClick={() => replyTo("replyAll", m)}>
+        Reply all
+      </button>
+      <button className="btn sm" onClick={() => replyTo("forward", m)}>
+        Forward
+      </button>
+      {unsub && (
+        <button
+          className="btn sm"
+          onClick={() => {
+            if (unsub.web) void openUrl(unsub.web).then(() => toast("Opened the unsubscribe page. Follow it to finish."));
+            else {
+              const d = unsubscribeDraft(unsub, m.accountId);
+              if (d) openCompose(d);
+            }
+          }}
+        >
+          Unsubscribe
+        </button>
+      )}
+      <select
+        className="input"
+        style={{ width: "auto" }}
+        aria-label="Snooze"
+        value=""
+        onChange={(e) => {
+          const at = Number(e.target.value);
+          if (at) void snoozeMail(m.id, at).then(() => toast(`Snoozed until ${format(at, "EEE d MMM, h:mm a")}.`));
+        }}
+      >
+        <option value="">Snooze…</option>
+        {snoozeOptions().map((o) => (
+          <option key={o.at} value={o.at}>
+            {o.label}
+          </option>
+        ))}
+      </select>
+      <button className="btn sm" onClick={() => replyTo("reply", m, { ai: "claude" })}>
+        Draft with Claude
+      </button>
+      <button className="btn sm" onClick={() => replyTo("reply", m, { ai: "gemini" })}>
+        Draft with Gemini
+      </button>
+    </div>
+  );
+}
+
+/** Quick one-tap replies, shown under the message. */
+export function QuickReplies({ m }: { m: MailMessage }) {
+  return (
+    <div className="row" style={{ flexWrap: "wrap", gap: 6 }} role="group" aria-label="Quick replies">
+      {QUICK.map((q) => (
+        <button key={q} className="chip" onClick={() => replyTo("reply", m, { text: q })}>
+          {q}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/** Under an open email: a thread summary and dates it mentions as calendar ideas. */
 export function ReaderTools({ m, showDates }: { m: MailMessage; showDates: boolean }) {
   const s = useStore();
   const mail = s.settings.mail;
@@ -29,7 +97,6 @@ export function ReaderTools({ m, showDates }: { m: MailMessage; showDates: boole
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   const ideas = useMemo(() => dateIdeas(m.text || m.preview || m.subject), [m.id, m.text, m.preview, m.subject]); // eslint-disable-line react-hooks/exhaustive-deps
-  const unsub = unsubscribeFor(m);
   const who: AiProvider | null = keys.claude ? "claude" : keys.gemini ? "gemini" : null;
 
   const summarise = async () => {
@@ -59,63 +126,7 @@ export function ReaderTools({ m, showDates }: { m: MailMessage; showDates: boole
   };
 
   return (
-    <section className="stack" aria-label="Reply and tools" style={{ gap: 10 }}>
-      <div className="row" style={{ flexWrap: "wrap" }}>
-        <button className="btn sm primary" onClick={() => replyTo("reply", m)}>
-          Reply
-        </button>
-        <button className="btn sm" onClick={() => replyTo("replyAll", m)}>
-          Reply all
-        </button>
-        <button className="btn sm" onClick={() => replyTo("forward", m)}>
-          Forward
-        </button>
-        <button className="btn sm" onClick={() => replyTo("reply", m, { ai: "claude" })}>
-          Draft with Claude
-        </button>
-        <button className="btn sm" onClick={() => replyTo("reply", m, { ai: "gemini" })}>
-          Draft with Gemini
-        </button>
-        {unsub && (
-          <button
-            className="btn sm"
-            onClick={() => {
-              if (unsub.web) void openUrl(unsub.web).then(() => toast("Opened the unsubscribe page. Follow it to finish."));
-              else {
-                const d = unsubscribeDraft(unsub, m.accountId);
-                if (d) openCompose(d);
-              }
-            }}
-          >
-            Unsubscribe
-          </button>
-        )}
-        <select
-          className="input"
-          style={{ width: "auto" }}
-          aria-label="Snooze"
-          value=""
-          onChange={(e) => {
-            const at = Number(e.target.value);
-            if (at) void snoozeMail(m.id, at).then(() => toast(`Snoozed until ${format(at, "EEE d MMM, h:mm a")}.`));
-          }}
-        >
-          <option value="">Snooze…</option>
-          {snoozeOptions().map((o) => (
-            <option key={o.at} value={o.at}>
-              {o.label}
-            </option>
-          ))}
-        </select>
-      </div>
-      <div className="row" style={{ flexWrap: "wrap", gap: 6 }} role="group" aria-label="Quick replies">
-        {QUICK.map((q) => (
-          <button key={q} className="chip" onClick={() => replyTo("reply", m, { text: q })}>
-            {q}
-          </button>
-        ))}
-      </div>
-
+    <section className="stack" aria-label="Thread tools" style={{ gap: 10 }}>
       <div>
         <button className="btn sm" disabled={busy} onClick={() => void summarise()}>
           {busy ? "Summarising…" : "Summarise thread"}

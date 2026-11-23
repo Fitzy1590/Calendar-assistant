@@ -6,7 +6,7 @@
 
 const ANGLE_URL = /\s*<https?:\/\/[^>\s]+>/g;
 const BRACKET_LABEL = /\[([^\]\n]{1,80})\]\s*(?=\n|$)/g;
-const IMAGE_ONLY = /^\s*\[https?:\/\/[^\]\s]+\]\s*$/;
+const BRACKET_URL = /\[https?:\/\/[^\]\s]+\]/g;
 const BARE_URL = /https?:\/\/[^\s<>"')]+/g;
 
 function shorten(url: string): string {
@@ -21,7 +21,7 @@ export function readableText(raw: string): string {
   const lines = raw
     .replace(/\r\n?/g, "\n")
     .split("\n")
-    .filter((l) => !IMAGE_ONLY.test(l)) // `[https://image...png]` placeholders
+    .map((l) => l.replace(BRACKET_URL, "")) // `[https://image...png]` placeholders
     .map((l) => l.replace(ANGLE_URL, "")) // `text<https://...>` -> `text`
     .map((l) => l.replace(BARE_URL, (u) => (u.length > 60 ? shorten(u) : u)))
     .map((l) => l.replace(BRACKET_LABEL, "$1").replace(/[ \t]+$/g, ""));

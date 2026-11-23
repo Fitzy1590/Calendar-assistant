@@ -201,6 +201,47 @@ function TaskRow({ t }: { t: Task }) {
   );
 }
 
+/** A compact draggable task for the week board: drag it to another day, or the Unscheduled box. */
+function BoardCard({ t }: { t: Task }) {
+  const s = useStore();
+  const [editing, setEditing] = useState(false);
+  return (
+    <div
+      className={cx("board-card", t.done && "done")}
+      draggable={!editing}
+      onDragStart={(e) => {
+        e.dataTransfer.setData("text/task", t.id);
+        e.dataTransfer.effectAllowed = "move";
+      }}
+    >
+      <button
+        className={cx("check", t.done && "on")}
+        onClick={() => s.upsert("tasks", { id: t.id, done: !t.done, doneAt: Date.now() })}
+        aria-label={t.done ? "Mark not done" : "Mark done"}
+      >
+        {t.done && <ICheck size={13} />}
+      </button>
+      {editing ? (
+        <input
+          className="input"
+          autoFocus
+          defaultValue={t.title}
+          onBlur={(e) => (s.upsert("tasks", { id: t.id, title: e.target.value || t.title }), setEditing(false))}
+          onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
+        />
+      ) : (
+        <span className={cx("t", t.done && "done")} onDoubleClick={() => setEditing(true)}>
+          {t.priority === "high" && <b className="prio-high">! </b>}
+          {t.title}
+        </span>
+      )}
+      <button className="btn ghost icon sm" onClick={() => s.remove("tasks", t.id)} aria-label={`Delete ${t.title}`}>
+        <ITrash size={14} />
+      </button>
+    </div>
+  );
+}
+
 function TaskList({ tasks, groupBy }: { tasks: Task[]; groupBy: "day" | "priority" }) {
   const today = todayYmd();
   const groups = useMemo(() => {
@@ -241,6 +282,7 @@ function TaskList({ tasks, groupBy }: { tasks: Task[]; groupBy: "day" | "priorit
 function WeekBoard({ tasks }: { tasks: Task[] }) {
   const s = useStore();
   const [over, setOver] = useState<string | null>(null);
+  const [adding, setAdding] = useState<string | null>(null); // the day a new task is being typed into
   const days = Array.from({ length: 7 }, (_, i) => addDays(new Date(), i));
   const today = todayYmd();
   const unscheduled = tasks.filter((t) => !t.due || (t.due < today && !t.done));
@@ -249,6 +291,10 @@ function WeekBoard({ tasks }: { tasks: Task[] }) {
     setOver(null);
     const id = e.dataTransfer.getData("text/task");
     if (id) s.upsert("tasks", { id, due: day, ignored: false });
+  };
+  const addTo = (day: string, title: string) => {
+    setAdding(null);
+    if (title.trim()) s.upsert("tasks", { title: title.trim(), due: day, priority: "med", done: false });
   };
   const events = taskBoardEvents(live(s.events));
   return (
@@ -261,13 +307,17 @@ function WeekBoard({ tasks }: { tasks: Task[] }) {
           return (
             <div
               key={k}
-              className={cx("daycol", over === k && "drop")}
+              className={cx("daycol", k === today && "today", over === k && "drop")}
+              aria-label={`${format(d, "EEEE d MMMM")}${k === today ? ", today" : ""}. Double-click to add a task.`}
               onDragOver={(e) => (e.preventDefault(), setOver(k))}
-              onDragLeave={() => setOver(null)}
+              onDragLeave={(e) => !e.currentTarget.contains(e.relatedTarget as Node | null) && setOver(null)}
               onDrop={drop(k)}
+              onDoubleClick={(e) => {
+                if (!(e.target as HTMLElement).closest(".board-card, button, input")) setAdding(k);
+              }}
             >
               <h4>
-                <span>{k === today ? "Today" : format(d, "EEE d")}</span>
+                <span>{k === today ? `Today · ${format(d, "EEE d")}` : format(d, "EEE d")}</span>
                 <span className="faint mono" style={{ fontSize: 11 }}>
                   {occ.length ? `${occ.length} ev` : ""}
                 </span>
@@ -279,9 +329,27 @@ function WeekBoard({ tasks }: { tasks: Task[] }) {
               ))}
               <div className="list" style={{ marginTop: 6 }}>
                 {list.map((t) => (
-                  <TaskRow key={t.id} t={t} />
+                  <BoardCard key={t.id} t={t} />
                 ))}
               </div>
+              {adding === k ? (
+                <input
+                  className="input"
+                  autoFocus
+                  aria-label={`New task for ${format(d, "EEEE d MMMM")}`}
+                  placeholder="New task, press Enter"
+                  style={{ marginTop: 6 }}
+                  onBlur={(e) => addTo(k, e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") addTo(k, (e.target as HTMLInputElement).value);
+                    if (e.key === "Escape") setAdding(null);
+                  }}
+                />
+              ) : (
+                <button className="btn ghost sm board-add" onClick={() => setAdding(k)}>
+                  <IPlus size={13} /> Add task
+                </button>
+              )}
             </div>
           );
         })}
@@ -299,7 +367,7 @@ function WeekBoard({ tasks }: { tasks: Task[] }) {
         </h2>
         <div className="list">
           {unscheduled.map((t) => (
-            <TaskRow key={t.id} t={t} />
+            <BoardCard key={t.id} t={t} />
           ))}
         </div>
         {!unscheduled.length && <div className="empty">Nothing waiting.</div>}

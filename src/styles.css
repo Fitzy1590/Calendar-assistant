@@ -296,7 +296,8 @@ label.field > span { font-weight: 500; }
 .month .cell { min-height: 112px; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); padding: 6px; background: var(--surface); cursor: pointer; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .month .cell.out { background: var(--bg); }
 .month .cell .n { font: 12px var(--font-mono); color: var(--muted); display: flex; justify-content: space-between; }
-.month .cell.today .n b { color: var(--accent-text, var(--accent)); }
+.month .cell.today { background: color-mix(in srgb, var(--accent) 10%, var(--surface)); box-shadow: inset 0 0 0 2px var(--accent); }
+.month .cell.today .n b { background: var(--accent); color: var(--bg); border-radius: 999px; min-width: 22px; height: 22px; display: inline-grid; place-items: center; padding: 0 5px; }
 .month .cell .wxmini { color: var(--faint); display: inline-flex; gap: 3px; align-items: center; font-size: 11px; }
 .pill { font-size: 12px; padding: 1px 6px; border-radius: 4px; background: color-mix(in srgb, var(--c, var(--accent)) 14%, var(--surface)); border-left: 3px solid var(--c, var(--accent)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
 .pill.task { --c: var(--muted); background: transparent; border-left-style: dotted; }
@@ -312,7 +313,8 @@ label.field > span { font-weight: 500; }
 .timegrid .allday, .timegrid .allday-label { position: sticky; top: var(--head-h); z-index: 2; background: var(--bg); box-shadow: 0 1px 0 var(--line-strong); }
 .timegrid .colhead .dname { font: 600 11px var(--font-ui); text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
 .timegrid .colhead .dnum { font: 500 20px var(--font-display); }
-.timegrid .colhead.today .dnum { color: var(--accent-text, var(--accent)); }
+.timegrid .colhead.today { background: color-mix(in srgb, var(--accent) 10%, var(--surface)); box-shadow: inset 0 -3px 0 var(--accent); }
+.timegrid .colhead.today .dnum { color: var(--accent-text, var(--accent)); font-weight: 700; }
 .timegrid .allday { border-left: 1px solid var(--line); border-bottom: 1px solid var(--line); padding: 3px; display: grid; gap: 2px; min-height: 26px; }
 .timegrid .hours { font: 11px var(--font-mono); color: var(--faint); text-align: right; padding-right: 8px; }
 .timegrid .hours div { height: 48px; transform: translateY(-7px); }
@@ -347,7 +349,14 @@ label.field > span { font-weight: 500; }
 .prio-high { color: var(--bad); } .prio-low { color: var(--faint); }
 .week-board { display: grid; grid-template-columns: repeat(7, minmax(150px, 1fr)); gap: 10px; overflow-x: auto; }
 .week-board .daycol { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 10px; min-height: 180px; }
-.week-board .daycol.drop { border-color: var(--accent); }
+.week-board .daycol.drop { border-color: var(--accent); background: var(--surface-2); }
+.week-board .daycol.today { border: 2px solid var(--accent); background: color-mix(in srgb, var(--accent) 8%, var(--surface)); }
+.week-board .daycol.today h4 { color: var(--accent-text, var(--accent)); }
+.week-board .daycol .list { gap: 6px; }
+.board-card { display: grid; grid-template-columns: 18px minmax(0, 1fr) auto; gap: 6px; align-items: start; padding: 6px 8px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 6px; cursor: grab; overflow-wrap: anywhere; }
+.board-card:active { cursor: grabbing; opacity: .6; }
+.board-card .t.done { text-decoration: line-through; color: var(--faint); }
+.board-add { margin-top: 6px; width: 100%; justify-content: flex-start; color: var(--muted); }
 .week-board .daycol h4 { margin: 0 0 8px; font: 600 13px var(--font-ui); display: flex; justify-content: space-between; }
 
 /* ---------- news / sports ---------- */

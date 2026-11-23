@@ -6,7 +6,7 @@ Package manager is **npm** (`package-lock.json`, CI runs `npm ci`); commands bel
 ## Checkpoint (2026-11-11): resume here after `/clear`
 
 **Where things are**
-- Released: **v0.2.4** (Hotmail on Android, Save-window backups). **v0.2.5** (this release): browser mode opens the browser not File Explorer (`crash::open` uses ShellExecute), WebView2 panics show the WebView2 options, group-policy block (0x800704EC) offers browser mode, `httpGet` retries a failed native request from the window. What's new entry is 0.2.5.
+- Released: **v0.2.4** (Hotmail on Android, Save-window backups). **v0.2.5**: browser mode opens the browser not File Explorer (`crash::open` uses ShellExecute), WebView2 panics show the WebView2 options, group-policy block (0x800704EC) offers browser mode, `httpGet` retries a failed native request from the window. What's new entry is 0.2.5. **v0.2.6** (this release): mail reader toolbar above the subject + readable text (`lib/mail/readable.ts`), Tasks week board (double-click a day to add, drag cards between days), today highlighted in Tasks/Calendar, left menu can be minimised. What's new entry is 0.2.6.
 - Untested: Android sign-in, Android Save/write to a content URI, Rust build (CI decides). Android refresh token sits in app-private localStorage.
 - NEXT: open a PR, watch the `build` run, then merge + release v0.2.4 only on the user's word (workflow_dispatch on main, release_version 0.2.4), notify, screenshots.
 

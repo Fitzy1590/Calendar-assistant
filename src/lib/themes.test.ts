@@ -4,7 +4,7 @@ import { accentText, contrastRatio, readableOn, CONTRAST_ACCENT } from "./themes
 
 const css = readFileSync(new URL("../styles.css", import.meta.url), "utf8");
 const themes: Record<string, Record<string, string>> = {};
-for (const m of css.matchAll(/:root\[data-theme="([\w-]+)"\]\s*\{([^}]*)\}/g)) {
+for (const m of css.matchAll(/\[data-theme="([\w-]+)"\]\s*\{([^}]*)\}/g)) {
   themes[m[1]] = {
     ...themes[m[1]],
     ...Object.fromEntries([...m[2].matchAll(/--([\w-]+):\s*(#[0-9a-f]{6})\b/gi)].map((x) => [x[1], x[2]])),
@@ -14,7 +14,19 @@ const ACCENTS = ["#2f5d8a", "#4f6b3a", "#b4532a", "#b8860b", "#8a3a55", "#50606e
 
 describe("theme tokens (read from styles.css)", () => {
   it("defines every theme", () => {
-    expect(Object.keys(themes).sort()).toEqual(["contrast", "forest", "ink", "oled", "paper", "sand", "slate"]);
+    expect(Object.keys(themes).sort()).toEqual([
+      "contrast",
+      "ember",
+      "forest",
+      "graphite",
+      "ink",
+      "midnight",
+      "nord",
+      "oled",
+      "paper",
+      "sand",
+      "slate",
+    ]);
   });
   for (const [name, t] of Object.entries(themes)) {
     it(`${name}: text, muted and status colours are readable (AA; AAA for contrast)`, () => {

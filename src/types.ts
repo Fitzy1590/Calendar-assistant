@@ -161,7 +161,19 @@ export interface FavTeam {
   badge?: string;
 }
 
-export type ThemeName = "paper" | "ink" | "slate" | "sand" | "oled" | "forest" | "contrast" | "system";
+export type ThemeName =
+  | "paper"
+  | "ink"
+  | "slate"
+  | "sand"
+  | "oled"
+  | "forest"
+  | "midnight"
+  | "ember"
+  | "graphite"
+  | "nord"
+  | "contrast"
+  | "system";
 export type PageId =
   | "home"
   | "calendar"

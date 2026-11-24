@@ -615,6 +615,7 @@ input[type="range"], input[type="checkbox"] { accent-color: var(--accent); }
 .mail-list { padding: 0; max-height: calc(100vh - 190px); overflow: auto; }
 .mail-row { display: grid; grid-template-columns: 1fr auto; column-gap: 8px; padding: 8px 12px; min-height: var(--row-h); border-bottom: 1px solid var(--line); cursor: pointer; }
 .mail-row .mail-subject, .mail-row .mail-preview { grid-column: 1 / -1; }
+.mail-row.unread { background: color-mix(in srgb, var(--accent) 10%, var(--surface)); }
 .mail-row.unread .mail-from, .mail-row.unread .mail-subject { font-weight: 700; }
 .mail-row[aria-selected="true"] { background: var(--surface-2); box-shadow: inset 3px 0 0 var(--accent); }
 .mail-reader { min-height: 240px; max-height: calc(100vh - 190px); overflow: auto; }
@@ -712,3 +713,14 @@ input[type="range"], input[type="checkbox"] { accent-color: var(--accent); }
 .mail.tabs .mail-folders { grid-column: 1 / -1; flex-direction: row; flex-wrap: wrap; }
 .mail.tabs .mail-folders .chip { text-align: center; }
 @media (max-width: 900px) { .mail, .mail.tabs { grid-template-columns: 1fr; } .mail-list, .mail-reader { max-height: none; } }
+.mail-folders.chips-row { flex-direction: row; flex-wrap: wrap; margin-bottom: 12px; }
+.mail.tabs .mail-folders.chips-row { margin-bottom: 0; }
+.reader-back { display: none; }
+@media (max-width: 760px) {
+  .mail-page:not(.reading) .mail-reader { display: none; }
+  .mail-page.reading > :not(.mail), .mail-page.reading .mail-list, .mail-page.reading .mail-folders { display: none; }
+  .reader-back { display: inline-flex; margin-bottom: 8px; }
+}
+@keyframes mail-spin { to { transform: rotate(360deg); } }
+.spin { animation: mail-spin 1s linear infinite; }
+@media (prefers-reduced-motion: reduce) { .spin { animation: none; } }

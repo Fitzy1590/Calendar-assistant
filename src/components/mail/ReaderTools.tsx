@@ -14,9 +14,7 @@ import type { MailMessage } from "../../lib/mail/types";
 import { conflictsFor } from "../../lib/planner";
 import { localIso, ymd } from "../../lib/util";
 
-const QUICK = ["Thanks, got it.", "Sounds good.", "I'll get back to you shortly."];
-
-/** Top of the reader: reply, forward, AI drafts, unsubscribe and snooze in one toolbar. */
+/** Top of the reader: reply, forward, unsubscribe and snooze in one toolbar. AI drafts and quick replies live in the reply window. */
 export function ReaderActions({ m }: { m: MailMessage }) {
   const unsub = unsubscribeFor(m);
   return (
@@ -61,25 +59,6 @@ export function ReaderActions({ m }: { m: MailMessage }) {
           </option>
         ))}
       </select>
-      <button className="btn sm" onClick={() => replyTo("reply", m, { ai: "claude" })}>
-        Draft with Claude
-      </button>
-      <button className="btn sm" onClick={() => replyTo("reply", m, { ai: "gemini" })}>
-        Draft with Gemini
-      </button>
-    </div>
-  );
-}
-
-/** Quick one-tap replies, shown under the message. */
-export function QuickReplies({ m }: { m: MailMessage }) {
-  return (
-    <div className="row" style={{ flexWrap: "wrap", gap: 6 }} role="group" aria-label="Quick replies">
-      {QUICK.map((q) => (
-        <button key={q} className="chip" onClick={() => replyTo("reply", m, { text: q })}>
-          {q}
-        </button>
-      ))}
     </div>
   );
 }

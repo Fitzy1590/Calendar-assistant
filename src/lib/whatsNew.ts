@@ -13,6 +13,14 @@ export interface WhatsNewEntry {
 
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    version: "0.2.8",
+    title: "Sports games fill your calendar",
+    points: [
+      "Upcoming games of the teams you follow are now added to your main calendar automatically when the app opens and after each sync. Games you delete stay deleted.",
+      'Don\'t want them? Turn off "Add games to my main calendar" at the top of the Sports page.',
+    ],
+  },
+  {
     version: "0.2.4",
     title: "Hotmail on Android and backups to a file",
     points: [

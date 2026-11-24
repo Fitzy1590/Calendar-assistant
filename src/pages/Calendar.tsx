@@ -84,11 +84,21 @@ export function Calendar() {
         title="Calendar"
         actions={
           <>
-            <button className="btn" onClick={() => setBdays(true)} title="Check every birthday is on the calendar">
-              <ICake size={16} /> Sync birthdays
+            <button
+              className="btn"
+              onClick={() => setBdays(true)}
+              title="Check every birthday is on the calendar"
+              aria-label="Sync birthdays"
+            >
+              <ICake size={16} /> <span className="btn-label">Sync birthdays</span>
             </button>
-            <button className="btn" onClick={() => s.setUi({ emailImportOpen: true })}>
-              <IMail /> Scan email
+            <button
+              className="btn"
+              onClick={() => s.setUi({ emailImportOpen: true })}
+              title="Scan email for events"
+              aria-label="Scan email"
+            >
+              <IMail /> <span className="btn-label">Scan email</span>
             </button>
             <button className="btn primary" onClick={() => newAt(new Date(new Date().setMinutes(0, 0, 0) + 3600e3))}>
               <IPlus /> New event

@@ -1,9 +1,10 @@
 import type React from "react";
 import { addDays, format, isToday } from "date-fns";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import type { Priority, Task } from "../types";
 import { live, toast, useStore } from "../store";
 import { cleanTitle, parseWhen } from "../lib/nlp";
+import { dueLabel } from "../lib/dueLabel";
 import { planWeek, taskBoardEvents, type PlanItem } from "../lib/planner";
 import { occurrencesOnDay } from "../lib/recurrence";
 import { cx, fromYmd, todayYmd, ymd } from "../lib/util";
@@ -18,14 +19,20 @@ export function Tasks() {
   const [prio, setPrio] = useState<Priority>("med");
   const [plan, setPlan] = useState<PlanItem[] | null>(null);
   const [custom, setCustom] = useState(false);
+  const [adding, setAdding] = useState(false);
   const tasks = live(s.tasks).filter((t) => cfg.showDone || !t.done);
+  const doneToday = live(s.tasks).filter((t) => t.done && t.doneAt && isToday(t.doneAt)).length;
+  const anyDone = live(s.tasks).some((t) => t.done);
 
   const quickAdd = () => {
     if (!text.trim()) return;
     const w = parseWhen(text);
     s.upsert("tasks", { title: cleanTitle(w.rest) || text, due: w.date ? ymd(w.date) : undefined, priority: prio, done: false });
     setText("");
+    setAdding(false);
+    toast("Task added");
   };
+  const when = parseWhen(text).date;
 
   return (
     <>
@@ -73,29 +80,58 @@ export function Tasks() {
           </div>
         }
       />
-      <form className="row card" style={{ marginBottom: 16, flexWrap: "nowrap" }} onSubmit={(e) => (e.preventDefault(), quickAdd())}>
-        <IPlus />
-        <input
-          className="input"
-          style={{ border: 0, background: "none" }}
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          placeholder='Add a task — "Pay rates Friday", "Book service next week"'
-        />
-        <select
-          className="input"
-          style={{ width: 110 }}
-          value={prio}
-          onChange={(e) => setPrio(e.target.value as Priority)}
-          aria-label="Priority"
-        >
-          <option value="high">High</option>
-          <option value="med">Normal</option>
-          <option value="low">Low</option>
-        </select>
-        <button className="btn primary">Add</button>
-      </form>
       {mode === "week" ? <WeekBoard tasks={tasks} /> : <TaskList tasks={tasks} groupBy={cfg.groupBy} />}
+      {(anyDone || cfg.showDone) && (
+        <button className="done-link" onClick={() => s.updateSettings((st) => void (st.pages.tasks.showDone = !cfg.showDone))}>
+          {cfg.showDone ? "Hide completed" : doneToday ? `${doneToday} done today · Show` : "Show completed"}
+        </button>
+      )}
+      <div className="fab-space" />
+      <button className="fab" onClick={() => setAdding(true)} aria-label="Add task" title="Add task">
+        <IPlus size={22} />
+      </button>
+      {adding && (
+        <Modal
+          title="Add a task"
+          onClose={() => setAdding(false)}
+          footer={
+            <>
+              <button className="btn" onClick={() => setAdding(false)}>
+                Cancel
+              </button>
+              <button className="btn primary" disabled={!text.trim()} onClick={quickAdd}>
+                Add
+              </button>
+            </>
+          }
+        >
+          <form className="stack" onSubmit={(e) => (e.preventDefault(), quickAdd())}>
+            <input
+              className="input"
+              autoFocus
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              placeholder='"Pay rates Friday", "Book service next week"'
+              aria-label="Task"
+            />
+            <div className="row">
+              <span className="muted">Priority</span>
+              <Seg
+                value={prio}
+                onChange={setPrio}
+                options={[
+                  { value: "high", label: "High" },
+                  { value: "med", label: "Normal" },
+                  { value: "low", label: "Low" },
+                ]}
+              />
+            </div>
+            <div className="faint" style={{ fontSize: 12.5 }} aria-live="polite">
+              {when ? `Due ${dueLabel(ymd(when), todayYmd())}` : "No date. Say a day, like “Friday”, to set one."}
+            </div>
+          </form>
+        </Modal>
+      )}
       {plan && (
         <Modal
           title="Suggested plan for the next 7 days"
@@ -147,56 +183,113 @@ export function Tasks() {
   );
 }
 
+const PRIO_LABEL: Record<Priority, string> = { high: "High priority", med: "Normal priority", low: "Low priority" };
+
+/** The due date as plain words. Tap it to pick another day. */
+function DueButton({ t }: { t: Task }) {
+  const s = useStore();
+  const ref = useRef<HTMLInputElement>(null);
+  const today = todayYmd();
+  const late = !t.done && !!t.due && t.due < today;
+  const label = dueLabel(t.due, today);
+  const open = () => {
+    const el = ref.current;
+    if (!el) return;
+    try {
+      el.showPicker();
+    } catch {
+      el.focus();
+      el.click();
+    }
+  };
+  return (
+    <span className="due-wrap">
+      <button type="button" className={cx("due", late && "late")} onClick={open} aria-label={`Due ${label}. Change date`}>
+        {label}
+      </button>
+      <input
+        ref={ref}
+        type="date"
+        className="due-input"
+        tabIndex={-1}
+        aria-hidden="true"
+        value={t.due ?? ""}
+        onChange={(e) => s.upsert("tasks", { id: t.id, due: e.target.value || undefined, ignored: false })}
+      />
+    </span>
+  );
+}
+
 function TaskRow({ t }: { t: Task }) {
   const s = useStore();
   const [editing, setEditing] = useState(false);
-  const overdue = !t.done && t.due && t.due < todayYmd();
+  // phones: swipe a row left to reveal Delete (mouse and keyboard get a button that shows on hover and focus)
+  const [dx, setDx] = useState<number | null>(null); // null when not dragging
+  const [open, setOpen] = useState(false);
+  const start = useRef<{ x: number; y: number } | null>(null);
+  const SWIPE = 72;
+  const remove = () => s.remove("tasks", t.id);
   return (
-    <div className="task-row" draggable onDragStart={(e) => e.dataTransfer.setData("text/task", t.id)}>
+    <div className="task-swipe">
       <button
-        className={cx("check", t.done && "on")}
-        onClick={() => s.upsert("tasks", { id: t.id, done: !t.done, doneAt: Date.now() })}
-        aria-label={t.done ? "Mark not done" : "Mark done"}
+        className={cx("task-del", (open || dx !== null) && "on")}
+        onClick={remove}
+        aria-label={`Delete ${t.title}`}
+        tabIndex={open ? 0 : -1}
       >
-        {t.done && <ICheck size={13} />}
+        <ITrash size={16} /> Delete
       </button>
-      {editing ? (
-        <input
-          className="input"
-          autoFocus
-          defaultValue={t.title}
-          onBlur={(e) => (s.upsert("tasks", { id: t.id, title: e.target.value }), setEditing(false))}
-          onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
-        />
-      ) : (
-        <span className={cx("t", t.done && "done")} onDoubleClick={() => setEditing(true)}>
-          {t.priority === "high" && <b className="prio-high">! </b>}
-          {t.title}
-          {overdue && (
-            <span className="tag" style={{ color: "var(--bad)", marginLeft: 6 }}>
-              overdue
-            </span>
-          )}
-          {t.ignored && (
-            <span className="tag" style={{ marginLeft: 6 }}>
-              parked
-            </span>
-          )}
-        </span>
-      )}
-      <span className="row" style={{ gap: 2 }}>
-        <input
-          type="date"
-          className="input"
-          style={{ width: 132, padding: "2px 6px", fontSize: 12 }}
-          value={t.due ?? ""}
-          onChange={(e) => s.upsert("tasks", { id: t.id, due: e.target.value || undefined, ignored: false })}
-          aria-label="Due date"
-        />
-        <button className="btn ghost icon sm" onClick={() => s.remove("tasks", t.id)} aria-label="Delete">
-          <ITrash size={15} />
+      <div
+        className={cx("task-row", `p-${t.priority}`)}
+        style={{ transform: `translateX(${dx ?? (open ? -SWIPE : 0)}px)`, transition: dx === null ? undefined : "none" }}
+        draggable
+        onDragStart={(e) => e.dataTransfer.setData("text/task", t.id)}
+        onTouchStart={(e) => (start.current = { x: e.touches[0].clientX, y: e.touches[0].clientY })}
+        onTouchMove={(e) => {
+          if (!start.current) return;
+          const x = e.touches[0].clientX - start.current.x;
+          const y = e.touches[0].clientY - start.current.y;
+          if (Math.abs(x) > Math.abs(y)) setDx(Math.max(-SWIPE, Math.min(0, (open ? -SWIPE : 0) + x)));
+        }}
+        onTouchEnd={() => {
+          if (dx !== null) setOpen(dx < -SWIPE / 2);
+          setDx(null);
+          start.current = null;
+        }}
+      >
+        <button
+          className={cx("check", t.done && "on")}
+          onClick={() => s.upsert("tasks", { id: t.id, done: !t.done, doneAt: Date.now() })}
+          aria-label={t.done ? "Mark not done" : "Mark done"}
+        >
+          {t.done && <ICheck size={13} />}
         </button>
-      </span>
+        {editing ? (
+          <input
+            className="input"
+            autoFocus
+            defaultValue={t.title}
+            onBlur={(e) => (s.upsert("tasks", { id: t.id, title: e.target.value }), setEditing(false))}
+            onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
+          />
+        ) : (
+          <span className={cx("t", t.done && "done")} onDoubleClick={() => setEditing(true)}>
+            <span className="visually-hidden">{PRIO_LABEL[t.priority]}. </span>
+            {t.title}
+            {t.ignored && (
+              <span className="tag" style={{ marginLeft: 6 }}>
+                parked
+              </span>
+            )}
+          </span>
+        )}
+        <span className="row" style={{ gap: 2 }}>
+          <DueButton t={t} />
+          <button className="btn ghost icon sm row-del" onClick={remove} aria-label={`Delete ${t.title}`}>
+            <ITrash size={15} />
+          </button>
+        </span>
+      </div>
     </div>
   );
 }
@@ -212,7 +305,7 @@ function BoardCard({ t, onGrab }: { t: Task; onGrab: (e: React.PointerEvent<HTML
   };
   return (
     <div
-      className={cx("board-card", t.done && "done")}
+      className={cx("board-card", `p-${t.priority}`, t.done && "done")}
       tabIndex={0}
       aria-keyshortcuts="Alt+ArrowLeft Alt+ArrowRight"
       onPointerDown={(e) => !editing && onGrab(e, t)}
@@ -241,7 +334,7 @@ function BoardCard({ t, onGrab }: { t: Task; onGrab: (e: React.PointerEvent<HTML
         />
       ) : (
         <span className={cx("t", t.done && "done")} onDoubleClick={() => setEditing(true)}>
-          {t.priority === "high" && <b className="prio-high">! </b>}
+          <span className="visually-hidden">{PRIO_LABEL[t.priority]}. </span>
           {t.title}
         </span>
       )}

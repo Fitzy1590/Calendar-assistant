@@ -7,7 +7,7 @@ import { addNote, NOTE_COLORS, tagsOf, toggleLine } from "../lib/notes";
 import { dictate, stopDictation, useVoice, voiceReady, unsupportedMessage } from "../lib/wake";
 import { localIso } from "../lib/util";
 import { EventEditor } from "../components/EventEditor";
-import { IArchive, ICal, IMic, IPalette, IPinNote, ISearch, ITasks, ITrash } from "../components/Icons";
+import { IArchive, ICal, IMic, IPalette, IPinNote, IPlus, ISearch, ITasks, ITrash } from "../components/Icons";
 import { Modal, PageHead, Seg, Toggle } from "../components/ui";
 
 const colorVar = (c: NoteColor) => ({ ["--nc" as string]: `var(--n-${c})` });
@@ -19,6 +19,7 @@ export function Notes() {
   const [color, setColor] = useState<NoteColor | null>(null);
   const [tag, setTag] = useState<string | null>(null);
   const [open, setOpen] = useState<Note | null>(null);
+  const [adding, setAdding] = useState(false);
   const [custom, setCustom] = useState(false);
   const [undo, setUndo] = useState<Note | null>(null);
   const [drag, setDrag] = useState<{ id: string; over?: string } | null>(null);
@@ -127,7 +128,6 @@ export function Notes() {
           </div>
         }
       />
-      <Composer />
       <div className="row" style={{ margin: "16px 0" }}>
         <div className="command" style={{ maxWidth: 300 }}>
           <ISearch />
@@ -163,7 +163,18 @@ export function Notes() {
       )}
       {board(others)}
       {!shown.length && (
-        <div className="empty">{all.length ? "No notes match." : "No notes yet. Write one above, or say “Hey Planner, take a note…”."}</div>
+        <div className="empty">
+          {all.length ? "No notes match." : "No notes yet. Tap + to write one, or say “Hey Planner, take a note…”."}
+        </div>
+      )}
+      <div className="fab-space" />
+      <button className="fab" onClick={() => setAdding(true)} aria-label="Add note" title="Add note">
+        <IPlus size={22} />
+      </button>
+      {adding && (
+        <Modal title="New note" onClose={() => setAdding(false)}>
+          <Composer onDone={() => setAdding(false)} />
+        </Modal>
       )}
       {open && <NoteEditor n={open} onClose={() => setOpen(null)} onDelete={() => remove(open)} />}
       {undo && (
@@ -175,11 +186,10 @@ export function Notes() {
   );
 }
 
-function Composer() {
+function Composer({ onDone }: { onDone: () => void }) {
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [color, setColor] = useState<NoteColor>("yellow");
-  const [focused, setFocused] = useState(false);
   const voice = useVoice();
   const base = useRef("");
   const save = () => {
@@ -187,12 +197,12 @@ function Composer() {
     addNote({ title: title.trim(), body: body.trim(), color });
     setTitle("");
     setBody("");
+    onDone();
   };
   const mic = () => {
     if (voice.status === "dictating") return stopDictation();
     if (!voiceReady()) return toast(unsupportedMessage());
     base.current = body ? body + " " : "";
-    setFocused(true);
     dictate(
       (t) => setBody(base.current + t),
       (t) => setBody(base.current + t),
@@ -200,45 +210,43 @@ function Composer() {
     );
   };
   return (
-    <div className="note-composer" onFocus={() => setFocused(true)}>
-      {focused && <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Title" aria-label="Note title" />}
+    <div className="note-composer plain">
+      <input autoFocus value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Title" aria-label="Note title" />
       <textarea
-        rows={focused ? 4 : 1}
+        rows={5}
         value={body}
         onChange={(e) => setBody(e.target.value)}
         placeholder="Write a note…   (start a line with [ ] for a checklist, #tag to group)"
         aria-label="Note text"
         onKeyDown={(e) => (e.ctrlKey || e.metaKey) && e.key === "Enter" && save()}
       />
-      {focused && (
-        <div className="row">
-          {NOTE_COLORS.map((c) => (
-            <button
-              key={c.id}
-              className="swatch"
-              style={colorVar(c.id)}
-              aria-pressed={color === c.id}
-              aria-label={c.label}
-              onClick={() => setColor(c.id)}
-            />
-          ))}
+      <div className="row">
+        {NOTE_COLORS.map((c) => (
           <button
-            className={"btn ghost icon sm" + (voice.status === "dictating" ? " mic-on" : "")}
-            onClick={mic}
-            aria-label="Dictate"
-            title="Dictate into this note"
-          >
-            <IMic size={16} />
-          </button>
-          <span style={{ flex: 1 }} />
-          <button className="btn sm ghost" onClick={() => (setFocused(false), setTitle(""), setBody(""))}>
-            Close
-          </button>
-          <button className="btn sm primary" onClick={save}>
-            Add note
-          </button>
-        </div>
-      )}
+            key={c.id}
+            className="swatch"
+            style={colorVar(c.id)}
+            aria-pressed={color === c.id}
+            aria-label={c.label}
+            onClick={() => setColor(c.id)}
+          />
+        ))}
+        <button
+          className={"btn ghost icon sm" + (voice.status === "dictating" ? " mic-on" : "")}
+          onClick={mic}
+          aria-label="Dictate"
+          title="Dictate into this note"
+        >
+          <IMic size={16} />
+        </button>
+        <span style={{ flex: 1 }} />
+        <button className="btn sm ghost" onClick={onDone}>
+          Cancel
+        </button>
+        <button className="btn sm primary" onClick={save}>
+          Add note
+        </button>
+      </div>
     </div>
   );
 }

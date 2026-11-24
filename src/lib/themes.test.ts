@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { accentText, contrastRatio, readableOn, CONTRAST_ACCENT } from "./themes";
+import { accentText, contrastRatio, luminance, readableOn, CONTRAST_ACCENT } from "./themes";
 
 const css = readFileSync(new URL("../styles.css", import.meta.url), "utf8");
 const themes: Record<string, Record<string, string>> = {};
@@ -67,4 +67,39 @@ describe("accent helpers", () => {
     expect(contrastRatio("#000000", "#ffffff")).toBeCloseTo(21, 0);
     expect(contrastRatio("#777777", "#777777")).toBe(1);
   });
+});
+
+describe("note colours", () => {
+  // each note is its colour softened toward surface-2 (55%), then tinted into the surface (32%): see .note in styles.css
+  const mix = (a: string, b: string, t: number) => {
+    const n = (h: string) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+    const [x, y] = [n(a), n(b)];
+    return (
+      "#" +
+      x
+        .map((v, i) =>
+          Math.round(v * t + y[i] * (1 - t))
+            .toString(16)
+            .padStart(2, "0"),
+        )
+        .join("")
+    );
+  };
+  const sets = [...css.matchAll(/(\[data-theme[^{]*|:root[^{]*)\{\s*(--n-yellow[^}]*)\}/g)].map((m) => ({
+    selector: m[1],
+    colours: Object.fromEntries([...m[2].matchAll(/--n-(\w+):\s*(#[0-9a-f]{6})/gi)].map((x) => [x[1], x[2]])),
+  }));
+  it("has a light and a dark palette", () => expect(sets.length).toBe(2));
+  for (const [name, t] of Object.entries(themes)) {
+    it(`${name}: text stays readable on every note colour`, () => {
+      const dark = luminance(t.surface) < 0.4;
+      const set = sets.find((x) => (dark ? x.selector.includes('"ink"') : x.selector.includes('"sand"')))!;
+      for (const [c, hex] of Object.entries(set.colours)) {
+        if (c === "ink") continue;
+        const bg = mix(mix(hex, t["surface-2"], 0.55), t.surface, 0.32);
+        expect(contrastRatio(t.text, bg), `${c} note`).toBeGreaterThanOrEqual(name === "contrast" ? 7 : 4.5);
+        expect(contrastRatio(t.muted, bg), `${c} note, muted`).toBeGreaterThanOrEqual(name === "contrast" ? 7 : 4.5);
+      }
+    });
+  }
 });

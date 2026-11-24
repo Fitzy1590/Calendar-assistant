@@ -300,6 +300,6 @@ export interface Settings {
     tasks: { showDone: boolean; groupBy: "day" | "priority" };
     news: { layout: "list" | "cards"; showImages: boolean };
     notes: { layout: "board" | "list"; size: "s" | "m" | "l"; showArchived: boolean };
-    sports: { resultsCount: number; view?: "calendar" | "list"; range?: "week" | "month" };
+    sports: { resultsCount: number; view?: "calendar" | "list"; range?: "week" | "month"; autoCalendar?: boolean }; // autoCalendar: undefined/true = games of followed teams are added to the main calendar
   };
 }

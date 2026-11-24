@@ -5,9 +5,10 @@ import { toast, useStore } from "../store";
 import { useAsync } from "../lib/hooks";
 import { highlightsSearch, kickoff, lastMatches, nextMatches, searchTeams, sportDay, SPORTS, type Match, type Team } from "../lib/sports";
 import { openUrl } from "../lib/platform";
-import { localIso, ymd } from "../lib/util";
+import { ymd } from "../lib/util";
 import { ICal, IPlay, IPlus, ISearch, ITrash } from "../components/Icons";
-import { PageHead, Suggest } from "../components/ui";
+import { PageHead, Suggest, Toggle } from "../components/ui";
+import { sportsEvent, syncSportsToCalendar } from "../lib/sportsCalendar";
 import { POPULAR_TEAMS } from "../lib/suggest";
 import { SportsUpcoming } from "../components/SportsUpcoming";
 
@@ -40,10 +41,36 @@ export function Sports() {
           </button>
         ))}
       </div>
+      {s.settings.teams.length > 0 && <AutoCalendarToggle />}
       {focus?.kind === "team" && <TeamView team={s.settings.teams.find((t) => t.id === focus.id)!} />}
       {focus?.kind === "sport" && <SportView sport={focus.id} />}
       {!focus && <SportsUpcoming />}
     </>
+  );
+}
+
+/** Switch for adding games of followed teams to the main calendar automatically. */
+function AutoCalendarToggle() {
+  const on = useStore((s) => s.settings.pages.sports.autoCalendar !== false);
+  const set = (v: boolean) => {
+    useStore.getState().updateSettings((st) => void (st.pages.sports.autoCalendar = v));
+    if (v)
+      void syncSportsToCalendar().then((n) =>
+        toast(n ? `Added ${n} game${n === 1 ? "" : "s"} to your calendar` : "Calendar is up to date"),
+      );
+  };
+  return (
+    <div className="row" style={{ marginBottom: 16, justifyContent: "space-between" }}>
+      <div>
+        <b>Add games to my main calendar</b>
+        <div className="faint" style={{ fontSize: 12.5 }}>
+          {on
+            ? "Upcoming games of the teams you follow are added when the app opens and on every sync. Games already added stay; delete one and it won't come back."
+            : "Off. Games only appear here in Sports. Games already in your calendar stay until you delete them."}
+        </div>
+      </div>
+      <Toggle checked={on} onChange={set} label="Add sports games to my main calendar" />
+    </div>
   );
 }
 
@@ -153,17 +180,7 @@ export function FollowPanel() {
 }
 
 function addToCalendar(m: Match) {
-  const start = kickoff(m);
-  useStore.getState().upsert("events", {
-    title: `${m.home} v ${m.away}`,
-    start: localIso(start),
-    end: localIso(new Date(start.getTime() + 2 * 3600e3)),
-    allDay: false,
-    location: m.venue,
-    source: "sports",
-    reminderMins: [30],
-    notes: m.league,
-  });
+  useStore.getState().upsert("events", sportsEvent(m));
   toast("Added to calendar");
 }
 

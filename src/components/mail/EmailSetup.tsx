@@ -162,12 +162,49 @@ export function EmailSetup() {
         <button className="btn" disabled={!otherMailAvailable() || !!busy} onClick={() => setImap((x) => ({ ...x, open: !x.open }))}>
           Add other email (Bigpond, Yahoo, iCloud…)
         </button>
-        {!googleConfigured() && (
-          <span className="faint" style={{ fontSize: 12.5 }}>
-            Gmail uses the Google client ID from the Google setup above.
-          </span>
-        )}
       </div>
+      {!otherMailAvailable() ? (
+        <div className="faint" style={{ fontSize: 12.5 }}>
+          Gmail and other email accounts connect in the installed Windows app, not in the browser or on the phone.
+        </div>
+      ) : (
+        !googleConfigured() && (
+          <div className="stack" style={{ gap: 8 }}>
+            <div className="faint" style={{ fontSize: 12.5 }}>
+              “Add Gmail account” unlocks once you paste a free Google client ID and secret (Desktop app) here. Create them once in Google
+              Cloud, with the Gmail API turned on. The guide walks you through it.
+            </div>
+            <div className="row" style={{ flexWrap: "wrap" }}>
+              <SetupGuideButton kind="gmail" label="Step-by-step Gmail setup guide" />
+              <button className="btn sm" onClick={() => void openUrl(KEY_LINKS.googleCloud.url)}>
+                {KEY_LINKS.googleCloud.label}
+              </button>
+              <button className="btn sm" onClick={() => void openUrl(KEY_LINKS.gmailApi.url)}>
+                {KEY_LINKS.gmailApi.label}
+              </button>
+            </div>
+            <div className="grid2">
+              <Field label="Google client ID (Desktop app)">
+                <input
+                  className="input mono"
+                  value={s.settings.email.googleDesktopClientId}
+                  onChange={(e) => s.updateSettings((st) => void (st.email.googleDesktopClientId = e.target.value.trim()))}
+                  placeholder="xxxx.apps.googleusercontent.com"
+                />
+              </Field>
+              <Field label="Google client secret (Desktop app)">
+                <input
+                  className="input mono"
+                  type="password"
+                  value={s.settings.email.googleDesktopClientSecret}
+                  onChange={(e) => s.updateSettings((st) => void (st.email.googleDesktopClientSecret = e.target.value.trim()))}
+                  placeholder="GOCSPX-…"
+                />
+              </Field>
+            </div>
+          </div>
+        )
+      )}
       {imap.open && (
         <div className="stack" style={{ gap: 10, padding: 12, border: "1px solid var(--line-strong)", borderRadius: "var(--radius)" }}>
           <Field label="Email address">

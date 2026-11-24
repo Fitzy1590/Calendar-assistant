@@ -5,7 +5,8 @@ import { PageHead } from "../components/ui";
 import { Bills } from "../components/mail/Bills";
 import { FolderRuleDialog } from "../components/mail/FolderRuleDialog";
 import { HandlePanel } from "../components/mail/HandlePanel";
-import { ReaderTools } from "../components/mail/ReaderTools";
+import { QuickReplies, ReaderActions, ReaderTools } from "../components/mail/ReaderTools";
+import { readableText } from "../lib/mail/readable";
 import { isSnoozed } from "../lib/mail/followups";
 import { groupRows, initials, searchMail, tone } from "../lib/mail/mailUi";
 import { Seg } from "../components/ui";
@@ -268,18 +269,31 @@ export function Email() {
         <article className="mail-reader card" aria-live="polite">
           {selected ? (
             <div className="stack">
-              <h2 style={{ margin: 0 }}>{selected.subject}</h2>
-              <div className="muted" style={{ fontSize: 13 }}>
-                From <b>{selected.from.name || selected.from.address}</b> &lt;{selected.from.address}&gt; ·{" "}
-                {format(selected.receivedAt, "EEE d MMM, h:mm a")}
-                {selected.to.length ? <div>To {selected.to.map((a) => a.name || a.address).join(", ")}</div> : null}
-              </div>
-              <div className="faint" style={{ fontSize: 12.5 }}>
-                {selected.important ? "Important" : BUCKET_LABEL[selected.bucket]}: {selected.reasons.join(". ")}
-              </div>
+              <ReaderActions m={selected} />
+              <header className="reader-head">
+                <h2 style={{ margin: 0 }}>{selected.subject}</h2>
+                <dl className="reader-meta" style={{ margin: 0 }}>
+                  <dt>From</dt>
+                  <dd>
+                    <b>{selected.from.name || selected.from.address}</b> &lt;{selected.from.address}&gt;
+                  </dd>
+                  {selected.to.length ? (
+                    <>
+                      <dt>To</dt>
+                      <dd>{selected.to.map((a) => a.name || a.address).join(", ")}</dd>
+                    </>
+                  ) : null}
+                  <dt>Date</dt>
+                  <dd>{format(selected.receivedAt, "EEE d MMM yyyy, h:mm a")}</dd>
+                </dl>
+                <div className="faint" style={{ fontSize: 12.5 }}>
+                  {selected.important ? "Important" : BUCKET_LABEL[selected.bucket]}: {selected.reasons.join(". ")}
+                </div>
+              </header>
               <pre className="mail-body">
-                {body?.id === selected.id ? (body.loading ? "Loading…" : body.text || selected.preview) : selected.preview}
+                {readableText(body?.id === selected.id ? (body.loading ? "Loading…" : body.text || selected.preview) : selected.preview)}
               </pre>
+              <QuickReplies m={selected} />
               <ReaderTools
                 m={selected}
                 showDates={datesFor === selected.id || (selected.bucket !== "subscriptions" && selected.bucket !== "spam")}

@@ -179,7 +179,39 @@ fn encode(s: &str) -> String {
 pub fn open(url: &str) {
     #[cfg(windows)]
     {
-        let _ = std::process::Command::new("explorer.exe").arg(url).spawn();
+        // ShellExecute hands the link to the default browser. (`explorer.exe <url>` falls back to
+        // opening a File Explorer window when it can't resolve a browser, which looked like the app
+        // "opening Explorer" instead of itself.)
+        use windows_sys::Win32::UI::Shell::ShellExecuteW;
+        use windows_sys::Win32::UI::WindowsAndMessaging::SW_SHOWNORMAL;
+        let wide = |s: &str| {
+            s.encode_utf16()
+                .chain(std::iter::once(0))
+                .collect::<Vec<u16>>()
+        };
+        let (verb, target) = (wide("open"), wide(url));
+        let code = unsafe {
+            ShellExecuteW(
+                std::ptr::null_mut(),
+                verb.as_ptr(),
+                target.as_ptr(),
+                std::ptr::null(),
+                std::ptr::null(),
+                SW_SHOWNORMAL,
+            )
+        } as usize;
+        if code <= 32 {
+            // no default browser registered: try Edge, then Internet Explorer's launcher, never Explorer
+            for exe in ["msedge.exe", "chrome.exe", "firefox.exe"] {
+                if std::process::Command::new("cmd")
+                    .args(["/C", "start", "", exe, url])
+                    .spawn()
+                    .is_ok()
+                {
+                    break;
+                }
+            }
+        }
     }
     #[cfg(not(windows))]
     {
@@ -276,6 +308,13 @@ pub fn install_panic_hook() {
             .location()
             .map(|l| format!(" (at {}:{})", l.file(), l.line()))
             .unwrap_or_default();
+        // The window is built inside Tauri's setup, so a WebView2 failure arrives here as a panic.
+        // Give it the WebView2 options (repair, or open in the browser) instead of a generic crash box.
+        #[cfg(windows)]
+        if looks_like_webview(&msg) {
+            crate::webview_unavailable(&msg);
+            return;
+        }
         report(Problem::Panic(format!("{msg}{at}")));
     }));
 }

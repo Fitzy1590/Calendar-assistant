@@ -11,7 +11,7 @@ and an **Android app** ([Tauri 2](https://tauri.app)), and the two stay in sync 
 | **Home** | Big weather panel (now, feels-like, hi/lo, rain, UV, sunrise/sunset, 24 h trend, 7-day strip), clock, mini calendar, today & tomorrow, tasks due, local events, birthdays, headlines, your teams. Every widget can be hidden or reordered. |
 | **Day view** | Click any day (home strip, mini calendar, month cell, week header): that day's forecast + hourly, your events & tasks, and what's on in your suburb and city. |
 | **Calendar** | Day / week / month / year (heat-map) views, keyboard shortcuts (←/→, T, D/W/M/Y), single or recurring events (daily, weekly on chosen days, monthly, yearly, every N, until/count, skip one occurrence), colours, reminders, conflict warnings. |
-| **Tasks** | Synced with the calendar. Week board with drag-to-reschedule, list by day or priority, natural-language quick add, **Plan my week** (spreads undated/overdue tasks across your lightest days). |
+| **Tasks** | Synced with the calendar. Week board with drag-to-reschedule and double-click-a-day to add, list by day or priority, natural-language quick add, **Plan my week** (spreads undated/overdue tasks across your lightest days). |
 | **Unfinished tasks** | Each morning, tasks you didn't tick off get a prompt: mark complete, move to today/tomorrow, pick a day, ignore for now, or remove. |
 | **Reminders** | Events, birthdays (N days before) and tasks; each kind on/off; snooze, ignore once, or turn off per item; desktop/phone notifications. |
 | **Notes** | Sticky-note board: colours, pin, drag to reorder, `[ ]` checklists, `#tags`, search, dictation, archive, undo delete, turn a note into a task or event. "Take a note: gate code is 4821". |

@@ -21,6 +21,31 @@ export const WHATS_NEW: WhatsNewEntry[] = [
     ],
   },
   {
+    version: "0.2.7",
+    title: "Drag tasks between days",
+    points: [
+      "Tasks: dragging a task to another day, or to Unscheduled, now works on Windows and Android. On a phone, drag by the dotted handle. With the keyboard, press Alt + Left or Right on a task.",
+      "Task cards in the week plan wrap their text at spaces, and the delete button shows when you point at a card.",
+    ],
+  },
+  {
+    version: "0.2.6",
+    title: "Easier email, task planning and menu",
+    points: [
+      "Email: Reply, Forward, Unsubscribe and Snooze are now at the top of the message, above the subject. The sender, date and text are laid out more clearly, and long tracking links are hidden from newsletters.",
+      "Tasks: double-click a day (or press Add task) to add a task to it, and drag tasks between days. Today is now clearly highlighted in Tasks and the Calendar.",
+      "The left menu can be minimised to an icon strip with the arrow at its top; it remembers your choice.",
+    ],
+  },
+  {
+    version: "0.2.5",
+    title: "Starts properly on locked-down PCs",
+    points: [
+      "If Windows blocks the app's window (a clean-up tool or a policy blocking WebView2), the app now explains why and offers to open in your web browser, instead of opening File Explorer.",
+      "Weather, Sports and other online pages now load on PCs where the app's built-in web client was being refused. Errors name the service that failed.",
+    ],
+  },
+  {
     version: "0.2.4",
     title: "Hotmail on Android and backups to a file",
     points: [

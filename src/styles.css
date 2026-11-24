@@ -738,3 +738,48 @@ input[type="range"], input[type="checkbox"] { accent-color: var(--accent); }
 @keyframes mail-spin { to { transform: rotate(360deg); } }
 .spin { animation: mail-spin 1s linear infinite; }
 @media (prefers-reduced-motion: reduce) { .spin { animation: none; } }
+
+/* ---------- subscriptions: totals, bar, row menu ---------- */
+.sub-total { font-size: 15px; }
+.sub-total b { font: 600 24px var(--font-display); }
+.sub-bar { display: flex; height: 8px; gap: 2px; border-radius: 4px; overflow: hidden; }
+.sub-bar i, .sub-legend i { display: block; background: var(--accent); }
+.sub-bar i:first-child { border-radius: 4px 0 0 4px; } .sub-bar i:last-child { border-radius: 0 4px 4px 0; }
+.sub-legend { display: flex; flex-wrap: wrap; gap: 4px 16px; list-style: none; margin: 0; padding: 0; color: var(--muted); font-size: 12.5px; }
+.sub-legend li { display: inline-flex; align-items: center; gap: 6px; }
+.sub-legend i { width: 10px; height: 10px; border-radius: 2px; }
+.menu-wrap { position: relative; display: inline-flex; }
+.menu-pop { position: absolute; right: 0; top: calc(100% + 4px); z-index: 30; min-width: 190px; display: grid; padding: 4px; background: var(--surface); border: 1px solid var(--line-strong); border-radius: var(--radius); }
+.menu-item { background: none; border: 0; text-align: left; padding: 8px 10px; border-radius: calc(var(--radius) - 2px); cursor: pointer; color: var(--text); }
+.menu-item:hover, .menu-item:focus-visible { background: var(--surface-2); }
+
+/* ---------- news: lead story and topic tabs ---------- */
+.news-lead { display: grid; gap: 6px; margin-bottom: var(--gap); }
+.news-lead a { font: 600 24px/1.25 var(--font-display); text-decoration: none; text-wrap: balance; }
+.news-lead a:hover { text-decoration: underline; text-decoration-color: var(--accent); }
+.topic-tabs { display: flex; gap: 4px; margin-bottom: 16px; border-bottom: 1px solid var(--line); overflow-x: auto; }
+.topic-tab-wrap { display: inline-flex; align-items: center; }
+.topic-tab { background: none; border: 0; padding: 8px 10px; cursor: pointer; color: var(--muted); white-space: nowrap; border-radius: 0; }
+.topic-tab:hover { color: var(--text); }
+.topic-tab[aria-selected="true"] { color: var(--text); font-weight: 600; box-shadow: inset 0 -2px 0 var(--accent); }
+.topic-unfollow { background: none; border: 0; padding: 2px 6px 2px 0; cursor: pointer; color: var(--faint); margin-left: -6px; }
+.topic-unfollow:hover { color: var(--text); }
+
+/* ---------- sports: game rows and team summary ---------- */
+.match-card { display: grid; grid-template-columns: 48px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 10px 0; }
+.match-card + .match-card { border-top: 1px solid var(--line); }
+.match-date { display: grid; justify-items: center; line-height: 1.1; padding-right: 12px; border-right: 1px solid var(--line); }
+.match-date b { font: 600 20px var(--font-display); }
+.match-date span { font: 600 11px var(--font-ui); text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+.match-title { font-weight: 600; }
+.match-title .mono { margin: 0 4px; }
+.team-summary { display: grid; gap: 4px; padding-top: 12px; border-top: 1px solid var(--line); }
+
+/* ---------- settings: sections as cards, section list on phones ---------- */
+.settings section { background: var(--surface); border: 1px solid var(--line); border-radius: calc(var(--radius) + 2px); padding: 2px var(--pad) 6px; margin-bottom: 16px; }
+.settings section .section-title { margin: 14px 0 4px; }
+.settings section .section-title + .setting { border-top: 0; }
+.sec-list { display: grid; background: var(--surface); border: 1px solid var(--line); border-radius: calc(var(--radius) + 2px); overflow: hidden; }
+.sec-link { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 14px var(--pad); background: none; border: 0; border-top: 1px solid var(--line); color: var(--text); cursor: pointer; text-align: left; font: inherit; min-height: 48px; }
+.sec-link:first-child { border-top: 0; }
+.sec-link:hover { background: var(--surface-2); }

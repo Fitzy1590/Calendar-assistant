@@ -415,15 +415,23 @@ label.field > span { font-weight: 500; }
 .prio-high { color: var(--bad); } .prio-low { color: var(--faint); }
 .task-row .check, .board-card .check { border-radius: 50%; }
 .task-swipe { position: relative; overflow: hidden; border-radius: var(--radius); }
-.list > .task-swipe { padding: 0; }
-.task-swipe .task-row { position: relative; background: var(--surface); padding: 9px 4px 9px 12px; transition: transform .15s ease; box-shadow: inset 3px 0 0 var(--muted); }
+.list > .task-swipe, .list > .stack:has(> .task-swipe) { padding: 0; }
+.list > .stack:has(> .task-swipe) { gap: 0; }
+.task-swipe .task-row { position: relative; background: var(--surface); padding: 9px 4px 9px 12px; transition: transform .15s ease; }
 .task-row.p-high, .board-card.p-high { box-shadow: inset 3px 0 0 var(--bad); }
 .task-row.p-med, .board-card.p-med { box-shadow: inset 3px 0 0 var(--warn); }
 .task-row.p-low, .board-card.p-low { box-shadow: inset 3px 0 0 var(--muted); }
 .task-del { display: none; position: absolute; right: 0; top: 0; bottom: 0; width: 72px; border: 0; background: var(--bad); color: var(--bg); align-items: center; justify-content: center; gap: 4px; font-size: 12px; cursor: pointer; }
-.row-del { opacity: 0; }
+.row-del, .row-actions { opacity: 0; }
+.task-row:hover .row-actions, .task-row:focus-within .row-actions { opacity: 1; }
+.swipe-actions { display: none; position: absolute; right: 0; top: 0; bottom: 0; }
+.swipe-actions button { width: 64px; border: 0; background: var(--surface-2); color: var(--text); display: grid; place-content: center; justify-items: center; gap: 2px; font-size: 12px; cursor: pointer; padding: 0; }
+.swipe-actions button.danger { background: var(--bad); color: var(--bg); }
+.shop-sub { font-size: 12.5px; color: var(--muted); text-transform: none; letter-spacing: 0; font-weight: 500; }
+.bought-toggle { background: none; border: 0; color: var(--muted); cursor: pointer; display: inline-flex; align-items: center; gap: 6px; padding: 8px 2px; font: inherit; text-transform: inherit; letter-spacing: inherit; }
+.bought-toggle:hover { color: var(--text); }
 .task-row:hover .row-del, .task-row:focus-within .row-del { opacity: 1; }
-@media (hover: none) { .row-del { display: none; } .task-del.on { display: flex; } }
+@media (hover: none) { .row-del, .row-actions { display: none; } .task-del.on, .swipe-actions.on { display: flex; } }
 .due-wrap { position: relative; display: inline-flex; }
 .due { border: 0; background: none; padding: 2px 8px; border-radius: 999px; color: var(--muted); font-size: 12.5px; cursor: pointer; white-space: nowrap; }
 .due:hover { background: var(--surface-2); color: var(--text); }

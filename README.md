@@ -22,7 +22,7 @@ and an **Android app** ([Tauri 2](https://tauri.app)), and the two stay in sync 
 | **Contacts** | Birthdays, favourites, `.vcf` import, **Call** / **Text** from Windows through your Android phone. |
 | **Assistant** | Command bar on every page (Ctrl+K) + mic. "Dentist Tuesday 3pm", "Soccer every Wednesday at 6pm", "Call Luke", "Text Mum saying running late", "What's on this week?", "Weather Saturday", "Plan my week", "Dark theme". Runs on-device, or switch to Claude for free-form requests. |
 | **News** | Google News headlines by category and edition, followed topics, search. |
-| **Sports** | Sports and favourite teams in the left menu; results, highlights links, an upcoming-games calendar (week or month) or list, filtered by team, add fixtures to your calendar. |
+| **Sports** | Sports and favourite teams in the left menu; results, highlights links, an upcoming-games calendar (week or month) or list, filtered by team, games of followed teams are added to your calendar automatically (switch off on the Sports page), or add one by hand. |
 | **Import** | Scan Gmail or Outlook, import Google Calendar, `.ics` files or pasted emails; multi-select what to add; conflicts with your calendar *and with each other* are flagged. |
 | **Google** | One-click two-way Google Calendar sync (Settings → Sync with Google Calendar), automatic every 5–60 minutes and when the app opens; daily backup of data + settings to Google Drive. |
 | **Backup** | Full JSON backup of all data and settings saved to a file you choose (Save window on Windows and Android; keys and tokens left out) and restore (merges, never overwrites newer data), `.ics` and `.csv` export, 14 daily on-device snapshots, Drive backup. |

@@ -4,7 +4,8 @@ import { toast, useStore } from "../store";
 import { useAsync } from "../lib/hooks";
 import { filterFixtures, fixturesOn, groupByDay, mergeFixtures, monthGrid, weekDays, type Fixture } from "../lib/fixtures";
 import { kickoff, nextMatches } from "../lib/sports";
-import { fromYmd, localIso, ymd } from "../lib/util";
+import { sportsEvent } from "../lib/sportsCalendar";
+import { fromYmd, ymd } from "../lib/util";
 import { ICal } from "./Icons";
 import { Seg } from "./ui";
 
@@ -14,17 +15,7 @@ const label = (f: Fixture) => `${f.home} v ${f.away}`;
 const when = (f: Fixture) => format(kickoff(f), "EEE d MMM, h:mm a");
 
 function addToCalendar(f: Fixture) {
-  const start = kickoff(f);
-  useStore.getState().upsert("events", {
-    title: label(f),
-    start: localIso(start),
-    end: localIso(new Date(start.getTime() + 2 * 3600e3)),
-    allDay: false,
-    location: f.venue,
-    source: "sports",
-    reminderMins: [30],
-    notes: f.league,
-  });
+  useStore.getState().upsert("events", sportsEvent(f));
   toast("Added to calendar");
 }
 

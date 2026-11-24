@@ -91,7 +91,7 @@ export const DEFAULT_SETTINGS: Settings = {
     tasks: { showDone: false, groupBy: "day" },
     news: { layout: "list", showImages: false },
     notes: { layout: "board", size: "m", showArchived: false },
-    sports: { resultsCount: 5 },
+    sports: { resultsCount: 5, autoCalendar: true },
   },
 };
 

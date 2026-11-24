@@ -33,6 +33,7 @@ import { notify } from "./lib/platform";
 import { dailyBackups } from "./lib/backup";
 import { startGoogleAutoSync } from "./lib/googleAuto";
 import { startDriveSync } from "./lib/driveSyncApp";
+import { startSportsCalendar } from "./lib/sportsCalendar";
 import { StaleBanner } from "./components/DriveSync";
 import { startMailPolling } from "./lib/mail/engine";
 import { accentText, CONTRAST_ACCENT, readableOn } from "./lib/themes";
@@ -99,7 +100,8 @@ function useBackground() {
     const stopGoogle = startGoogleAutoSync();
     const stopMail = startMailPolling();
     const stopDrive = startDriveSync();
-    return () => (clearInterval(a), clearInterval(b), stopGoogle(), stopMail(), stopDrive());
+    const stopSports = startSportsCalendar();
+    return () => (clearInterval(a), clearInterval(b), stopGoogle(), stopMail(), stopDrive(), stopSports());
   }, []);
 }
 

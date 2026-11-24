@@ -1,7 +1,7 @@
 import type React from "react";
 import { calendarEvents } from "../lib/birthdays";
-import { addDays, format } from "date-fns";
-import { useState } from "react";
+import { addDays, differenceInCalendarDays, format } from "date-fns";
+import { useEffect, useState } from "react";
 import type { HomeWidget } from "../types";
 import { live, useStore } from "../store";
 import { useAsync, useForecast, useNow } from "../lib/hooks";
@@ -10,11 +10,14 @@ import { occurrencesInRange } from "../lib/recurrence";
 import { nextBirthday } from "../lib/reminders";
 import { localEventsFor } from "../lib/localEvents";
 import { kickoff, nextMatches } from "../lib/sports";
-import { fmtTime, todayYmd, ymd } from "../lib/util";
+import { cx, fmtTime, fromYmd, todayYmd, ymd } from "../lib/util";
+import { moveTo, nudge } from "../lib/order";
+import { homeSummary } from "../lib/homeSummary";
+import { unpaidBills, useMail } from "../lib/mail/engine";
 import { skyOf, tempUnit } from "../lib/weather";
 import { openUrl } from "../lib/platform";
 import { MiniCalendar } from "../components/MiniCalendar";
-import { ICake, IDown, IPin, IPlus, WeatherIcon } from "../components/Icons";
+import { ICake, IPin, WeatherIcon } from "../components/Icons";
 import { PageHead, Toggle } from "../components/ui";
 import { MailWidget } from "../components/mail/MailWidget";
 import { STEP_NAMES } from "./Wizard";
@@ -33,51 +36,113 @@ const LABELS: Record<HomeWidget["id"], string> = {
   mail: "Important email",
 };
 
+/** Sentence-case card heading with a count and a See all link. */
+function CardTitle({ title, count, onAll, allLabel }: { title: string; count?: number; onAll?: () => void; allLabel?: string }) {
+  return (
+    <h2>
+      <span>{title}</span>
+      {count != null && <span className="count">{count}</span>}
+      <span className="spacer" />
+      {onAll && (
+        <button className="card-link" onClick={onAll} aria-label={allLabel ?? `See all ${title.toLowerCase()}`}>
+          See all →
+        </button>
+      )}
+    </h2>
+  );
+}
+
 export function Home() {
   const s = useStore();
   const [custom, setCustom] = useState(false);
+  const [editing, setEditing] = useState(false); // rearranging: drag cards by their handle
+  const [drag, setDrag] = useState<{ id: HomeWidget["id"]; over?: HomeWidget["id"] } | null>(null);
+  const [said, setSaid] = useState("");
   const widgets = s.settings.pages.home.widgets;
+  const messages = useMail((m) => m.messages);
+  const today = todayYmd();
+  const t0 = new Date(new Date().setHours(0, 0, 0, 0));
+  const eventsToday = occurrencesInRange(calendarEvents(s), t0, addDays(t0, 1)).length;
+  const tasksDue = live(s.tasks).filter((t) => !t.done && !t.ignored && t.due && t.due <= today).length;
+  const bills = unpaidBills(messages);
+  const dated = bills.filter((b) => b.dueDate).map((b) => differenceInCalendarDays(fromYmd(b.dueDate!), fromYmd(today)));
+  const summary = homeSummary({
+    events: eventsToday,
+    tasks: tasksDue,
+    bills: bills.length,
+    billDays: dated.length ? Math.min(...dated) : undefined,
+  });
+  useEffect(() => {
+    if (!editing) return () => {};
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setEditing(false);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [editing]);
   const now = useNow(30_000);
   const hour = now.getHours();
   const greet = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
 
-  const move = (i: number, d: number) =>
-    s.updateSettings((st) => {
-      const w = st.pages.home.widgets;
-      const j = i + d;
-      if (j < 0 || j >= w.length) return;
-      [w[i], w[j]] = [w[j], w[i]];
-    });
+  const reorder = (next: typeof widgets) => s.updateSettings((st) => void (st.pages.home.widgets = next));
+  const nudgeCard = (id: HomeWidget["id"], dir: -1 | 1) => {
+    const next = nudge(widgets, id, dir, (x) => x.visible);
+    if (next === widgets) return;
+    reorder(next);
+    const pos = next.filter((x) => x.visible).findIndex((x) => x.id === id) + 1;
+    setSaid(`${LABELS[id]} moved to position ${pos} of ${next.filter((x) => x.visible).length}`);
+    requestAnimationFrame(() => document.querySelector<HTMLElement>(`[data-wid="${id}"] .grip-handle`)?.focus());
+  };
+  const grab = (e: React.PointerEvent<HTMLElement>, id: HomeWidget["id"]) => {
+    e.preventDefault();
+    e.currentTarget.setPointerCapture(e.pointerId);
+    setDrag({ id });
+  };
+  const dragMove = (e: React.PointerEvent<HTMLElement>) => {
+    if (!drag) return;
+    const over = document.elementFromPoint(e.clientX, e.clientY)?.closest<HTMLElement>("[data-wid]")?.dataset.wid as
+      | HomeWidget["id"]
+      | undefined;
+    if (over !== drag.over) setDrag({ ...drag, over });
+  };
+  const dragEnd = () => {
+    if (drag?.over && drag.over !== drag.id) reorder(moveTo(widgets, drag.id, drag.over));
+    setDrag(null);
+  };
 
   return (
     <>
       <PageHead
         title={`${greet}${s.settings.displayName ? ", " + s.settings.displayName : ""}`}
-        sub={format(now, "EEEE d MMMM yyyy")}
+        sub={
+          <>
+            <div>{format(now, "EEEE d MMMM yyyy")}</div>
+            <div className="home-summary">{summary}</div>
+          </>
+        }
         open={custom}
         setOpen={setCustom}
         customise={
           <div className="list">
             {widgets.map((w, i) => (
-              <div key={w.id} className="row" style={{ justifyContent: "space-between" }}>
-                <span className="row">
-                  <Toggle
-                    checked={w.visible}
-                    onChange={(v) => s.updateSettings((st) => void (st.pages.home.widgets[i].visible = v))}
-                    label={LABELS[w.id]}
-                  />{" "}
-                  {LABELS[w.id]}
-                </span>
-                <span className="row">
-                  <button className="btn sm ghost" onClick={() => move(i, -1)} disabled={i === 0} aria-label="Move up">
-                    Up
-                  </button>
-                  <button className="btn sm ghost" onClick={() => move(i, 1)} disabled={i === widgets.length - 1} aria-label="Move down">
-                    <IDown size={14} />
-                  </button>
-                </span>
+              <div key={w.id} className="row">
+                <Toggle
+                  checked={w.visible}
+                  onChange={(v) => s.updateSettings((st) => void (st.pages.home.widgets[i].visible = v))}
+                  label={LABELS[w.id]}
+                />{" "}
+                {LABELS[w.id]}
               </div>
             ))}
+            <div>
+              <button
+                className="btn sm"
+                onClick={() => {
+                  setCustom(false);
+                  setEditing(true);
+                }}
+              >
+                Rearrange cards
+              </button>
+            </div>
           </div>
         }
       />
@@ -96,13 +161,49 @@ export function Home() {
           </span>
         </div>
       )}
-      <div className="home">
+      {editing && (
+        <div className="card row edit-bar" style={{ marginBottom: 16, justifyContent: "space-between" }}>
+          <span>Drag a card by its handle to move it, or focus a handle and press the arrow keys. Esc also finishes.</span>
+          <button className="btn primary sm" onClick={() => setEditing(false)}>
+            Done
+          </button>
+        </div>
+      )}
+      <span className="visually-hidden" role="status">
+        {said}
+      </span>
+      <div className={cx("home", editing && "editing")}>
         {widgets
           .filter((w) => w.visible && (w.id !== "mail" || s.settings.mail.alerts.homeCard))
           .map((w) => {
             const C = WIDGETS[w.id];
             return (
-              <section key={w.id} className={`card w-${w.id}`}>
+              <section
+                key={w.id}
+                data-wid={w.id}
+                className={cx(
+                  "card",
+                  `w-${w.id}`,
+                  drag?.id === w.id && "dragging",
+                  drag?.over === w.id && drag.id !== w.id && "drop-target",
+                )}
+              >
+                {editing && (
+                  <button
+                    className="grip-handle"
+                    aria-label={`Move ${LABELS[w.id]}. Drag, or press the arrow keys.`}
+                    onPointerDown={(e) => grab(e, w.id)}
+                    onPointerMove={dragMove}
+                    onPointerUp={dragEnd}
+                    onPointerCancel={() => setDrag(null)}
+                    onKeyDown={(e) => {
+                      if (e.key === "ArrowLeft" || e.key === "ArrowUp") (e.preventDefault(), nudgeCard(w.id, -1));
+                      else if (e.key === "ArrowRight" || e.key === "ArrowDown") (e.preventDefault(), nudgeCard(w.id, 1));
+                    }}
+                  >
+                    <span className="grip-dots" aria-hidden="true" />
+                  </button>
+                )}
                 <C />
               </section>
             );
@@ -226,7 +327,7 @@ function MiniCalWidget() {
   const s = useStore();
   return (
     <>
-      <h2>Calendar</h2>
+      <CardTitle title="Calendar" />
       <MiniCalendar selected={s.selectedDay} onPick={(d) => s.selectDay(ymd(d))} />
     </>
   );
@@ -238,12 +339,7 @@ function AgendaWidget() {
   const occ = occurrencesInRange(calendarEvents(s), t0, addDays(t0, 2)).filter((o) => o.event.allDay || o.end > new Date());
   return (
     <>
-      <h2>
-        Today & tomorrow <span className="spacer" />
-        <button className="btn sm ghost" onClick={() => s.setPage("calendar")}>
-          <IPlus size={14} />
-        </button>
-      </h2>
+      <CardTitle title="Today & tomorrow" count={occ.length} onAll={() => s.setPage("calendar")} allLabel="See all events in Calendar" />
       <div className="list">
         {occ.slice(0, 8).map((o) => (
           <div key={o.key} className="agenda-item" onClick={() => s.selectDay(ymd(o.start))} style={{ cursor: "pointer" }}>
@@ -271,12 +367,7 @@ function TasksWidget() {
     .sort((a, b) => (a.due ?? "z").localeCompare(b.due ?? "z"));
   return (
     <>
-      <h2>
-        Tasks <span className="spacer" />
-        <button className="btn sm ghost" onClick={() => s.setPage("tasks")}>
-          All
-        </button>
-      </h2>
+      <CardTitle title="Tasks" count={tasks.length} onAll={() => s.setPage("tasks")} allLabel="See all tasks" />
       <div className="list">
         {tasks.slice(0, 7).map((t) => (
           <div key={t.id} className="task-row">
@@ -313,7 +404,7 @@ function BirthdaysWidget() {
     .slice(0, 5);
   return (
     <>
-      <h2>Birthdays</h2>
+      <CardTitle title="Birthdays" count={list.length} />
       <div className="list">
         {list.map(({ c, date, age }) => (
           <div key={c.id} className="row" style={{ justifyContent: "space-between" }}>
@@ -338,12 +429,7 @@ function HeadlinesWidget() {
   const news = useAsync(() => getHeadlines(topic, s.settings.newsRegion), [topic, s.settings.newsRegion]);
   return (
     <>
-      <h2>
-        Headlines <span className="spacer" />
-        <button className="btn sm ghost" onClick={() => s.setPage("news")}>
-          More
-        </button>
-      </h2>
+      <CardTitle title="Headlines" onAll={() => s.setPage("news")} allLabel="See all headlines" />
       <div className="list">
         {(news.data ?? []).slice(0, 5).map((h) => (
           <a key={h.link} href={h.link} onClick={(e) => (e.preventDefault(), openUrl(h.link))} style={{ textDecoration: "none" }}>
@@ -371,12 +457,7 @@ function SportsWidget() {
   }, [teams.map((t) => t.id).join()]);
   return (
     <>
-      <h2>
-        Your teams <span className="spacer" />
-        <button className="btn sm ghost" onClick={() => s.setPage("sports")}>
-          More
-        </button>
-      </h2>
+      <CardTitle title="Your teams" onAll={() => s.setPage("sports")} allLabel="See all fixtures" />
       <div className="list">
         {(data.data ?? []).map((m) => (
           <div key={m.id}>
@@ -433,12 +514,12 @@ function NotesWidget() {
     .slice(0, 4);
   return (
     <>
-      <h2>
-        Notes <span className="spacer" />
-        <button className="btn sm ghost" onClick={() => s.setPage("notes")}>
-          All
-        </button>
-      </h2>
+      <CardTitle
+        title="Notes"
+        count={live(s.notes).filter((n) => !n.archived).length}
+        onAll={() => s.setPage("notes")}
+        allLabel="See all notes"
+      />
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
         {notes.map((n) => (
           <div

@@ -322,6 +322,20 @@ label.field > span { font-weight: 500; }
 
 /* ---------- home ---------- */
 .home { display: grid; grid-template-columns: repeat(12, 1fr); gap: var(--gap); }
+.home > .card { position: relative; }
+.home > .card > h2 { text-transform: none; letter-spacing: 0; font: 600 14px var(--font-ui); color: var(--text); margin: 0 0 10px; }
+.home > .card > h2 .spacer { flex: 1; }
+.home > .card > h2 .count { color: var(--muted); font-weight: 400; font-variant-numeric: tabular-nums; }
+.card-link { background: none; border: 0; padding: 2px 4px; margin-right: -4px; cursor: pointer; color: var(--accent-text, var(--accent)); font: 500 12.5px var(--font-ui); border-radius: 4px; }
+.card-link:hover { text-decoration: underline; }
+.home-summary { color: var(--text); margin-top: 2px; }
+.home.editing > .card { outline: 1.5px dashed var(--accent); outline-offset: -1px; }
+.home.editing > .card > :not(.grip-handle) { pointer-events: none; }
+.home > .card.dragging { opacity: 0.4; }
+.home > .card.drop-target { outline-style: solid; outline-width: 2px; }
+.grip-handle { position: absolute; top: 8px; right: 8px; z-index: 2; width: 30px; height: 30px; display: grid; place-items: center; border: 1px solid var(--line-strong); border-radius: var(--radius); background: var(--surface); cursor: grab; padding: 0; touch-action: none; }
+.grip-handle:active { cursor: grabbing; }
+.grip-dots { width: 10px; height: 14px; background: radial-gradient(circle, var(--muted) 1.2px, transparent 1.6px) 0 0 / 5px 5px; }
 .home > .w-weather { grid-column: span 8; }
 .home > .w-clock { grid-column: span 4; }
 .home > .w-minical { grid-column: span 4; }

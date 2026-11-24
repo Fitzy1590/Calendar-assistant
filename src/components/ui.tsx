@@ -1,5 +1,5 @@
-import { useEffect, type ReactNode } from "react";
-import { IX, ISliders } from "./Icons";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { IMore, IX, ISliders } from "./Icons";
 
 export function Modal({
   title,
@@ -134,5 +134,46 @@ export function Field({ label, children }: { label: string; children: ReactNode 
       <span>{label}</span>
       {children}
     </label>
+  );
+}
+
+/** A "…" button that opens a short menu. Esc or a click elsewhere closes it. */
+export function Menu({ label, items }: { label: string; items: { label: string; onClick: () => void }[] }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLSpanElement>(null);
+  useEffect(() => {
+    if (!open) return () => {};
+    const away = (e: PointerEvent) => !ref.current?.contains(e.target as Node) && setOpen(false);
+    const key = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    document.addEventListener("pointerdown", away);
+    document.addEventListener("keydown", key);
+    return () => {
+      document.removeEventListener("pointerdown", away);
+      document.removeEventListener("keydown", key);
+    };
+  }, [open]);
+  return (
+    <span className="menu-wrap" ref={ref}>
+      <button className="btn sm ghost icon" aria-haspopup="menu" aria-expanded={open} aria-label={label} onClick={() => setOpen(!open)}>
+        <IMore size={16} />
+      </button>
+      {open && (
+        <div role="menu" className="menu-pop">
+          {items.map((i) => (
+            <button
+              key={i.label}
+              role="menuitem"
+              className="menu-item"
+              onClick={() => {
+                setOpen(false);
+                i.onClick();
+              }}
+            >
+              {i.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </span>
   );
 }

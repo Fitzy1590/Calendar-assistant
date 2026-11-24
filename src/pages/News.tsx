@@ -5,7 +5,7 @@ import { useAsync } from "../lib/hooks";
 import { getHeadlines, NEWS_REGIONS, NEWS_TOPICS, searchNews, type Headline } from "../lib/news";
 import { openUrl } from "../lib/platform";
 import { IExternal, ISearch } from "../components/Icons";
-import { PageHead, Seg, Toggle } from "../components/ui";
+import { PageHead, Seg } from "../components/ui";
 
 export function News() {
   const s = useStore();
@@ -19,8 +19,9 @@ export function News() {
   const [q, setQ] = useState("");
   const [search, setSearch] = useState("");
   const [custom, setCustom] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   useEffect(() => {
-    const h = (e: Event) => (setSearch((e as CustomEvent).detail), setQ((e as CustomEvent).detail));
+    const h = (e: Event) => (setSearch((e as CustomEvent).detail), setQ((e as CustomEvent).detail), setSearchOpen(true));
     window.addEventListener("news-search", h);
     return () => window.removeEventListener("news-search", h);
   }, []);
@@ -28,6 +29,18 @@ export function News() {
   const data = useAsync<Headline[]>(
     () => (search ? searchNews(search, region) : tab.startsWith("q:") ? searchNews(tab.slice(2), region) : getHeadlines(tab, region)),
     [tab, search, region],
+  );
+  const shown = (data.data ?? []).slice(0, 40);
+  const meta = (h: Headline) => `${h.source} · ${formatDistanceToNowStrict(h.published)} ago`;
+  const row = (h: Headline) => (
+    <div key={h.link} className="item">
+      <a href={h.link} onClick={(e) => (e.preventDefault(), openUrl(h.link))}>
+        {h.title} <IExternal size={12} />
+      </a>
+      <div className="faint" style={{ fontSize: 12.5 }}>
+        {meta(h)}
+      </div>
+    </div>
   );
   const toggleCat = (id: string) =>
     s.updateSettings((st) => {
@@ -39,6 +52,16 @@ export function News() {
       <PageHead
         title="News"
         sub="Today's headlines from Google News"
+        actions={
+          <button
+            className="btn ghost icon"
+            aria-label="Search news"
+            aria-pressed={searchOpen || !!search}
+            onClick={() => setSearchOpen(!searchOpen)}
+          >
+            <ISearch />
+          </button>
+        }
         open={custom}
         setOpen={setCustom}
         customise={
@@ -82,61 +105,64 @@ export function News() {
                   value={cfg.layout}
                   onChange={(v) => s.updateSettings((st) => void (st.pages.news.layout = v))}
                   options={[
-                    { value: "list", label: "List" },
+                    { value: "list", label: "Lead and list" },
                     { value: "cards", label: "Cards" },
                   ]}
                 />
               </label>
-              <span className="row">
-                <Toggle
-                  checked={cfg.showImages}
-                  onChange={(v) => s.updateSettings((st) => void (st.pages.news.showImages = v))}
-                  label="Source names"
-                />{" "}
-                Show source & time
-              </span>
             </div>
           </div>
         }
       />
-      <div className="row" style={{ marginBottom: 14 }}>
-        <form className="command" style={{ maxWidth: 360 }} onSubmit={(e) => (e.preventDefault(), setSearch(q))}>
-          <ISearch />
-          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search news" />
-        </form>
-        {search && (
-          <>
-            <button
-              className="btn sm"
-              onClick={() => s.updateSettings((st) => void (st.newsKeywords = [...new Set([...st.newsKeywords, search])]))}
-            >
-              Follow "{search}"
-            </button>
-            <button className="btn sm ghost" onClick={() => (setSearch(""), setQ(""))}>
-              Clear
-            </button>
-          </>
-        )}
-      </div>
+      {(searchOpen || search) && (
+        <div className="row" style={{ marginBottom: 14 }}>
+          <form className="command" style={{ maxWidth: 360 }} onSubmit={(e) => (e.preventDefault(), setSearch(q))}>
+            <ISearch />
+            <input
+              autoFocus
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Search news"
+              aria-label="Search news"
+              onKeyDown={(e) => e.key === "Escape" && (setSearch(""), setQ(""), setSearchOpen(false))}
+            />
+          </form>
+          {search && (
+            <>
+              <button
+                className="btn sm"
+                onClick={() => s.updateSettings((st) => void (st.newsKeywords = [...new Set([...st.newsKeywords, search])]))}
+              >
+                Follow "{search}"
+              </button>
+              <button className="btn sm ghost" onClick={() => (setSearch(""), setQ(""), setSearchOpen(false))}>
+                Clear
+              </button>
+            </>
+          )}
+        </div>
+      )}
       {!search && (
-        <div className="row" style={{ marginBottom: 16 }}>
+        <div className="topic-tabs" role="tablist" aria-label="Topics">
           {tabs.map((t) => (
-            <button key={t.id} className="chip" aria-pressed={tab === t.id} onClick={() => setTab(t.id)}>
-              {t.label}
+            <span key={t.id} className="topic-tab-wrap">
+              <button role="tab" aria-selected={tab === t.id} className="topic-tab" onClick={() => setTab(t.id)}>
+                {t.label}
+              </button>
               {t.q && (
-                <span
-                  onClick={(e) => (
-                    e.stopPropagation(),
-                    s.updateSettings((st) => void (st.newsKeywords = st.newsKeywords.filter((k) => k !== t.label)))
-                  )}
-                  aria-label="Unfollow"
-                  className="faint"
+                <button
+                  className="topic-unfollow"
+                  aria-label={`Unfollow ${t.label}`}
+                  onClick={() => s.updateSettings((st) => void (st.newsKeywords = st.newsKeywords.filter((k) => k !== t.label)))}
                 >
                   ×
-                </span>
+                </button>
               )}
-            </button>
+            </span>
           ))}
+          <button className="topic-tab" aria-label="Add or remove topics" title="Add or remove topics" onClick={() => setCustom(true)}>
+            +
+          </button>
         </div>
       )}
       {data.error && (
@@ -146,20 +172,21 @@ export function News() {
         </div>
       )}
       {data.loading && !data.data && <div className="empty">Loading…</div>}
-      <div className={cfg.layout === "cards" ? "news-cards" : "news-list list card"}>
-        {(data.data ?? []).slice(0, 40).map((h) => (
-          <div key={h.link} className="item">
-            <a href={h.link} onClick={(e) => (e.preventDefault(), openUrl(h.link))}>
-              {h.title} <IExternal size={12} />
-            </a>
-            {cfg.showImages !== false && (
-              <div className="faint" style={{ fontSize: 12.5 }}>
-                {h.source} · {formatDistanceToNowStrict(h.published)} ago
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
+      {cfg.layout === "cards" ? (
+        <div className="news-cards">{shown.map(row)}</div>
+      ) : (
+        <>
+          {shown[0] && (
+            <div className="news-lead card">
+              <a href={shown[0].link} onClick={(e) => (e.preventDefault(), openUrl(shown[0].link))}>
+                {shown[0].title} <IExternal size={14} />
+              </a>
+              <div className="faint">{meta(shown[0])}</div>
+            </div>
+          )}
+          {shown.length > 1 && <div className="news-list list card">{shown.slice(1).map(row)}</div>}
+        </>
+      )}
     </>
   );
 }

@@ -290,3 +290,11 @@ export const INavigate = (p: P) => (
 export const ITrend = ({ down, ...p }: P & { down?: boolean }) => (
   <S {...p}>{down ? <path d="m4 7 6 6 4-4 6 6M20 10v5h-5" /> : <path d="m4 17 6-6 4 4 6-6M20 14V9h-5" />}</S>
 );
+
+export const IMore = (p: P) => (
+  <S {...p}>
+    <circle cx="5" cy="12" r="1.2" fill="currentColor" />
+    <circle cx="12" cy="12" r="1.2" fill="currentColor" />
+    <circle cx="19" cy="12" r="1.2" fill="currentColor" />
+  </S>
+);

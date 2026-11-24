@@ -5,6 +5,7 @@ import { parseStatement } from "../lib/bankStatement";
 import { openUrl } from "../lib/platform";
 import {
   byCategory,
+  categoryShares,
   cancelGuide,
   chargedAfterCancel,
   detectSubscriptions,
@@ -14,7 +15,7 @@ import {
   type Subscription,
 } from "../lib/subscriptions";
 import { fromYmd, todayYmd } from "../lib/util";
-import { Modal, PageHead } from "../components/ui";
+import { Menu, Modal, PageHead } from "../components/ui";
 
 const money = (n: number) => `$${n.toFixed(2)}`;
 const EVERY: Record<Cadence, string> = {
@@ -63,6 +64,7 @@ export function Subscriptions() {
 
   const live = items.filter((i) => !i.hidden);
   const t = totals(items);
+  const shares = categoryShares(items);
   const groups = byCategory(items);
   const again = chargedAfterCancel(live, cancelled);
   const hidden = items.filter((i) => i.hidden);
@@ -112,15 +114,27 @@ export function Subscriptions() {
         </div>
       ) : (
         <div className="stack" style={{ gap: 16 }}>
-          <div className="row" style={{ flexWrap: "wrap", gap: 12 }}>
-            <Stat label="Per month" value={money(t.monthly)} />
-            <Stat label="Per year" value={money(t.yearly)} />
-            <Stat label="Subscriptions" value={String(t.count)} />
-            {importedAt && (
-              <span className="faint" style={{ alignSelf: "center" }}>
-                From the statement you imported on {format(fromYmd(importedAt), "d MMM yyyy")}
-              </span>
-            )}
+          <div className="stack" style={{ gap: 8 }}>
+            <div className="sub-total">
+              <b>{money(t.monthly)}</b> a month · {money(t.yearly)} a year · {t.count} subscription{t.count === 1 ? "" : "s"}
+            </div>
+            <div
+              className="sub-bar"
+              role="img"
+              aria-label={`Share of the monthly cost: ${shares.map((x) => `${x.label} ${x.pct}%`).join(", ")}`}
+            >
+              {shares.map((x, i) => (
+                <i key={x.label} style={{ width: `${x.pct}%`, opacity: 1 - i * 0.2 }} />
+              ))}
+            </div>
+            <ul className="sub-legend">
+              {shares.map((x, i) => (
+                <li key={x.label}>
+                  <i style={{ opacity: 1 - i * 0.2 }} aria-hidden="true" /> {x.label} {x.pct}%
+                </li>
+              ))}
+            </ul>
+            {importedAt && <div className="faint">From the statement you imported on {format(fromYmd(importedAt), "d MMM yyyy")}</div>}
           </div>
 
           {groups.map((g) => (
@@ -190,15 +204,6 @@ export function Subscriptions() {
   );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="card" style={{ padding: "10px 16px", minWidth: 140 }}>
-      <div className="eyebrow">{label}</div>
-      <div style={{ font: "600 26px var(--font-display)" }}>{value}</div>
-    </div>
-  );
-}
-
 function SubRow({
   sub,
   cancelledOn,
@@ -214,25 +219,32 @@ function SubRow({
     <div className="sub-row">
       <div style={{ minWidth: 0 }}>
         <b>{sub.name}</b> {sub.via && <span className="tag">via {sub.via}</span>}{" "}
+        {sub.priceChange && (
+          <span
+            className="tag"
+            style={{ color: sub.priceChange.to > sub.priceChange.from ? "var(--warn)" : "var(--ok)" }}
+            title={`Price changed from ${money(sub.priceChange.from)} to ${money(sub.priceChange.to)}`}
+          >
+            <span aria-hidden="true">{sub.priceChange.to > sub.priceChange.from ? "▲" : "▼"}</span>{" "}
+            {money(Math.abs(sub.priceChange.to - sub.priceChange.from))}
+            <span className="visually-hidden">
+              {" "}
+              Price changed from {money(sub.priceChange.from)} to {money(sub.priceChange.to)}
+            </span>
+          </span>
+        )}{" "}
         {cancelledOn && <span className="tag">cancelled {format(fromYmd(cancelledOn), "d MMM")}</span>}
         <div className="faint" style={{ fontSize: 12.5 }}>
           {money(sub.amount)} {EVERY[sub.cadence]} · next about {format(fromYmd(sub.nextDate), "d MMM")} · seen {sub.count} time
           {sub.count === 1 ? "" : "s"}
         </div>
-        {sub.priceChange && (
-          <div style={{ color: "var(--warn)", fontSize: 12.5 }}>
-            Price changed from {money(sub.priceChange.from)} to {money(sub.priceChange.to)}
-          </div>
-        )}
       </div>
       <div className="row" style={{ flex: "none" }}>
         <span className="mono muted">{money(sub.monthly)}/mo</span>
         <button className="btn sm" onClick={onCancel}>
           How to cancel
         </button>
-        <button className="btn sm ghost" onClick={onHide} aria-label={`${sub.name} is not a subscription`}>
-          Not one
-        </button>
+        <Menu label={`More for ${sub.name}`} items={[{ label: "Not a subscription", onClick: onHide }]} />
       </div>
     </div>
   );

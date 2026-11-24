@@ -2,14 +2,14 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { format, formatDistanceToNowStrict, isToday } from "date-fns";
 import { useStore } from "../store";
 import { PageHead } from "../components/ui";
+import { ILeft, IPlus, ISync } from "../components/Icons";
 import { Bills } from "../components/mail/Bills";
 import { FolderRuleDialog } from "../components/mail/FolderRuleDialog";
 import { HandlePanel } from "../components/mail/HandlePanel";
-import { QuickReplies, ReaderActions, ReaderTools } from "../components/mail/ReaderTools";
+import { ReaderActions, ReaderTools } from "../components/mail/ReaderTools";
 import { readableText } from "../lib/mail/readable";
 import { isSnoozed } from "../lib/mail/followups";
 import { groupRows, initials, searchMail, tone } from "../lib/mail/mailUi";
-import { Seg } from "../components/ui";
 import { newMail } from "../lib/mail/composeStore";
 import { MailContextMenu } from "../components/mail/MailContextMenu";
 import { BUCKET_LABEL } from "../lib/mail/classify";
@@ -39,6 +39,7 @@ export function Email() {
   const [fileFor, setFileFor] = useState<MailMessage | null>(null);
   const [datesFor, setDatesFor] = useState<string | null>(null);
   const [query, setQuery] = useState("");
+  const [reading, setReading] = useState(false); // phones: a message open full screen
   const [body, setBody] = useState<{ id: string; text: string; loading: boolean } | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const accounts = s.settings.mail.accounts;
@@ -136,177 +137,174 @@ export function Email() {
 
   const billCount = unpaidBills(messages).length;
   const sync = (
-    <button className="btn" disabled={syncing} onClick={() => syncMail().catch(() => {})}>
-      {syncing ? "Syncing…" : "Sync now"}
+    <button
+      className="btn icon"
+      disabled={syncing}
+      onClick={() => syncMail().catch(() => {})}
+      aria-label={syncing ? "Syncing" : "Sync now"}
+      title={syncing ? "Syncing…" : "Sync now"}
+    >
+      <ISync className={syncing ? "spin" : undefined} />
     </button>
   );
-  const tabs = (
-    <div className="seg" role="group" aria-label="Email sections" style={{ marginBottom: 12 }}>
-      <button aria-pressed={tab === "mail"} onClick={() => useMail.setState({ tab: "mail" })}>
-        Mail
+  const goView = (v: View) => (useMail.setState({ tab: "mail" }), setView(v));
+  const folderNav = (
+    <nav className="mail-folders chips-row" aria-label="Mail folders">
+      {VIEWS.filter((v) => v.id !== "spam" || messages.some((m) => m.bucket === "spam")).map((v) => (
+        <button key={v.id} className="chip" aria-pressed={tab === "mail" && view === v.id} onClick={() => goView(v.id)}>
+          {v.label}
+          {counts[v.id] ? <span className="mono faint"> {counts[v.id]}</span> : null}
+        </button>
+      ))}
+      {counts.snoozed > 0 && (
+        <button className="chip" aria-pressed={tab === "mail" && view === "snoozed"} onClick={() => goView("snoozed")}>
+          Snoozed <span className="mono faint">{counts.snoozed}</span>
+        </button>
+      )}
+      {folders.map((f) => (
+        <button
+          key={f.id}
+          className="chip"
+          aria-pressed={tab === "mail" && view === `folder:${f.id}`}
+          onClick={() => goView(`folder:${f.id}`)}
+        >
+          {f.name}
+          {counts[`folder:${f.id}`] ? <span className="mono faint"> {counts[`folder:${f.id}`]}</span> : null}
+        </button>
+      ))}
+      <button className="chip" aria-pressed={tab === "bills"} onClick={() => useMail.setState({ tab: "bills" })}>
+        Bills{billCount ? <span className="mono faint"> {billCount}</span> : null}
       </button>
-      <button aria-pressed={tab === "bills"} onClick={() => useMail.setState({ tab: "bills" })}>
-        Bills{billCount ? ` ${billCount}` : ""}
-      </button>
-    </div>
+    </nav>
+  );
+  const newButton = (
+    <button className="fab" onClick={() => newMail()} aria-label="New email" title="New email">
+      <IPlus size={22} />
+    </button>
   );
   if (tab === "bills")
     return (
-      <>
+      <div className="mail-page">
         <PageHead title="Email" sub={accounts.map((a) => a.address).join(", ")} actions={sync} />
-        {tabs}
+        {folderNav}
         <Bills />
-      </>
+        {newButton}
+      </div>
     );
   return (
     <>
-      <PageHead
-        title="Email"
-        sub={accounts.map((a) => a.address).join(", ")}
-        actions={
-          <span className="row">
-            <button className="btn primary" onClick={() => newMail()}>
-              New email
-            </button>
-            <button className="btn" disabled={syncing} onClick={() => syncMail().catch(() => {})}>
-              {syncing ? "Syncing…" : "Sync now"}
-            </button>
-          </span>
-        }
-      />
-      {tabs}
-      {error && (
-        <div role="alert" style={{ color: "var(--bad)", fontSize: 13, marginBottom: 8 }}>
-          {error}
+      <div className={"mail-page" + (reading ? " reading" : "")}>
+        <PageHead title="Email" sub={accounts.map((a) => a.address).join(", ")} actions={sync} />
+        {error && (
+          <div role="alert" style={{ color: "var(--bad)", fontSize: 13, marginBottom: 8 }}>
+            {error}
+          </div>
+        )}
+        <div className="row" style={{ marginBottom: 10 }}>
+          <input
+            className="input"
+            type="search"
+            style={{ maxWidth: 360 }}
+            placeholder="Search mail"
+            aria-label="Search mail"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
         </div>
-      )}
-      <div className="row" style={{ marginBottom: 10, flexWrap: "wrap", justifyContent: "space-between" }}>
-        <input
-          className="input"
-          type="search"
-          style={{ maxWidth: 360 }}
-          placeholder="Search mail"
-          aria-label="Search mail"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-        />
-        <Seg
-          value={s.settings.mail.layout}
-          options={[
-            { value: "tabs", label: "Tabs on top" },
-            { value: "classic", label: "Classic" },
-          ]}
-          onChange={(v) => s.updateSettings((st) => void (st.mail.layout = v))}
-        />
-      </div>
-      <div className={"mail " + s.settings.mail.layout}>
-        <nav className="mail-folders" aria-label="Mail folders">
-          {VIEWS.filter((v) => v.id !== "spam" || messages.some((m) => m.bucket === "spam")).map((v) => (
-            <button key={v.id} className="chip" aria-pressed={view === v.id} onClick={() => setView(v.id)}>
-              {v.label}
-              {counts[v.id] ? <span className="mono faint"> {counts[v.id]}</span> : null}
-            </button>
-          ))}
-          {counts.snoozed > 0 && (
-            <button className="chip" aria-pressed={view === "snoozed"} onClick={() => setView("snoozed")}>
-              Snoozed <span className="mono faint">{counts.snoozed}</span>
-            </button>
-          )}
-          {folders.map((f) => (
-            <button key={f.id} className="chip" aria-pressed={view === `folder:${f.id}`} onClick={() => setView(`folder:${f.id}`)}>
-              {f.name}
-              {counts[`folder:${f.id}`] ? <span className="mono faint"> {counts[`folder:${f.id}`]}</span> : null}
-            </button>
-          ))}
-        </nav>
-        <div className="mail-list card" role="listbox" aria-label={`${viewLabel} messages`} ref={listRef} onKeyDown={onKey}>
-          {groups.map((g) => (
-            <div key={g.label} role="group" aria-label={g.label}>
-              <div className="mail-day eyebrow" aria-hidden="true">
-                {g.label}
-              </div>
-              {g.rows.map((m) => (
-                <div
-                  key={m.id}
-                  data-id={m.id}
-                  role="option"
-                  aria-selected={m.id === selectedId}
-                  tabIndex={m.id === selectedId || (!selectedId && m.id === shown[0]?.id) ? 0 : -1}
-                  className={"mail-row" + (m.isRead || m.dismissed ? "" : " unread")}
-                  aria-label={`${m.from.name || m.from.address}, ${m.subject}, ${when(m.receivedAt)}${m.isRead ? "" : ", unread"}${m.important ? ", important" : ""}`}
-                  onClick={() => useMail.setState({ selectedId: m.id })}
-                  onKeyDown={(e) => e.key === "Enter" && useMail.setState({ selectedId: m.id })}
-                  onContextMenu={(e) => {
-                    e.preventDefault();
-                    useMail.setState({ selectedId: m.id });
-                    setCtx({ m, x: e.clientX, y: e.clientY });
-                  }}
-                >
-                  <span className={"avatar tone" + tone(m.from.address)} aria-hidden="true">
-                    {initials(m.from.name, m.from.address)}
-                  </span>
-                  <span className="mail-from ellipsis">{m.from.name || m.from.address}</span>
-                  <span className="faint mono" style={{ fontSize: 11 }}>
-                    {when(m.receivedAt)}
-                  </span>
-                  <span className="mail-subject ellipsis">{m.subject}</span>
-                  <span className="muted ellipsis mail-preview">
-                    {view !== "important" && view !== "action" && m.bucket !== "inbox" ? (
-                      <span className="tag">{BUCKET_LABEL[m.bucket]}</span>
-                    ) : null}{" "}
-                    {m.preview}
-                  </span>
+        <div className="mail tabs">
+          {folderNav}
+          <div className="mail-list card" role="listbox" aria-label={`${viewLabel} messages`} ref={listRef} onKeyDown={onKey}>
+            {groups.map((g) => (
+              <div key={g.label} role="group" aria-label={g.label}>
+                <div className="mail-day eyebrow" aria-hidden="true">
+                  {g.label}
                 </div>
-              ))}
-            </div>
-          ))}
-          {!shown.length && (
-            <div className="empty">
-              {messages.length ? "Nothing here." : syncing ? "Fetching your mail…" : "No mail yet. Press Sync now."}
-            </div>
-          )}
+                {g.rows.map((m) => (
+                  <div
+                    key={m.id}
+                    data-id={m.id}
+                    role="option"
+                    aria-selected={m.id === selectedId}
+                    tabIndex={m.id === selectedId || (!selectedId && m.id === shown[0]?.id) ? 0 : -1}
+                    className={"mail-row" + (m.isRead || m.dismissed ? "" : " unread")}
+                    aria-label={`${m.from.name || m.from.address}, ${m.subject}, ${when(m.receivedAt)}${m.isRead ? "" : ", unread"}${m.important ? ", important" : ""}`}
+                    onClick={() => (useMail.setState({ selectedId: m.id }), setReading(true))}
+                    onKeyDown={(e) => e.key === "Enter" && (useMail.setState({ selectedId: m.id }), setReading(true))}
+                    onContextMenu={(e) => {
+                      e.preventDefault();
+                      useMail.setState({ selectedId: m.id });
+                      setCtx({ m, x: e.clientX, y: e.clientY });
+                    }}
+                  >
+                    <span className={"avatar tone" + tone(m.from.address)} aria-hidden="true">
+                      {initials(m.from.name, m.from.address)}
+                    </span>
+                    <span className="mail-from ellipsis">{m.from.name || m.from.address}</span>
+                    <span className="faint mono" style={{ fontSize: 11 }}>
+                      {when(m.receivedAt)}
+                    </span>
+                    <span className="mail-subject ellipsis">{m.subject}</span>
+                    <span className="muted ellipsis mail-preview">
+                      {view !== "important" && view !== "action" && m.bucket !== "inbox" ? (
+                        <span className="tag">{BUCKET_LABEL[m.bucket]}</span>
+                      ) : null}{" "}
+                      {m.preview}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ))}
+            {!shown.length && (
+              <div className="empty">
+                {messages.length ? "Nothing here." : syncing ? "Fetching your mail…" : "No mail yet. Press Sync now."}
+              </div>
+            )}
+          </div>
+          <article className="mail-reader card" aria-live="polite">
+            <button className="btn sm ghost reader-back" onClick={() => setReading(false)}>
+              <ILeft size={14} /> {viewLabel}
+            </button>
+            {selected ? (
+              <div className="stack">
+                <ReaderActions m={selected} />
+                <header className="reader-head">
+                  <h2 style={{ margin: 0 }}>{selected.subject}</h2>
+                  <dl className="reader-meta" style={{ margin: 0 }}>
+                    <dt>From</dt>
+                    <dd>
+                      <b>{selected.from.name || selected.from.address}</b> &lt;{selected.from.address}&gt;
+                    </dd>
+                    {selected.to.length ? (
+                      <>
+                        <dt>To</dt>
+                        <dd>{selected.to.map((a) => a.name || a.address).join(", ")}</dd>
+                      </>
+                    ) : null}
+                    <dt>Date</dt>
+                    <dd>{format(selected.receivedAt, "EEE d MMM yyyy, h:mm a")}</dd>
+                  </dl>
+                  <div className="faint" style={{ fontSize: 12.5 }}>
+                    {selected.important ? "Important" : BUCKET_LABEL[selected.bucket]}: {selected.reasons.join(". ")}
+                  </div>
+                </header>
+                <pre className="mail-body">
+                  {readableText(body?.id === selected.id ? (body.loading ? "Loading…" : body.text || selected.preview) : selected.preview)}
+                </pre>
+                <ReaderTools
+                  m={selected}
+                  showDates={datesFor === selected.id || (selected.bucket !== "subscriptions" && selected.bucket !== "spam")}
+                />
+                <HandlePanel m={selected} onFile={() => setFileFor(selected)} />
+                <div className="faint" style={{ fontSize: 12 }}>
+                  Opening a message here only marks it as seen in this app. Your mailbox is not changed.
+                </div>
+              </div>
+            ) : (
+              <div className="empty">Select a message to read it.</div>
+            )}
+          </article>
         </div>
-        <article className="mail-reader card" aria-live="polite">
-          {selected ? (
-            <div className="stack">
-              <ReaderActions m={selected} />
-              <header className="reader-head">
-                <h2 style={{ margin: 0 }}>{selected.subject}</h2>
-                <dl className="reader-meta" style={{ margin: 0 }}>
-                  <dt>From</dt>
-                  <dd>
-                    <b>{selected.from.name || selected.from.address}</b> &lt;{selected.from.address}&gt;
-                  </dd>
-                  {selected.to.length ? (
-                    <>
-                      <dt>To</dt>
-                      <dd>{selected.to.map((a) => a.name || a.address).join(", ")}</dd>
-                    </>
-                  ) : null}
-                  <dt>Date</dt>
-                  <dd>{format(selected.receivedAt, "EEE d MMM yyyy, h:mm a")}</dd>
-                </dl>
-                <div className="faint" style={{ fontSize: 12.5 }}>
-                  {selected.important ? "Important" : BUCKET_LABEL[selected.bucket]}: {selected.reasons.join(". ")}
-                </div>
-              </header>
-              <pre className="mail-body">
-                {readableText(body?.id === selected.id ? (body.loading ? "Loading…" : body.text || selected.preview) : selected.preview)}
-              </pre>
-              <QuickReplies m={selected} />
-              <ReaderTools
-                m={selected}
-                showDates={datesFor === selected.id || (selected.bucket !== "subscriptions" && selected.bucket !== "spam")}
-              />
-              <HandlePanel m={selected} onFile={() => setFileFor(selected)} />
-              <div className="faint" style={{ fontSize: 12 }}>
-                Opening a message here only marks it as seen in this app. Your mailbox is not changed.
-              </div>
-            </div>
-          ) : (
-            <div className="empty">Select a message to read it.</div>
-          )}
-        </article>
+        {newButton}
       </div>
       {ctx && (
         <MailContextMenu

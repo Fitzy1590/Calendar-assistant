@@ -225,6 +225,19 @@ export function byCategory(subs: Subscription[]): { category: Category; items: S
   }).filter((g) => g.items.length);
 }
 
+/** Where the money goes: the biggest categories by monthly cost, the rest folded into "Other". Shares are whole percentages. */
+export function categoryShares(subs: Subscription[], top = 4): { label: string; monthly: number; pct: number }[] {
+  const groups = byCategory(subs)
+    .map((g) => ({ label: g.category as string, monthly: g.monthly }))
+    .sort((a, b) => b.monthly - a.monthly);
+  const total = groups.reduce((n, g) => n + g.monthly, 0);
+  if (!total) return [];
+  const head = groups.slice(0, top);
+  const rest = groups.slice(top);
+  if (rest.length) head.push({ label: "Other", monthly: round(rest.reduce((n, g) => n + g.monthly, 0)) });
+  return head.map((g) => ({ ...g, pct: Math.round((g.monthly / total) * 100) }));
+}
+
 /** Merge a fresh detection into what is saved: new ones are added, seen ones refreshed, your "not a subscription" choices kept. */
 export function mergeDetected(saved: Subscription[], found: Subscription[]): Subscription[] {
   const hidden = new Set(saved.filter((s) => s.hidden).map((s) => s.id));

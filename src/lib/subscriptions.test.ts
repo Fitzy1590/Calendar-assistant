@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 import type { Txn } from "./bankStatement";
+import type { Subscription } from "./subscriptions";
 import {
   billedVia,
   byCategory,
   cadenceFor,
   cancelGuide,
+  categoryShares,
   chargedAfterCancel,
   detectSubscriptions,
   merchantKey,
@@ -120,4 +122,41 @@ describe("subscriptions", () => {
     expect(unknown.links).toHaveLength(1);
     expect(unknown.steps[0]).toMatch(/Account, Billing/);
   });
+});
+
+describe("categoryShares", () => {
+  const sub = (id: string, category: Subscription["category"], monthly: number, hidden?: boolean): Subscription => ({
+    id,
+    name: id,
+    category,
+    amount: monthly,
+    cadence: "monthly",
+    monthly,
+    yearly: monthly * 12,
+    lastDate: "2026-11-01",
+    nextDate: "2026-12-01",
+    count: 3,
+    known: false,
+    hidden,
+  });
+  it("orders categories by monthly cost and gives whole percentages", () => {
+    const out = categoryShares([sub("a", "Streaming", 30), sub("b", "Gaming", 60), sub("c", "Streaming", 10)]);
+    expect(out.map((x) => x.label)).toEqual(["Gaming", "Streaming"]);
+    expect(out.map((x) => x.pct)).toEqual([60, 40]);
+  });
+  it("folds everything past the top few into Other and ignores hidden ones", () => {
+    const subs = [
+      sub("a", "Streaming", 50),
+      sub("b", "Gaming", 40),
+      sub("c", "Fitness & health", 30),
+      sub("d", "Music & audio", 20),
+      sub("e", "Other", 5),
+      sub("f", "News & reading", 5),
+      sub("g", "Gaming", 999, true),
+    ];
+    const out = categoryShares(subs);
+    expect(out.map((x) => x.label)).toEqual(["Streaming", "Gaming", "Fitness & health", "Music & audio", "Other"]);
+    expect(out[4].monthly).toBe(10);
+  });
+  it("is empty when there is nothing to show", () => expect(categoryShares([])).toEqual([]));
 });

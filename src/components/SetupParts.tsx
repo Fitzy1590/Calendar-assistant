@@ -28,47 +28,84 @@ import { cityGuesses, DEVICE_NAMES, KEY_LINKS, NEWS_KEYWORDS, regionDefaults, SY
 
 /** Building blocks shared by the first-run wizard and the Settings page, so both stay in step. */
 
-export const THEMES: { id: ThemeName; name: string; bg: string; fg: string }[] = [
-  { id: "system", name: "Match system", bg: "linear-gradient(90deg,#f3efe6 50%,#111113 50%)", fg: "#6b655b" },
-  { id: "paper", name: "Paper", bg: "#f3efe6", fg: "#1d1b17" },
-  { id: "sand", name: "Sand", bg: "#ece2cf", fg: "#2a2118" },
-  { id: "ink", name: "Ink", bg: "#111113", fg: "#ecebe6" },
-  { id: "slate", name: "Slate", bg: "#0e151d", fg: "#e3e8ed" },
-  { id: "oled", name: "OLED dark", bg: "#000000", fg: "#f2f2ef" },
-  { id: "forest", name: "Forest", bg: "#0f1a14", fg: "#e6efe6" },
-  { id: "contrast", name: "High contrast", bg: "#000000", fg: "#ffffff" },
+export const THEMES: { id: ThemeName; name: string; group: "light" | "dark" | "other"; legacy?: boolean }[] = [
+  { id: "paper", name: "Paper", group: "light" },
+  { id: "sand", name: "Sand", group: "light" },
+  { id: "ink", name: "Ink", group: "dark" },
+  { id: "slate", name: "Slate", group: "dark" },
+  { id: "midnight", name: "Midnight", group: "dark" },
+  { id: "ember", name: "Ember", group: "dark" },
+  { id: "graphite", name: "Graphite", group: "dark" },
+  { id: "nord", name: "Nord", group: "dark" },
+  // still work for anyone who already chose them, but no longer offered
+  { id: "oled", name: "OLED dark", group: "dark", legacy: true },
+  { id: "forest", name: "Forest", group: "dark", legacy: true },
+  { id: "contrast", name: "High contrast", group: "other" },
+];
+const THEME_GROUPS: { id: "light" | "dark" | "other"; label: string }[] = [
+  { id: "light", label: "Light" },
+  { id: "dark", label: "Dark" },
+  { id: "other", label: "Other" },
 ];
 export const ACCENTS = [
   { c: "#2f5d8a", n: "Ink blue" },
-  { c: "#4f6b3a", n: "Moss" },
-  { c: "#b4532a", n: "Terracotta" },
-  { c: "#b8860b", n: "Ochre" },
+  { c: "#6446b0", n: "Violet" },
   { c: "#8a3a55", n: "Mulberry" },
   { c: "#50606e", n: "Slate" },
 ];
+
+function ThemeTile({ id, name, selected }: { id: ThemeName; name: string; selected: boolean }) {
+  const update = useStore((s) => s.updateSettings);
+  const preview = (theme: string) => (
+    <div className="sw" data-theme={theme}>
+      <div className="sw-nav">
+        <b />
+        <i />
+        <i />
+        <i />
+      </div>
+      <div className="sw-body">
+        <span className="sw-date">24</span>
+        <span className="sw-chip" />
+        <span className="sw-chip b" />
+      </div>
+    </div>
+  );
+  return (
+    <button className="theme-tile" aria-pressed={selected} onClick={() => update((st) => void (st.theme = id))}>
+      {id === "system" ? (
+        <div className="sw-pair">
+          {preview("paper")}
+          {preview("ink")}
+        </div>
+      ) : (
+        preview(id)
+      )}
+      <div className="nm">{name}</div>
+    </button>
+  );
+}
 
 export function ThemePicker() {
   const s = useStore();
   return (
     <div className="stack">
-      <div className="theme-tiles">
-        {THEMES.map((t) => (
-          <button
-            key={t.id}
-            className="theme-tile"
-            aria-pressed={s.settings.theme === t.id}
-            onClick={() => s.updateSettings((st) => void (st.theme = t.id))}
-          >
-            <div className="sw" style={{ background: t.bg }}>
-              <span />
-              <span style={{ margin: 12, borderTop: `3px solid ${s.settings.accent}`, color: t.fg, font: "500 22px var(--font-display)" }}>
-                21°
-              </span>
-            </div>
-            <div className="nm">{t.name}</div>
-          </button>
-        ))}
+      <div className="theme-tile-wrap">
+        <ThemeTile id="system" name="Match system" selected={s.settings.theme === "system"} />
       </div>
+      {THEME_GROUPS.map((g) => {
+        const list = THEMES.filter((t) => t.group === g.id && (!t.legacy || t.id === s.settings.theme));
+        return (
+          <div key={g.id} className="stack" role="group" aria-label={g.label + " themes"}>
+            <div className="theme-group">{g.label}</div>
+            <div className="theme-tiles">
+              {list.map((t) => (
+                <ThemeTile key={t.id} id={t.id} name={t.name} selected={s.settings.theme === t.id} />
+              ))}
+            </div>
+          </div>
+        );
+      })}
       <div className="row">
         <span className="muted" style={{ width: 70 }}>
           Accent

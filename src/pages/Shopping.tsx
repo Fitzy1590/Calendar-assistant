@@ -1,5 +1,5 @@
 import { format, formatDistanceToNowStrict } from "date-fns";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { CalEvent, ShoppingItem } from "../types";
 import { live, toast, useStore } from "../store";
 import {
@@ -19,10 +19,10 @@ import {
   type Store,
 } from "../lib/shopping";
 import { openUrl } from "../lib/platform";
-import { localIso, todayYmd } from "../lib/util";
+import { cx, localIso, todayYmd } from "../lib/util";
 import { addSearch, cheapest as cheapestPrice, groupLabel, removeSearch } from "../lib/shoppingHistory";
 import { EventEditor } from "../components/EventEditor";
-import { ICal, ICart, IExternal, INavigate, IPhone, ISearch, ITasks, ITrash, ITrend } from "../components/Icons";
+import { ICal, ICart, IDown, IExternal, INavigate, IPhone, IRight, ISearch, ITasks, ITrash, ITrend } from "../components/Icons";
 import { PageHead, Seg } from "../components/ui";
 
 type Tab = "find" | "list" | "history" | "tracking";
@@ -391,7 +391,7 @@ function ListView({ onFind }: { onFind: (q: string) => void }) {
     for (const i of items.filter((x) => !x.done)) m.set(i.store?.name ?? "Anywhere", [...(m.get(i.store?.name ?? "Anywhere") ?? []), i]);
     return [...m];
   }, [s.shopping]);
-  const total = items.filter((i) => !i.done && i.price).reduce((n, i) => n + (i.price ?? 0), 0);
+  const [boughtOpen, setBoughtOpen] = useState(false);
   return (
     <div className="stack">
       <form
@@ -410,18 +410,20 @@ function ListView({ onFind }: { onFind: (q: string) => void }) {
         />
         <button className="btn primary">Add</button>
       </form>
-      {total > 0 && (
-        <div className="muted">
-          Known prices total <b className="mono">{money(total)}</b>
-        </div>
-      )}
       {byStore.map(([store, list]) => {
         const first = list[0].store;
+        // what you plan to buy here; items you are only watching the price of are left out
+        const sub = list.filter((x) => !x.track && x.price).reduce((n, x) => n + (x.price ?? 0), 0);
         return (
           <section key={store} className="card">
             <h2>
               {store} <span className="faint">{list.length}</span>
               <span className="spacer" />
+              {sub > 0 && (
+                <span className="mono shop-sub" title="Total of the priced items to buy here">
+                  {money(sub)}
+                </span>
+              )}
               {first?.name && (
                 <NextSteps
                   compact
@@ -447,23 +449,31 @@ function ListView({ onFind }: { onFind: (q: string) => void }) {
           </section>
         );
       })}
-      {items.some((i) => i.done) && (
-        <section className="card">
-          <h2>
-            Bought <span className="spacer" />
-            <button className="btn sm ghost" onClick={() => items.filter((i) => i.done).forEach((i) => s.remove("shopping", i.id))}>
-              Clear
-            </button>
-          </h2>
-          <div className="list">
-            {items
-              .filter((i) => i.done)
-              .map((i) => (
-                <ItemRow key={i.id} i={i} onFind={onFind} />
-              ))}
-          </div>
-        </section>
-      )}
+      {items.some((i) => i.done) &&
+        (boughtOpen ? (
+          <section className="card">
+            <h2>
+              <button className="bought-toggle" aria-expanded="true" onClick={() => setBoughtOpen(false)}>
+                <IDown size={14} /> Bought <span className="faint">{items.filter((i) => i.done).length}</span>
+              </button>
+              <span className="spacer" />
+              <button className="btn sm ghost" onClick={() => items.filter((i) => i.done).forEach((i) => s.remove("shopping", i.id))}>
+                Clear
+              </button>
+            </h2>
+            <div className="list">
+              {items
+                .filter((i) => i.done)
+                .map((i) => (
+                  <ItemRow key={i.id} i={i} onFind={onFind} />
+                ))}
+            </div>
+          </section>
+        ) : (
+          <button className="bought-toggle" aria-expanded="false" onClick={() => setBoughtOpen(true)}>
+            <IRight size={14} /> Bought <span className="faint">{items.filter((i) => i.done).length}</span>
+          </button>
+        ))}
       {!items.length && <div className="empty">Your list is empty. Add things here, from Find, or by voice.</div>}
       {trip && <EventEditor initial={trip} onClose={() => setTrip(null)} />}
     </div>
@@ -474,6 +484,12 @@ function ItemRow({ i, onFind }: { i: ShoppingItem; onFind: (q: string) => void }
   const s = useStore();
   const [trackUrl, setTrackUrl] = useState("");
   const [adding, setAdding] = useState(false);
+  // phones: swipe a row left to reveal Find / Track / Delete (mouse and keyboard get the same buttons on hover and focus)
+  const [dx, setDx] = useState<number | null>(null); // null when not dragging
+  const [swiped, setSwiped] = useState(false);
+  const start = useRef<{ x: number; y: number } | null>(null);
+  const SWIPE = ((!i.done ? 1 : 0) + (!i.track && !i.done ? 1 : 0) + 1) * 64;
+  const remove = () => s.remove("shopping", i.id);
   const startTracking = async () => {
     const url = trackUrl.trim();
     if (!/^https?:\/\//.test(url)) return toast("Paste the product page link");
@@ -495,46 +511,78 @@ function ItemRow({ i, onFind }: { i: ShoppingItem; onFind: (q: string) => void }
   };
   return (
     <div className="stack" style={{ gap: 4 }}>
-      <div className="task-row">
-        <button
-          className={"check" + (i.done ? " on" : "")}
-          onClick={() => s.upsert("shopping", { id: i.id, done: !i.done })}
-          aria-label={i.done ? "Mark not bought" : "Mark bought"}
-        />
-        <span className={i.done ? "t done" : "t"}>
-          {i.name}
-          {i.qty ? ` × ${i.qty}` : ""}{" "}
-          {i.price != null && (
-            <span className="mono muted" style={{ fontSize: 12.5 }}>
-              {money(i.price, i.currency)}
-            </span>
-          )}
-          {i.track && (
-            <span className="tag" style={{ marginLeft: 6 }}>
-              tracking
-            </span>
-          )}
-        </span>
-        <span className="row" style={{ gap: 2 }}>
+      <div className="task-swipe">
+        <div className={cx("swipe-actions", (swiped || dx !== null) && "on")} style={{ width: SWIPE }}>
           {!i.done && (
-            <button className="btn ghost sm" onClick={() => onFind(i.name)} title="Find nearby and compare prices">
-              <ISearch size={14} /> Find
-            </button>
-          )}
-          {i.url && (
-            <button className="btn ghost sm icon" onClick={() => openUrl(i.url!)} aria-label="Open item">
-              <IExternal size={14} />
+            <button onClick={() => (setSwiped(false), onFind(i.name))} tabIndex={swiped ? 0 : -1}>
+              <ISearch size={16} /> Find
             </button>
           )}
           {!i.track && !i.done && (
-            <button className="btn ghost sm" onClick={() => setAdding(!adding)}>
-              <ITrend size={14} /> Track
+            <button onClick={() => (setSwiped(false), setAdding(true))} tabIndex={swiped ? 0 : -1}>
+              <ITrend size={16} /> Track
             </button>
           )}
-          <button className="btn ghost sm icon" onClick={() => s.remove("shopping", i.id)} aria-label="Delete">
-            <ITrash size={14} />
+          <button className="danger" onClick={remove} aria-label={`Delete ${i.name}`} tabIndex={swiped ? 0 : -1}>
+            <ITrash size={16} /> Delete
           </button>
-        </span>
+        </div>
+        <div
+          className="task-row"
+          style={{ transform: `translateX(${dx ?? (swiped ? -SWIPE : 0)}px)`, transition: dx === null ? undefined : "none" }}
+          onTouchStart={(e) => (start.current = { x: e.touches[0].clientX, y: e.touches[0].clientY })}
+          onTouchMove={(e) => {
+            if (!start.current) return;
+            const x = e.touches[0].clientX - start.current.x;
+            const y = e.touches[0].clientY - start.current.y;
+            if (Math.abs(x) > Math.abs(y)) setDx(Math.max(-SWIPE, Math.min(0, (swiped ? -SWIPE : 0) + x)));
+          }}
+          onTouchEnd={() => {
+            if (dx !== null) setSwiped(dx < -SWIPE / 2);
+            setDx(null);
+            start.current = null;
+          }}
+        >
+          <button
+            className={"check" + (i.done ? " on" : "")}
+            onClick={() => s.upsert("shopping", { id: i.id, done: !i.done })}
+            aria-label={i.done ? "Mark not bought" : "Mark bought"}
+          />
+          <span className={i.done ? "t done" : "t"}>
+            {i.name}
+            {i.qty ? ` × ${i.qty}` : ""}{" "}
+            {i.price != null && (
+              <span className="mono muted" style={{ fontSize: 12.5 }}>
+                {money(i.price, i.currency)}
+              </span>
+            )}
+            {i.track && (
+              <span className="tag" style={{ marginLeft: 6 }}>
+                tracking
+              </span>
+            )}
+          </span>
+          <span className="row row-actions" style={{ gap: 2 }}>
+            {!i.done && (
+              <button className="btn ghost sm" onClick={() => onFind(i.name)} title="Find nearby and compare prices">
+                <ISearch size={14} /> Find
+              </button>
+            )}
+            {i.url && (
+              <button className="btn ghost sm icon" onClick={() => openUrl(i.url!)} aria-label="Open item">
+                <IExternal size={14} />
+              </button>
+            )}
+            {!i.track && !i.done && (
+              <button className="btn ghost sm" onClick={() => setAdding(!adding)}>
+                <ITrend size={14} /> Track
+              </button>
+            )}
+            <button className="btn ghost sm icon" onClick={remove} aria-label={`Delete ${i.name}`}>
+              <ITrash size={14} />
+            </button>
+          </span>
+        </div>
       </div>
       {adding && (
         <form className="row" onSubmit={(e) => (e.preventDefault(), startTracking())} style={{ paddingLeft: 32 }}>

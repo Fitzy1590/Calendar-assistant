@@ -13,6 +13,15 @@ export interface WhatsNewEntry {
 
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    version: "0.3.0",
+    title: "A cleaner look",
+    points: [
+      "The menu is now a bar across the top on Windows (the bottom bar stays on phones), cards are rounder, and there are four new themes: Midnight, Ember, Graphite and Nord.",
+      "Tasks, Notes, Shopping, Email, Home, News, Sports, Subscriptions and Settings were tidied. Adding is now a round + button, and row buttons show when you point at a row or swipe it on a phone.",
+      "On Home, press Customise, then Rearrange cards, and drag cards where you want them.",
+    ],
+  },
+  {
     version: "0.2.8",
     title: "Sports games fill your calendar",
     points: [

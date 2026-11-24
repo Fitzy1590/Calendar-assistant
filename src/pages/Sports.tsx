@@ -7,7 +7,7 @@ import { highlightsSearch, kickoff, lastMatches, nextMatches, searchTeams, sport
 import { openUrl } from "../lib/platform";
 import { ymd } from "../lib/util";
 import { ICal, IPlay, IPlus, ISearch, ITrash } from "../components/Icons";
-import { PageHead, Suggest, Toggle } from "../components/ui";
+import { PageHead, Seg, Suggest, Toggle } from "../components/ui";
 import { sportsEvent, syncSportsToCalendar } from "../lib/sportsCalendar";
 import { POPULAR_TEAMS } from "../lib/suggest";
 import { SportsUpcoming } from "../components/SportsUpcoming";
@@ -26,22 +26,41 @@ export function Sports() {
         setOpen={setCustom}
         customise={<FollowPanel />}
       />
-      <div className="row" style={{ marginBottom: 16, flexWrap: "wrap" }}>
-        <button className="chip" aria-pressed={!focus} onClick={() => s.setSportFocus(null)}>
-          Upcoming games
-        </button>
-        {s.settings.teams.map((t) => (
-          <button key={t.id} className="chip" aria-pressed={focus?.id === t.id} onClick={() => s.setSportFocus({ kind: "team", id: t.id })}>
-            {t.badge && <img src={t.badge} alt="" width={16} height={16} />} {t.name}
-          </button>
-        ))}
-        {s.settings.sports.map((sp) => (
-          <button key={sp} className="chip" aria-pressed={focus?.id === sp} onClick={() => s.setSportFocus({ kind: "sport", id: sp })}>
-            {sp}
-          </button>
-        ))}
+      <div className="row" style={{ marginBottom: 16, flexWrap: "wrap", justifyContent: "space-between" }}>
+        <select
+          className="input"
+          style={{ width: "auto", minWidth: 220 }}
+          aria-label="Team or sport"
+          value={focus ? `${focus.kind}:${focus.id}` : ""}
+          onChange={(e) => {
+            const v = e.target.value;
+            if (!v) return s.setSportFocus(null);
+            const [kind, ...rest] = v.split(":");
+            s.setSportFocus({ kind: kind as "team" | "sport", id: rest.join(":") });
+          }}
+        >
+          <option value="">Upcoming games</option>
+          {s.settings.teams.length > 0 && (
+            <optgroup label="Teams">
+              {s.settings.teams.map((t) => (
+                <option key={t.id} value={`team:${t.id}`}>
+                  {t.name}
+                </option>
+              ))}
+            </optgroup>
+          )}
+          {s.settings.sports.length > 0 && (
+            <optgroup label="Sports">
+              {s.settings.sports.map((sp) => (
+                <option key={sp} value={`sport:${sp}`}>
+                  {sp}
+                </option>
+              ))}
+            </optgroup>
+          )}
+        </select>
+        {s.settings.teams.length > 0 && <AutoCalendarToggle />}
       </div>
-      {s.settings.teams.length > 0 && <AutoCalendarToggle />}
       {focus?.kind === "team" && <TeamView team={s.settings.teams.find((t) => t.id === focus.id)!} />}
       {focus?.kind === "sport" && <SportView sport={focus.id} />}
       {!focus && <SportsUpcoming />}
@@ -59,18 +78,16 @@ function AutoCalendarToggle() {
         toast(n ? `Added ${n} game${n === 1 ? "" : "s"} to your calendar` : "Calendar is up to date"),
       );
   };
+  const why = on
+    ? "Upcoming games of the teams you follow are added when the app opens and on every sync. Games already added stay; delete one and it won't come back."
+    : "Off. Games only appear here in Sports. Games already in your calendar stay until you delete them.";
   return (
-    <div className="row" style={{ marginBottom: 16, justifyContent: "space-between" }}>
-      <div>
-        <b>Add games to my main calendar</b>
-        <div className="faint" style={{ fontSize: 12.5 }}>
-          {on
-            ? "Upcoming games of the teams you follow are added when the app opens and on every sync. Games already added stay; delete one and it won't come back."
-            : "Off. Games only appear here in Sports. Games already in your calendar stay until you delete them."}
-        </div>
-      </div>
-      <Toggle checked={on} onChange={set} label="Add sports games to my main calendar" />
-    </div>
+    <span className="row" style={{ gap: 8 }} title={why}>
+      <span className="muted" style={{ fontSize: 13 }}>
+        Add games to my calendar
+      </span>
+      <Toggle checked={on} onChange={set} label={`Add sports games to my main calendar. ${why}`} />
+    </span>
   );
 }
 
@@ -187,28 +204,31 @@ function addToCalendar(m: Match) {
 function MatchRow({ m, past }: { m: Match; past?: boolean }) {
   const k = kickoff(m);
   return (
-    <div className="stack" style={{ gap: 4 }}>
-      <div className="match">
-        <span className="home">{m.home}</span>
-        <span className="score">{past ? `${m.homeScore ?? "–"} : ${m.awayScore ?? "–"}` : format(k, "h:mm a")}</span>
-        <span>{m.away}</span>
+    <div className="match-card">
+      <div className="match-date" aria-hidden="true">
+        <b>{format(k, "d")}</b>
+        <span>{format(k, "EEE")}</span>
       </div>
-      <div className="row" style={{ justifyContent: "center" }}>
-        <span className="faint" style={{ fontSize: 12 }}>
-          {format(k, "EEE d MMM")}
+      <div className="match-main">
+        <div className="match-title">
+          {m.home} {past ? <span className="mono">{`${m.homeScore ?? "–"} : ${m.awayScore ?? "–"}`}</span> : "v"} {m.away}
+        </div>
+        <div className="faint" style={{ fontSize: 12.5 }}>
+          {format(k, "EEEE d MMM")}
+          {past ? "" : ` · ${format(k, "h:mm a")}`}
           {m.venue ? ` · ${m.venue}` : ""}
           {m.league ? ` · ${m.league}` : ""}
-        </span>
-        {past ? (
-          <button className="btn sm ghost" onClick={() => openUrl(highlightsSearch(m))}>
-            <IPlay size={14} /> Highlights
-          </button>
-        ) : (
-          <button className="btn sm ghost" onClick={() => addToCalendar(m)}>
-            <ICal size={14} /> Add to calendar
-          </button>
-        )}
+        </div>
       </div>
+      {past ? (
+        <button className="btn sm ghost" onClick={() => openUrl(highlightsSearch(m))}>
+          <IPlay size={14} /> Highlights
+        </button>
+      ) : (
+        <button className="btn sm ghost" onClick={() => addToCalendar(m)}>
+          <ICal size={14} /> Add to calendar
+        </button>
+      )}
     </div>
   );
 }
@@ -217,11 +237,14 @@ function TeamView({ team }: { team: FavTeam }) {
   const s = useStore();
   const key = s.settings.sportsApiKey;
   const n = s.settings.pages.sports.resultsCount;
+  const [tab, setTab] = useState<"upcoming" | "results">("upcoming");
   const next = useAsync(() => nextMatches(team.id, key), [team.id]);
   const last = useAsync(() => lastMatches(team.id, key), [team.id]);
+  const nextM = next.data?.[0];
+  const lastM = last.data?.[0];
   return (
-    <div className="home">
-      <section className="card" style={{ gridColumn: "span 12" }}>
+    <div className="stack">
+      <section className="card stack" style={{ gap: 12 }}>
         <div className="row" style={{ gap: 14 }}>
           {team.badge && <img src={team.badge} alt="" width={56} height={56} />}
           <div>
@@ -241,31 +264,63 @@ function TeamView({ team }: { team: FavTeam }) {
             <IPlay size={15} /> All highlights
           </button>
         </div>
-      </section>
-      <section className="card" style={{ gridColumn: "span 6" }}>
-        <h2>
-          Upcoming <span className="spacer" />
-          {(next.data?.length ?? 0) > 0 && (
-            <button className="btn sm ghost" onClick={() => next.data!.forEach(addToCalendar)}>
-              Add all
-            </button>
-          )}
-        </h2>
-        <div className="list">
-          {(next.data ?? []).map((m) => (
-            <MatchRow key={m.id} m={m} />
-          ))}
-          {next.data && !next.data.length && <div className="empty">No fixtures listed yet.</div>}
-          {next.error && <div className="empty">Couldn't load fixtures: {next.error}</div>}
+        <div className="team-summary">
+          <div>
+            <span className="faint">Next</span>{" "}
+            <b>
+              {nextM
+                ? `${nextM.home} v ${nextM.away}, ${format(kickoff(nextM), "EEE d MMM, h:mm a")}`
+                : next.data
+                  ? "No fixtures listed yet"
+                  : "…"}
+            </b>
+          </div>
+          <div>
+            <span className="faint">Last</span>{" "}
+            <b>
+              {lastM
+                ? `${lastM.home} ${lastM.homeScore ?? "–"} : ${lastM.awayScore ?? "–"} ${lastM.away}`
+                : last.data
+                  ? "No recent results"
+                  : "…"}
+            </b>
+          </div>
         </div>
       </section>
-      <section className="card" style={{ gridColumn: "span 6" }}>
-        <h2>Recent results</h2>
+      <div className="row" style={{ justifyContent: "space-between" }}>
+        <Seg
+          value={tab}
+          onChange={setTab}
+          options={[
+            { value: "upcoming", label: "Upcoming" },
+            { value: "results", label: "Results" },
+          ]}
+        />
+        {tab === "upcoming" && (next.data?.length ?? 0) > 0 && (
+          <button className="btn sm ghost" onClick={() => next.data!.forEach(addToCalendar)}>
+            Add all to calendar
+          </button>
+        )}
+      </div>
+      <section className="card">
         <div className="list">
-          {(last.data ?? []).slice(0, n).map((m) => (
-            <MatchRow key={m.id} m={m} past />
-          ))}
-          {last.data && !last.data.length && <div className="empty">No recent results.</div>}
+          {tab === "upcoming" ? (
+            <>
+              {(next.data ?? []).map((m) => (
+                <MatchRow key={m.id} m={m} />
+              ))}
+              {next.data && !next.data.length && <div className="empty">No fixtures listed yet.</div>}
+              {next.error && <div className="empty">Couldn't load fixtures: {next.error}</div>}
+            </>
+          ) : (
+            <>
+              {(last.data ?? []).slice(0, n).map((m) => (
+                <MatchRow key={m.id} m={m} past />
+              ))}
+              {last.data && !last.data.length && <div className="empty">No recent results.</div>}
+              {last.error && <div className="empty">Couldn't load results: {last.error}</div>}
+            </>
+          )}
         </div>
       </section>
     </div>

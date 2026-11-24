@@ -89,7 +89,11 @@ export async function runLocal(input: string): Promise<A.ActionResult> {
 
   if ((m = low.match(/^(?:show|switch to|use|open)? ?(?:the )?(day|week|month|year)(?:ly)? view$/)))
     return A.setCalendarView(m[1] as "day");
-  if ((m = low.match(/\b(dark|light|paper|ink|slate|sand)\b (?:mode|theme)|theme (?:to )?(dark|light|paper|ink|slate|sand)/))) {
+  if (
+    (m = low.match(
+      /\b(dark|light|paper|ink|slate|sand|midnight|ember|graphite|nord)\b (?:mode|theme)|theme (?:to )?(dark|light|paper|ink|slate|sand|midnight|ember|graphite|nord)/,
+    ))
+  ) {
     const name = (m[1] || m[2]) as string;
     return A.setTheme(name === "dark" ? "ink" : name === "light" ? "paper" : (name as "ink"));
   }
@@ -263,9 +267,12 @@ const TOOLS: Anthropic.Tool[] = [
   ),
   tool("search_notes", "Find notes mentioning a word or phrase.", { query: { type: "string" } }, ["query"]),
   tool("set_calendar_view", "Switch the calendar view.", { view: { type: "string", enum: ["day", "week", "month", "year"] } }, ["view"]),
-  tool("set_theme", "Change the colour theme.", { theme: { type: "string", enum: ["paper", "ink", "slate", "sand", "system"] } }, [
-    "theme",
-  ]),
+  tool(
+    "set_theme",
+    "Change the colour theme.",
+    { theme: { type: "string", enum: ["paper", "ink", "slate", "sand", "midnight", "ember", "graphite", "nord", "system"] } },
+    ["theme"],
+  ),
   tool("plan_week", "Spread unscheduled and overdue tasks across the next 7 days.", { apply: { type: "boolean" } }, ["apply"]),
   tool("search_news", "Open the news page, optionally searching a topic.", { query: { type: "string" } }, []),
   tool("search_settings", "Open settings filtered by a keyword.", { query: { type: "string" } }, ["query"]),

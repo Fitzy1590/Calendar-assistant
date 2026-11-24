@@ -19,7 +19,7 @@ import {
 import { FollowPanel } from "./Sports";
 import { UpdateSettings } from "../components/Updates";
 import { Diagnostics } from "../components/Errors";
-import { ISearch } from "../components/Icons";
+import { ILeft, IRight, ISearch } from "../components/Icons";
 import { Field, PageHead, Toggle } from "../components/ui";
 import { EmailSetup } from "../components/mail/EmailSetup";
 import { DriveSyncSetup } from "../components/DriveSync";
@@ -38,6 +38,16 @@ export function Settings() {
   const s = useStore();
   const [q, setQ] = useState("");
   const input = useRef<HTMLInputElement>(null);
+  // phones: a list of sections first, then one section at a time
+  const [phone, setPhone] = useState(() => window.matchMedia("(max-width: 760px)").matches);
+  const [openSec, setOpenSec] = useState<string | null>(null);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 760px)");
+    const on = () => setPhone(mq.matches);
+    mq.addEventListener("change", on);
+    return () => mq.removeEventListener("change", on);
+  }, []);
+  const toTop = () => document.querySelector(".content")?.scrollTo({ top: 0 });
   useEffect(() => {
     const h = (e: Event) => setQ((e as CustomEvent).detail);
     window.addEventListener("settings-search", h);
@@ -258,6 +268,8 @@ export function Settings() {
   const terms = q.toLowerCase().split(/\s+/).filter(Boolean);
   const shown = items.filter((i) => terms.every((t) => `${i.section} ${i.label} ${i.help ?? ""} ${i.keywords}`.toLowerCase().includes(t)));
   const sections = [...new Set(shown.map((i) => i.section))];
+  const drill = phone && !q; // browsing, not searching
+  const visible = drill && openSec ? sections.filter((x) => x === openSec) : sections;
   const hl = (text: string) => {
     if (!terms.length) return text;
     const alt = terms.map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|");
@@ -284,34 +296,63 @@ export function Settings() {
           </button>
         )}
       </div>
-      <div className="settings">
-        <nav>
+      {drill && !openSec ? (
+        <nav className="sec-list" aria-label="Settings sections">
           {sections.map((sec) => (
-            <a key={sec} className="nav-item" href={`#sec-${sec}`} style={{ textDecoration: "none" }}>
-              {sec}
-            </a>
+            <button
+              key={sec}
+              className="sec-link"
+              onClick={() => {
+                setOpenSec(sec);
+                toTop();
+              }}
+            >
+              {sec} <IRight size={16} />
+            </button>
           ))}
         </nav>
-        <div>
-          {sections.map((sec) => (
-            <section key={sec} id={`sec-${sec}`}>
-              <div className="section-title">{hl(sec)}</div>
-              {shown
-                .filter((i) => i.section === sec)
-                .map((i) => (
-                  <div key={i.id} className="setting" style={i.wide ? { gridTemplateColumns: "1fr" } : undefined}>
-                    <div>
-                      <div className="label">{hl(i.label)}</div>
-                      {i.help && <div className="help">{hl(i.help)}</div>}
+      ) : (
+        <div className="settings">
+          <nav>
+            {sections.map((sec) => (
+              <a key={sec} className="nav-item" href={`#sec-${sec}`} style={{ textDecoration: "none" }}>
+                {sec}
+              </a>
+            ))}
+          </nav>
+          <div>
+            {drill && openSec && (
+              <button
+                className="btn sm ghost"
+                style={{ marginBottom: 8 }}
+                onClick={() => {
+                  setOpenSec(null);
+                  toTop();
+                }}
+              >
+                <ILeft size={14} /> Settings
+              </button>
+            )}
+            {visible.map((sec) => (
+              <section key={sec} id={`sec-${sec}`}>
+                <div className="section-title">{hl(sec)}</div>
+                {shown
+                  .filter((i) => i.section === sec)
+                  .map((i) => (
+                    <div key={i.id} className="setting" style={i.wide ? { gridTemplateColumns: "1fr" } : undefined}>
+                      <div>
+                        <div className="label">{hl(i.label)}</div>
+                        {i.help && <div className="help">{hl(i.help)}</div>}
+                      </div>
+                      <div>{i.render()}</div>
                     </div>
-                    <div>{i.render()}</div>
-                  </div>
-                ))}
-            </section>
-          ))}
-          {!shown.length && <div className="empty">No settings match “{q}”.</div>}
+                  ))}
+              </section>
+            ))}
+            {!shown.length && <div className="empty">No settings match “{q}”.</div>}
+          </div>
         </div>
-      </div>
+      )}
     </>
   );
 }

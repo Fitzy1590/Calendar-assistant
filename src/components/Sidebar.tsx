@@ -19,7 +19,6 @@ import {
   IDown,
   IHome,
   IIdea,
-  ILeft,
   INews,
   INote,
   IPeople,
@@ -44,27 +43,8 @@ const META: Record<PageId, { label: string; icon: (p: { size?: number }) => Reac
   settings: { label: "Settings", icon: ICog },
 };
 
-const COLLAPSE_KEY = "ca.sidebarCollapsed";
-const readCollapsed = () => {
-  try {
-    return localStorage.getItem(COLLAPSE_KEY) === "1";
-  } catch {
-    return false;
-  }
-};
-
 export function Sidebar() {
   const s = useStore();
-  const [collapsed, setCollapsed] = useState(readCollapsed); // per device; wide screens only
-  const toggleCollapsed = () => {
-    const next = !collapsed;
-    setCollapsed(next);
-    try {
-      localStorage.setItem(COLLAPSE_KEY, next ? "1" : "0");
-    } catch {
-      /* private window: it just won't be remembered */
-    }
-  };
   const mailMessages = useMail((m) => m.messages);
   const [sportsOpen, setSportsOpen] = useState(false); // collapsed until you open it
   const [syncOpen, setSyncOpen] = useState(false);
@@ -99,20 +79,11 @@ export function Sidebar() {
           : "Offline · changes queued";
 
   return (
-    <nav className={"side" + (collapsed ? " collapsed" : "")} aria-label="Main">
+    <nav className="side" aria-label="Main">
       <div className="side-top">
         <div className="brand">
           Calendar Assistant<small>{s.settings.displayName ? `${s.settings.displayName}'s planner` : "Planner"}</small>
         </div>
-        <button
-          className="btn ghost icon sm side-toggle"
-          onClick={toggleCollapsed}
-          aria-expanded={!collapsed}
-          aria-label={collapsed ? "Expand menu" : "Minimise menu"}
-          title={collapsed ? "Expand menu" : "Minimise menu"}
-        >
-          {collapsed ? <IRight size={16} /> : <ILeft size={16} />}
-        </button>
       </div>
       {s.settings.sidebar
         .filter((i) => i.visible)
@@ -145,7 +116,7 @@ export function Sidebar() {
               <button
                 id={`nav-${id}`}
                 className="nav-item"
-                title={collapsed ? label : undefined}
+                title={label}
                 aria-current={s.page === id ? "page" : undefined}
                 aria-keyshortcuts={num ? `${num} Alt+ArrowUp Alt+ArrowDown` : "Alt+ArrowUp Alt+ArrowDown"}
                 onClick={() => go(id)}
@@ -202,21 +173,13 @@ export function Sidebar() {
           );
         })}
       <div className="side-foot">
-        <button
-          className="nav-item"
-          onClick={() => s.setUi({ assistantOpen: !s.assistantOpen })}
-          title={collapsed ? "Assistant" : undefined}
-        >
+        <button className="nav-item" onClick={() => s.setUi({ assistantOpen: !s.assistantOpen })} title="Assistant">
           <IChat size={18} /> <span className="nav-label-text">Assistant</span>
         </button>
-        <button
-          className="nav-item"
-          onClick={() => s.setUi({ feedbackOpen: true })}
-          title={collapsed ? "Suggestions & feedback" : undefined}
-        >
+        <button className="nav-item" onClick={() => s.setUi({ feedbackOpen: true })} title="Suggestions & feedback">
           <IIdea size={18} /> <span className="nav-label-text">Suggestions & feedback</span>
         </button>
-        <button className="nav-item" onClick={() => setSyncOpen(true)} title={sync.peers.join(", ") || (collapsed ? syncLabel : "")}>
+        <button className="nav-item" onClick={() => setSyncOpen(true)} title={sync.peers.join(", ") || syncLabel}>
           <span
             className={
               "dot " + (sync.status === "online" ? "ok" : sync.status === "connecting" ? "warn" : sync.status === "offline" ? "bad" : "")

@@ -28,7 +28,7 @@ const LABELS: Record<HomeWidget["id"], string> = {
   clock: "Clock",
   minical: "Mini calendar",
   agenda: "Today & tomorrow",
-  tasks: "Tasks due",
+  tasks: "Tasks, next 7 days",
   localEvents: "Local events today",
   birthdays: "Birthdays",
   headlines: "Headlines",
@@ -362,34 +362,52 @@ function AgendaWidget() {
 function TasksWidget() {
   const s = useStore();
   const today = todayYmd();
-  const tasks = live(s.tasks)
-    .filter((t) => !t.done && !t.ignored && (!t.due || t.due <= today))
-    .sort((a, b) => (a.due ?? "z").localeCompare(b.due ?? "z"));
+  const last = ymd(addDays(fromYmd(today), 6));
+  const open = live(s.tasks).filter((t) => !t.done && !t.ignored);
+  const byDue = (a: { due?: string }, b: { due?: string }) => (a.due ?? "").localeCompare(b.due ?? "");
+  const overdue = open.filter((t) => t.due && t.due < today).sort(byDue);
+  const undated = open.filter((t) => !t.due);
+  const days = Array.from({ length: 7 }, (_, i) => {
+    const d = addDays(fromYmd(today), i);
+    const key = ymd(d);
+    const label = i === 0 ? "Today" : i === 1 ? "Tomorrow" : format(d, "EEEE");
+    return { key, label, sub: format(d, "d MMM"), tasks: open.filter((t) => t.due === key) };
+  });
+  const total = overdue.length + days.reduce((n, d) => n + d.tasks.length, 0) + undated.length;
+  const row = (t: (typeof open)[number], late = false) => (
+    <div key={t.id} className="task-row">
+      <button
+        className="check"
+        onClick={() => s.upsert("tasks", { id: t.id, done: true, doneAt: Date.now() })}
+        aria-label={`Complete ${t.title}`}
+      />
+      <span>
+        {t.title}
+        {late && t.due && <span className="faint"> · was due {format(fromYmd(t.due), "EEE d MMM")}</span>}
+      </span>
+      <span className={"mono prio-" + t.priority} style={{ fontSize: 11 }} aria-label={t.priority === "high" ? "High priority" : undefined}>
+        {t.priority === "high" ? "!" : ""}
+      </span>
+    </div>
+  );
+  const group = (key: string, label: string, sub: string | undefined, items: typeof open, late = false, tone = "") => (
+    <section key={key} className="task-day" aria-label={label}>
+      <h3 className={tone}>
+        <span>{label}</span>
+        {sub && <span className="faint">{sub}</span>}
+        <span className="spacer" />
+        {items.length > 0 && <span className="faint">{items.length}</span>}
+      </h3>
+      {items.length ? items.map((t) => row(t, late)) : <div className="faint task-none">Nothing due</div>}
+    </section>
+  );
   return (
     <>
-      <CardTitle title="Tasks" count={tasks.length} onAll={() => s.setPage("tasks")} allLabel="See all tasks" />
-      <div className="list">
-        {tasks.slice(0, 7).map((t) => (
-          <div key={t.id} className="task-row">
-            <button
-              className="check"
-              onClick={() => s.upsert("tasks", { id: t.id, done: true, doneAt: Date.now() })}
-              aria-label={`Complete ${t.title}`}
-            />
-            <span>
-              {t.title}{" "}
-              {t.due && t.due < today && (
-                <span className="tag" style={{ color: "var(--bad)" }}>
-                  overdue
-                </span>
-              )}
-            </span>
-            <span className={"mono prio-" + t.priority} style={{ fontSize: 11 }}>
-              {t.priority === "high" ? "!" : ""}
-            </span>
-          </div>
-        ))}
-        {!tasks.length && <div className="empty">All clear for today.</div>}
+      <CardTitle title="Tasks, next 7 days" count={total} onAll={() => s.setPage("tasks")} allLabel="See all tasks" />
+      <div className="task-days" data-range={`${today}..${last}`}>
+        {overdue.length > 0 && group("overdue", "Overdue", undefined, overdue, true, "bad")}
+        {days.map((d) => group(d.key, d.label, d.sub, d.tasks))}
+        {undated.length > 0 && group("nodate", "No date", undefined, undated)}
       </div>
     </>
   );
@@ -425,13 +443,15 @@ function BirthdaysWidget() {
 
 function HeadlinesWidget() {
   const s = useStore();
+  const [tries, setTries] = useState(0);
   const topic = s.settings.newsCategories[0] ?? "TOP";
-  const news = useAsync(() => getHeadlines(topic, s.settings.newsRegion), [topic, s.settings.newsRegion]);
+  const news = useAsync(() => getHeadlines(topic, s.settings.newsRegion), [topic, s.settings.newsRegion, tries]);
+  const items = (news.data ?? []).slice(0, 5);
   return (
     <>
       <CardTitle title="Headlines" onAll={() => s.setPage("news")} allLabel="See all headlines" />
       <div className="list">
-        {(news.data ?? []).slice(0, 5).map((h) => (
+        {items.map((h) => (
           <a key={h.link} href={h.link} onClick={(e) => (e.preventDefault(), openUrl(h.link))} style={{ textDecoration: "none" }}>
             <div style={{ fontWeight: 500 }}>{h.title}</div>
             <div className="faint" style={{ fontSize: 12 }}>
@@ -439,7 +459,18 @@ function HeadlinesWidget() {
             </div>
           </a>
         ))}
-        {news.error && <div className="empty">Headlines need the desktop/Android app or a sync server (browser CORS).</div>}
+        {news.loading && !items.length && <div className="empty">Loading headlines…</div>}
+        {!news.loading && !news.error && !items.length && <div className="empty">No headlines came back for this topic.</div>}
+        {news.error && !items.length && (
+          <div className="empty" role="alert">
+            Couldn't load headlines: {news.error}
+            <div style={{ marginTop: 8 }}>
+              <button className="btn" onClick={() => setTries(tries + 1)}>
+                Try again
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </>
   );

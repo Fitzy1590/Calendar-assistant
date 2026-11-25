@@ -328,6 +328,13 @@ label.field > span { font-weight: 500; }
 .home > .card > h2 .count { color: var(--muted); font-weight: 400; font-variant-numeric: tabular-nums; }
 .card-link { background: none; border: 0; padding: 2px 4px; margin-right: -4px; cursor: pointer; color: var(--accent-text, var(--accent)); font: 500 12.5px var(--font-ui); border-radius: 4px; }
 .card-link:hover { text-decoration: underline; }
+.task-days { display: grid; gap: 10px; }
+.task-day > h3 { display: flex; gap: 8px; align-items: baseline; margin: 0 0 4px; font: 600 12.5px var(--font-ui); color: var(--text); }
+.task-day > h3 .spacer { flex: 1; }
+.task-day > h3 .faint { font-weight: 400; font-size: 12px; }
+.task-day > h3.bad { color: var(--bad); }
+.task-day .task-row { padding: 5px 0; }
+.task-none { font-size: 12.5px; padding: 2px 0 2px 32px; }
 .home-summary { color: var(--text); margin-top: 2px; }
 .home.editing > .card { outline: 1.5px dashed var(--accent); outline-offset: -1px; }
 .home.editing > .card > :not(.grip-handle) { pointer-events: none; }

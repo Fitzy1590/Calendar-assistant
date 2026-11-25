@@ -8,7 +8,7 @@ and an **Android app** ([Tauri 2](https://tauri.app)), and the two stay in sync 
 
 | Area | What you get |
 |---|---|
-| **Home** | Big weather panel (now, feels-like, hi/lo, rain, UV, sunrise/sunset, 24 h trend, 7-day strip), clock, mini calendar, today & tomorrow, tasks due, local events, birthdays, headlines, your teams. Every widget can be hidden or reordered. |
+| **Home** | Big weather panel (now, feels-like, hi/lo, rain, UV, sunrise/sunset, 24 h trend, 7-day strip), clock, mini calendar, today & tomorrow, tasks for the next 7 days by day, local events, birthdays, headlines, your teams. Every widget can be hidden or reordered. |
 | **Day view** | Click any day (home strip, mini calendar, month cell, week header): that day's forecast + hourly, your events & tasks, and what's on in your suburb and city. |
 | **Calendar** | Day / week / month / year (heat-map) views, keyboard shortcuts (←/→, T, D/W/M/Y), single or recurring events (daily, weekly on chosen days, monthly, yearly, every N, until/count, skip one occurrence), colours, reminders, conflict warnings. |
 | **Tasks** | Synced with the calendar. Week board with drag-to-reschedule and double-click-a-day to add, list by day or priority, natural-language quick add, **Plan my week** (spreads undated/overdue tasks across your lightest days). |

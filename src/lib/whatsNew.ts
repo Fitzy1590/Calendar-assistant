@@ -13,6 +13,14 @@ export interface WhatsNewEntry {
 
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    version: "0.3.1",
+    title: "Your week of tasks on Home",
+    points: [
+      "The Tasks card on Home now shows the next 7 days, one group per day, with overdue tasks first and undated tasks last.",
+      "If the Headlines card can't load, it now says why and has a Try again button.",
+    ],
+  },
+  {
     version: "0.3.0",
     title: "A cleaner look",
     points: [

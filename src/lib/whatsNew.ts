@@ -13,6 +13,15 @@ export interface WhatsNewEntry {
 
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    version: "0.3.2",
+    title: "Email now pulls in everything",
+    points: [
+      "Big Outlook and Gmail inboxes now sync the whole last 30 days. Before, Outlook stopped at 2,000 messages and Gmail at 300, so mail could be missing.",
+      "The sync button now shows progress while it works, then how many messages were checked and when it last finished.",
+      "The first sync after updating takes longer because it fetches the full 30 days.",
+    ],
+  },
+  {
     version: "0.3.1",
     title: "Your week of tasks on Home",
     points: [

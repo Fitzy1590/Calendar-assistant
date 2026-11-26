@@ -7,6 +7,8 @@ import { Bills } from "../components/mail/Bills";
 import { FolderRuleDialog } from "../components/mail/FolderRuleDialog";
 import { HandlePanel } from "../components/mail/HandlePanel";
 import { ReaderActions, ReaderTools } from "../components/mail/ReaderTools";
+import { RichBody } from "../components/mail/RichBody";
+import { imagesAllowed } from "../lib/mail/html";
 import { readableText } from "../lib/mail/readable";
 import { isSnoozed } from "../lib/mail/followups";
 import { groupRows, initials, searchMail, tone } from "../lib/mail/mailUi";
@@ -29,6 +31,21 @@ const VIEWS: { id: View; label: string; match: (m: MailMessage) => boolean }[] =
   { id: "spam", label: "Junk", match: (m) => m.bucket === "spam" },
 ];
 
+// the colour each view carries (see `.k-*` in styles.css); folders and snoozed use the accent
+const VIEW_KEY: Record<string, string> = {
+  important: "urgent",
+  inbox: "inbox",
+  action: "action",
+  financial: "financial",
+  social: "social",
+  subscriptions: "subscriptions",
+  spam: "spam",
+  bills: "bills",
+};
+const kOf = (v: string) => "k-" + (VIEW_KEY[v] ?? "folder");
+
+const MAX_HTML = 600_000; // longer HTML is shown as text instead
+
 const when = (t: number) => (isToday(t) ? format(t, "h:mm a") : formatDistanceToNowStrict(t, { addSuffix: true }));
 
 export function Email() {
@@ -40,7 +57,8 @@ export function Email() {
   const [datesFor, setDatesFor] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [reading, setReading] = useState(false); // phones: a message open full screen
-  const [body, setBody] = useState<{ id: string; text: string; loading: boolean } | null>(null);
+  const [body, setBody] = useState<{ id: string; text: string; html?: string; loading: boolean } | null>(null);
+  const [showPics, setShowPics] = useState<string | null>(null); // a message you chose to show pictures for, once
   const listRef = useRef<HTMLDivElement>(null);
   const accounts = s.settings.mail.accounts;
 
@@ -77,24 +95,29 @@ export function Email() {
   );
   const selected = messages.find((m) => m.id === selectedId);
 
-  // open a message: show it, mark it seen here (not in your mailbox), and load its text if it isn't cached
+  // open a message: show it, mark it seen here (not in your mailbox), and load its text and HTML if they aren't cached
   useEffect(() => {
     if (!selected) return;
     if (!selected.dismissed) void dismissMail(selected.id);
-    if (selected.text) return void setBody({ id: selected.id, text: selected.text, loading: false });
-    setBody({ id: selected.id, text: "", loading: true });
+    const acct = s.settings.mail.accounts.find((a) => a.id === selected.accountId);
+    const canHtml = !!acct && !!providerFor(acct).bodyFull;
+    // `html === ""` in the cache means "this message has no HTML version", so it isn't asked for again
+    if (selected.text && (selected.html !== undefined || !canHtml))
+      return void setBody({ id: selected.id, text: selected.text, html: selected.html || undefined, loading: false });
+    setBody({ id: selected.id, text: selected.text ?? "", html: selected.html || undefined, loading: !selected.text });
     let cancelled = false;
     Promise.resolve()
       .then(() => {
-        const acct = s.settings.mail.accounts.find((a) => a.id === selected.accountId);
         if (!acct) throw new Error("account removed");
-        return providerFor(acct).bodyText(selected.providerId);
+        const p = providerFor(acct);
+        return p.bodyFull ? p.bodyFull(selected.providerId) : p.bodyText(selected.providerId).then((text) => ({ text, html: undefined }));
       })
-      .then(async (text) => {
+      .then(async (b) => {
         if (cancelled) return;
-        setBody({ id: selected.id, text, loading: false });
+        const html = b.html && b.html.length <= MAX_HTML ? b.html : undefined;
+        setBody({ id: selected.id, text: b.text, html, loading: false });
         const m = await getMessage(selected.id);
-        if (m && s.settings.mail.cacheText) await putMessages([{ ...m, text }], true);
+        if (m && s.settings.mail.cacheText) await putMessages([{ ...m, text: b.text, html: html ?? "" }], true);
       })
       .catch(() => !cancelled && setBody({ id: selected.id, text: selected.preview, loading: false }));
     return () => {
@@ -180,28 +203,32 @@ export function Email() {
   const folderNav = (
     <nav className="mail-folders chips-row" aria-label="Mail folders">
       {VIEWS.filter((v) => v.id !== "spam" || messages.some((m) => m.bucket === "spam")).map((v) => (
-        <button key={v.id} className="chip" aria-pressed={tab === "mail" && view === v.id} onClick={() => goView(v.id)}>
+        <button key={v.id} className={"chip " + kOf(v.id)} aria-pressed={tab === "mail" && view === v.id} onClick={() => goView(v.id)}>
+          <i className="kdot" aria-hidden="true" />
           {v.label}
           {counts[v.id] ? <span className="mono faint"> {counts[v.id]}</span> : null}
         </button>
       ))}
       {counts.snoozed > 0 && (
-        <button className="chip" aria-pressed={tab === "mail" && view === "snoozed"} onClick={() => goView("snoozed")}>
+        <button className="chip k-folder" aria-pressed={tab === "mail" && view === "snoozed"} onClick={() => goView("snoozed")}>
+          <i className="kdot" aria-hidden="true" />
           Snoozed <span className="mono faint">{counts.snoozed}</span>
         </button>
       )}
       {folders.map((f) => (
         <button
           key={f.id}
-          className="chip"
+          className="chip k-folder"
           aria-pressed={tab === "mail" && view === `folder:${f.id}`}
           onClick={() => goView(`folder:${f.id}`)}
         >
+          <i className="kdot" aria-hidden="true" />
           {f.name}
           {counts[`folder:${f.id}`] ? <span className="mono faint"> {counts[`folder:${f.id}`]}</span> : null}
         </button>
       ))}
-      <button className="chip" aria-pressed={tab === "bills"} onClick={() => useMail.setState({ tab: "bills" })}>
+      <button className="chip k-bills" aria-pressed={tab === "bills"} onClick={() => useMail.setState({ tab: "bills" })}>
+        <i className="kdot" aria-hidden="true" />
         Bills{billCount ? <span className="mono faint"> {billCount}</span> : null}
       </button>
     </nav>
@@ -256,7 +283,7 @@ export function Email() {
                     role="option"
                     aria-selected={m.id === selectedId}
                     tabIndex={m.id === selectedId || (!selectedId && m.id === shown[0]?.id) ? 0 : -1}
-                    className={"mail-row" + (m.isRead || m.dismissed ? "" : " unread")}
+                    className={`mail-row k-${m.bucket}` + (m.isRead || m.dismissed ? "" : " unread")}
                     aria-label={`${m.from.name || m.from.address}, ${m.subject}, ${when(m.receivedAt)}${m.isRead ? "" : ", unread"}${m.important ? ", important" : ""}`}
                     onClick={() => (useMail.setState({ selectedId: m.id }), setReading(true))}
                     onKeyDown={(e) => e.key === "Enter" && (useMail.setState({ selectedId: m.id }), setReading(true))}
@@ -270,14 +297,12 @@ export function Email() {
                       {initials(m.from.name, m.from.address)}
                     </span>
                     <span className="mail-from ellipsis">{m.from.name || m.from.address}</span>
-                    <span className="faint mono" style={{ fontSize: 11 }}>
+                    <span className="when faint mono" style={{ fontSize: 11 }}>
                       {when(m.receivedAt)}
                     </span>
                     <span className="mail-subject ellipsis">{m.subject}</span>
                     <span className="muted ellipsis mail-preview">
-                      {view !== "important" && view !== "action" && m.bucket !== "inbox" ? (
-                        <span className="tag">{BUCKET_LABEL[m.bucket]}</span>
-                      ) : null}{" "}
+                      {m.bucket !== "inbox" && VIEW_KEY[view] !== m.bucket ? <span className="bk">{BUCKET_LABEL[m.bucket]}</span> : null}{" "}
                       {m.preview}
                     </span>
                   </div>
@@ -313,13 +338,54 @@ export function Email() {
                     <dt>Date</dt>
                     <dd>{format(selected.receivedAt, "EEE d MMM yyyy, h:mm a")}</dd>
                   </dl>
-                  <div className="faint" style={{ fontSize: 12.5 }}>
-                    {selected.important ? "Important" : BUCKET_LABEL[selected.bucket]}: {selected.reasons.join(". ")}
+                  <div className={`reader-why k-${selected.important ? "urgent" : selected.bucket}`}>
+                    <span className="pill-k">{selected.important ? "Important" : BUCKET_LABEL[selected.bucket]}</span>
+                    <span className="faint">{selected.reasons.join(". ")}</span>
                   </div>
                 </header>
-                <pre className="mail-body">
-                  {readableText(body?.id === selected.id ? (body.loading ? "Loading…" : body.text || selected.preview) : selected.preview)}
-                </pre>
+                {(() => {
+                  const mine = body?.id === selected.id ? body : null;
+                  const rich = s.settings.mail.view === "rich" && !!mine?.html;
+                  const allow =
+                    showPics === selected.id ||
+                    imagesAllowed(s.settings.mail.images, s.settings.mail.trustedImageSenders, selected.from.address);
+                  return (
+                    <>
+                      {mine?.html && (
+                        <div className="seg" role="group" aria-label="How to show this message" style={{ width: "fit-content" }}>
+                          {(["rich", "plain"] as const).map((v) => (
+                            <button
+                              key={v}
+                              aria-pressed={(v === "rich") === rich}
+                              onClick={() => s.updateSettings((x) => void (x.mail.view = v))}
+                            >
+                              {v === "rich" ? "Rich" : "Plain"}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                      {rich ? (
+                        <RichBody
+                          html={mine!.html!}
+                          allowImages={allow}
+                          sender={selected.from.name || selected.from.address}
+                          onShowImages={() => setShowPics(selected.id)}
+                          onTrustSender={() =>
+                            s.updateSettings((x) => {
+                              const a = selected.from.address.toLowerCase();
+                              if (x.mail.images === "block") x.mail.images = "trusted";
+                              if (!x.mail.trustedImageSenders.includes(a)) x.mail.trustedImageSenders.push(a);
+                            })
+                          }
+                        />
+                      ) : (
+                        <pre className="mail-body">
+                          {readableText(mine ? (mine.loading ? "Loading…" : mine.text || selected.preview) : selected.preview)}
+                        </pre>
+                      )}
+                    </>
+                  );
+                })()}
                 <ReaderTools
                   m={selected}
                   showDates={datesFor === selected.id || (selected.bucket !== "subscriptions" && selected.bucket !== "spam")}

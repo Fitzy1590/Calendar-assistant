@@ -402,6 +402,31 @@ export function EmailSetup() {
         <Toggle checked={m.cacheText} onChange={(v) => set((x) => void (x.cacheText = v))} label="Keep message text on this device" /> Keep
         message text for offline reading (off: only sender, subject and a short preview)
       </span>
+      <span className="row">
+        Show emails as
+        <select
+          className="input"
+          style={{ width: "auto" }}
+          aria-label="Show emails as"
+          value={m.view}
+          onChange={(e) => set((x) => void (x.view = e.target.value as "rich" | "plain"))}
+        >
+          <option value="rich">Rich (HTML, with links)</option>
+          <option value="plain">Plain text</option>
+        </select>
+        and pictures
+        <select
+          className="input"
+          style={{ width: "auto" }}
+          aria-label="Pictures in emails"
+          value={m.images}
+          onChange={(e) => set((x) => void (x.images = e.target.value as "always" | "trusted" | "block"))}
+        >
+          <option value="always">Always show</option>
+          <option value="trusted">Show for senders I trust</option>
+          <option value="block">Blocked until I allow</option>
+        </select>
+      </span>
       <div className="faint" style={{ fontSize: 12.5 }}>
         Mail stays on this PC. It isn't synced to your phone or included in backups, and your sign-in is kept in Windows' secure store.
       </div>

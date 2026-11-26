@@ -63,6 +63,11 @@ Backlog, not voted: IMAP/SMTP (needs native Rust), push notifications (needs a s
 
 ---
 
+## Email: HTML view + calm colour (from the two voting cards, Nov 2026)
+- Done: emails open as HTML in a sandboxed frame (`lib/mail/html.ts`, `components/mail/RichBody.tsx`); Gmail and Outlook only, IMAP stays plain text (needs `imap_core.rs` to return the HTML part: not done). Rich / Plain toggle; setting for pictures (Always show = the owner's choice, Trusted senders, Blocked) with a Show pictures bar and "Always show for <sender>"; links open via `openUrl`; HTML cached on this device only, same rule as text (`MailMessage.html`, `""` = no HTML version).
+- Done: calm colour by type (layout A from the vote): `--k-*` tokens per theme, coloured folder tabs, type label on rows, pill in the reader. Votes: A "Love it", C and E not chosen, F "No", calm over bold.
+- Not done / unverified: real Gmail and Outlook HTML (only tested with seeded mail and unit tests), the phone layout on a real device, IMAP HTML, What's new entry (add at release), the high-contrast theme's AAA (type colours measured at 7:1 or more on its black, pill tints not measured). Type colours measured: 4.5:1 or more on all light surfaces, 5.7:1 or more on the dark ones.
+
 ## 0b. Drive sync (approved vote; design in `docs/DRIVE_SYNC.md`)
 
 Windows side and the shared engine first; Android joins next. Every stage also needs B1-B3 and B5.

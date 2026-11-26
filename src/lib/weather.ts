@@ -26,14 +26,30 @@ export interface DayWeather {
   rainMm: number;
   uv: number;
   wind: number;
+  humidity?: number; // average relative humidity over the day, %
   sunrise: string;
   sunset: string;
 }
 export interface Forecast {
   current: { temp: number; feels: number; code: number; wind: number; humidity: number; isDay: boolean };
-  hourly: { time: string; temp: number; code: number; rainChance: number }[];
+  hourly: { time: string; temp: number; code: number; rainChance: number; humidity?: number }[];
   daily: DayWeather[];
   fetchedAt: number;
+}
+
+/** Average humidity per day (yyyy-MM-dd) from the hourly series; a day with no readings is left out. */
+export function meanHumidityByDate(times: string[], values: (number | null | undefined)[]): Map<string, number> {
+  const sum = new Map<string, { total: number; n: number }>();
+  times.forEach((t, i) => {
+    const v = values[i];
+    if (typeof v !== "number" || Number.isNaN(v)) return;
+    const day = t.slice(0, 10);
+    const acc = sum.get(day) ?? { total: 0, n: 0 };
+    acc.total += v;
+    acc.n++;
+    sum.set(day, acc);
+  });
+  return new Map([...sum].map(([day, a]) => [day, Math.round(a.total / a.n)]));
 }
 
 export async function getForecast(p: Place, units: "metric" | "imperial"): Promise<Forecast> {
@@ -41,11 +57,12 @@ export async function getForecast(p: Place, units: "metric" | "imperial"): Promi
   const url =
     `https://api.open-meteo.com/v1/forecast?latitude=${p.lat}&longitude=${p.lon}&timezone=auto&forecast_days=16` +
     `&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,relative_humidity_2m,is_day` +
-    `&hourly=temperature_2m,weather_code,precipitation_probability` +
+    `&hourly=temperature_2m,weather_code,precipitation_probability,relative_humidity_2m` +
     `&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum,uv_index_max,wind_speed_10m_max,sunrise,sunset` +
     u;
   return cached(`wx:${p.lat},${p.lon}:${units}`, 15 * 60e3, async () => {
     const j = await getJson<any>(url);
+    const humidityBy = meanHumidityByDate(j.hourly.time, j.hourly.relative_humidity_2m ?? []);
     return {
       fetchedAt: Date.now(),
       current: {
@@ -61,6 +78,7 @@ export async function getForecast(p: Place, units: "metric" | "imperial"): Promi
         temp: j.hourly.temperature_2m[i],
         code: j.hourly.weather_code[i],
         rainChance: j.hourly.precipitation_probability[i] ?? 0,
+        humidity: j.hourly.relative_humidity_2m?.[i] ?? undefined,
       })),
       daily: j.daily.time.map((d: string, i: number) => ({
         date: d,
@@ -71,6 +89,7 @@ export async function getForecast(p: Place, units: "metric" | "imperial"): Promi
         rainMm: j.daily.precipitation_sum[i] ?? 0,
         uv: j.daily.uv_index_max[i] ?? 0,
         wind: j.daily.wind_speed_10m_max[i] ?? 0,
+        humidity: humidityBy.get(d),
         sunrise: j.daily.sunrise[i],
         sunset: j.daily.sunset[i],
       })),
@@ -122,6 +141,7 @@ export function describeDay(d: DayWeather, units: "metric" | "imperial") {
   const t = tempUnit(units);
   let s = `${label}, ${Math.round(d.min)}–${Math.round(d.max)}${t}`;
   if (d.rainChance >= 30) s += `, ${d.rainChance}% chance of rain`;
+  if (d.humidity !== undefined) s += `, humidity ${d.humidity}%`;
   if (d.uv >= 8) s += `, UV very high (${Math.round(d.uv)})`;
   return s;
 }

@@ -23,7 +23,7 @@ import { cx, fmtTime, localIso, ymd } from "../lib/util";
 import { skyOf } from "../lib/weather";
 import { EventEditor } from "../components/EventEditor";
 import { MiniCalendar } from "../components/MiniCalendar";
-import { ICake, ILeft, IMail, IPlus, IRight, WeatherIcon } from "../components/Icons";
+import { ICake, IDrop, ILeft, IMail, IPlus, IRight, WeatherIcon } from "../components/Icons";
 import { PageHead, Seg, Toggle } from "../components/ui";
 
 type View = "day" | "week" | "month" | "year";
@@ -264,6 +264,12 @@ function MonthView({ cursor, onNew, onOpen }: { cursor: Date; onNew: (d: Date) =
                 <span className="wxmini">
                   <WeatherIcon sky={skyOf(w.code).sky} size={13} />
                   {Math.round(w.max)}°
+                  {w.humidity !== undefined && (
+                    <span className="hum" title={`Humidity ${w.humidity}%`} aria-label={`Humidity ${w.humidity}%`}>
+                      <IDrop size={10} />
+                      {w.humidity}%
+                    </span>
+                  )}
                 </span>
               )}
             </div>
@@ -359,9 +365,15 @@ function TimeGrid({
             <div className="row" style={{ justifyContent: "space-between" }}>
               <span className="dnum">{format(d, "d")}</span>
               {w && (
-                <span className="faint row mono" style={{ fontSize: 11, gap: 3 }}>
+                <span className="wxcol faint row mono" style={{ fontSize: 11, gap: 3 }}>
                   <WeatherIcon sky={skyOf(w.code).sky} size={14} />
                   {Math.round(w.max)}°
+                  {w.humidity !== undefined && (
+                    <span className="hum" title={`Humidity ${w.humidity}%`} aria-label={`Humidity ${w.humidity}%`}>
+                      <IDrop size={10} />
+                      {w.humidity}%
+                    </span>
+                  )}
                 </span>
               )}
             </div>

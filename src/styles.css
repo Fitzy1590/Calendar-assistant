@@ -827,3 +827,22 @@ input[type="range"], input[type="checkbox"] { accent-color: var(--accent); }
 .mail-frame { display: block; width: 100%; border: 1px solid var(--line); border-radius: var(--radius); background: #fff; }
 .img-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; padding: 7px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-2); color: var(--muted); font-size: 12.5px; }
 .img-bar b { color: var(--text); }
+
+/* ---------- weather: humidity next to the temperature in every view ---------- */
+.hum { display: inline-flex; align-items: center; gap: 2px; color: var(--muted); font: 11px var(--font-mono); }
+.month .cell .wxmini { flex-wrap: wrap; justify-content: flex-end; column-gap: 6px; }
+.wx-day .hum { color: var(--muted); }
+@media (max-width: 760px) { .timegrid .wxcol > svg:first-child { display: none; } }
+@media (max-width: 760px) {
+  .timegrid { --head-h: 94px; }
+  .timegrid .colhead { padding: 6px 4px; }
+  .timegrid .wxcol { flex-direction: column; align-items: flex-end; gap: 0; }
+  .timegrid .wxcol .hum { font-size: 10px; }
+}
+@media (max-width: 600px) {
+  .month .cell .wxmini > svg:first-child { display: none; }
+  .month .cell .wxmini { flex-direction: column; align-items: flex-end; gap: 0; font-size: 10px; min-width: 0; }
+  .month .cell .n { gap: 2px; flex-wrap: wrap; }
+  .month .cell .wxmini { margin-left: auto; }
+  .month .cell.today .n b { min-width: 20px; height: 20px; padding: 0 3px; }
+}

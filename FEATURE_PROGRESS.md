@@ -69,6 +69,9 @@ Backlog, not voted: IMAP/SMTP (needs native Rust), push notifications (needs a s
 - Fixed after v0.3.3 (reported by the owner, "ResizeObserver loop" banner): an email with `min-height:100vh` made the frame and the message chase each other. The cleaner now drops vh/vmin/vmax lengths, the frame is sized from the body on the next frame and capped, and the global error banner ignores that browser notice. Reproduced and re-checked in the real app. Ships as 0.3.4 once the owner says so.
 - Not done / unverified: real Gmail and Outlook HTML (only tested with seeded mail and unit tests), the phone layout on a real device, IMAP HTML, What's new entry (add at release), the high-contrast theme's AAA (type colours measured at 7:1 or more on its black, pill tints not measured). Type colours measured: 4.5:1 or more on all light surfaces, 5.7:1 or more on the dark ones.
 
+## Weather: humidity per day (Nov 2026, ships as 0.3.5)
+- Done: average daily humidity (from Open-Meteo's hourly `relative_humidity_2m`) shown next to the temperature in the month cells, the week/day column headers, the Home forecast strip and today line, the day panel and the assistant's weather reply. Phone sizes stack it under the temperature. Checked in the real app with a synthetic forecast (the sandbox can't reach Open-Meteo): not seen with the live service.
+
 ## 0b. Drive sync (approved vote; design in `docs/DRIVE_SYNC.md`)
 
 Windows side and the shared engine first; Android joins next. Every stage also needs B1-B3 and B5.

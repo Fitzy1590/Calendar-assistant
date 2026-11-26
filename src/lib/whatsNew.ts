@@ -13,6 +13,14 @@ export interface WhatsNewEntry {
 
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    version: "0.3.5",
+    title: "Humidity for every day",
+    points: [
+      "Each day's average humidity now shows beside the temperature in the Calendar (month, week and day), on the Home forecast, in the day panel and when you ask the assistant about the weather.",
+      "On a phone the humidity sits under the temperature so it fits. Windows only.",
+    ],
+  },
+  {
     version: "0.3.4",
     title: 'Fix for the email "Something went wrong" message',
     points: [

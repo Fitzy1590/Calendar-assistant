@@ -17,7 +17,7 @@ import { unpaidBills, useMail } from "../lib/mail/engine";
 import { skyOf, tempUnit } from "../lib/weather";
 import { openUrl } from "../lib/platform";
 import { MiniCalendar } from "../components/MiniCalendar";
-import { ICake, IPin, WeatherIcon } from "../components/Icons";
+import { ICake, IDrop, IPin, WeatherIcon } from "../components/Icons";
 import { PageHead, Toggle } from "../components/ui";
 import { MailWidget } from "../components/mail/MailWidget";
 import { STEP_NAMES } from "./Wizard";
@@ -261,6 +261,7 @@ function WeatherWidget() {
               H {Math.round(today.max)}° · L {Math.round(today.min)}°
             </span>
             <span>Rain {today.rainChance}%</span>
+            {today.humidity !== undefined && <span>Humidity {today.humidity}%</span>}
             <span>UV {Math.round(today.uv)}</span>
             <span>Wind {Math.round(current.wind)}</span>
             <span>
@@ -295,6 +296,12 @@ function WeatherWidget() {
               {Math.round(d.max)}° <span className="faint">{Math.round(d.min)}°</span>
             </span>
             <span className="r">{d.rainChance >= 20 ? `${d.rainChance}%` : ""}</span>
+            {d.humidity !== undefined && (
+              <span className="hum" title={`Humidity ${d.humidity}%`} aria-label={`Humidity ${d.humidity}%`}>
+                <IDrop size={10} />
+                {d.humidity}%
+              </span>
+            )}
           </button>
         ))}
       </div>

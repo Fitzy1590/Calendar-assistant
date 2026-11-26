@@ -191,6 +191,12 @@ export const IStar = ({ filled, ...p }: P & { filled?: boolean }) => (
   </S>
 );
 
+export const IDrop = (p: P) => (
+  <S {...p}>
+    <path d="M12 3.5c3.2 3.8 5.5 6.6 5.5 9.6a5.5 5.5 0 0 1-11 0c0-3 2.3-5.8 5.5-9.6z" />
+  </S>
+);
+
 export function WeatherIcon({ sky, size = 22, night }: { sky: Sky; size?: number; night?: boolean }) {
   const sun = night ? (
     <path d="M15 4.5a6.5 6.5 0 1 0 4.5 9.8A5.5 5.5 0 0 1 15 4.5z" />

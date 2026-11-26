@@ -18,6 +18,12 @@ const SAFE_LINK = /^(https?:|mailto:|tel:)/i;
 const SECURE_IMG = /^https:\/\//i; // plain http pictures are never loaded
 
 // the hook below reads and writes this while one message is being cleaned (sanitize is synchronous)
+// Viewport units inside the frame mean "the frame's size", and the frame is sized to the message: 100vh would make
+// them chase each other for ever. Height rules in vh are dropped and any other vh/vmin/vmax length becomes 0.
+const VIEWPORT_HEIGHT_RULE = /(?:min-|max-)?height\s*:\s*[\d.]+[dsl]?v(?:h|min|max)\b[^;}"']*;?/gi;
+const VIEWPORT_LENGTH = /[\d.]+[dsl]?v(?:h|min|max)\b/gi;
+export const withoutViewportUnits = (css: string) => css.replace(VIEWPORT_HEIGHT_RULE, "").replace(VIEWPORT_LENGTH, "0px");
+
 let run = { allowImages: false, blocked: 0, links: 0 };
 let hooked = false;
 
@@ -43,7 +49,10 @@ function ensureHooks() {
       node.removeAttribute("src");
       run.blocked++;
     }
+    if (node.tagName === "STYLE" && node.textContent) node.textContent = withoutViewportUnits(node.textContent);
     if (!run.allowImages) node.removeAttribute("background");
+    const style0 = node.getAttribute("style");
+    if (style0 && /v(h|min|max)\b/i.test(style0)) node.setAttribute("style", withoutViewportUnits(style0));
     const style = node.getAttribute("style");
     if (style && /url\s*\(/i.test(style)) {
       const kept = run.allowImages ? style.replace(/url\(\s*(['"]?)(?!https:)[^)]*\)/gi, "none") : style.replace(/url\([^)]*\)/gi, "none");
@@ -88,6 +97,7 @@ export function sanitizeMailHtml(raw: string, allowImages: boolean): RichMail {
 export function mailDocument(cleanHtml: string, allowImages: boolean): string {
   const csp = `default-src 'none'; style-src 'unsafe-inline'; img-src data:${allowImages ? " https:" : ""}`;
   return `<!doctype html><html><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="${csp}"><base target="_blank"><style>
+html,body{height:auto!important;min-height:0!important}
 html{background:#fff;color:#1b1b1f}
 body{margin:0;padding:18px 20px;font:14.5px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif;overflow-wrap:anywhere}
 a{color:#2f5d8a}img{max-width:100%;height:auto}table{max-width:100%}pre{white-space:pre-wrap}

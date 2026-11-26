@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from "vitest";
-import { imagesAllowed, mailDocument, sanitizeMailHtml } from "./html";
+import { imagesAllowed, mailDocument, sanitizeMailHtml, withoutViewportUnits } from "./html";
 
 describe("sanitizeMailHtml", () => {
   it("removes scripts, handlers, forms and frames", () => {
@@ -65,7 +65,28 @@ describe("sanitizeMailHtml", () => {
   });
 });
 
+describe("viewport units", () => {
+  it("drops height rules in vh and zeroes other viewport lengths", () => {
+    expect(withoutViewportUnits(".a{min-height:100vh;color:red}")).toBe(".a{color:red}");
+    expect(withoutViewportUnits(".a{height:100dvh}")).toBe(".a{}");
+    expect(withoutViewportUnits(".a{padding:5vmin 2px}")).toBe(".a{padding:0px 2px}");
+    expect(withoutViewportUnits(".a{width:100%;height:40px}")).toBe(".a{width:100%;height:40px}");
+  });
+  it("applies in style blocks and style attributes", () => {
+    const r = sanitizeMailHtml(
+      `<style>.full{min-height:100vh;background:#eef}</style><div class="full" style="height:100vh;margin:2vh">x</div>`,
+      false,
+    );
+    expect(r.html).not.toMatch(/\dvh/);
+    expect(r.html).toContain("background:#eef");
+  });
+});
+
 describe("mailDocument", () => {
+  it("keeps the message from sizing itself to the frame (that made the frame grow without end)", () => {
+    expect(mailDocument("<p>x</p>", false)).toContain("html,body{height:auto!important;min-height:0!important}");
+  });
+
   it("blocks scripts always and pictures unless allowed", () => {
     expect(mailDocument("<p>x</p>", false)).toContain("default-src 'none'; style-src 'unsafe-inline'; img-src data:\"");
     expect(mailDocument("<p>x</p>", true)).toContain("img-src data: https:");

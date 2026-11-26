@@ -5,6 +5,7 @@ import { toast, useStore } from "../store";
 import { placeFromDevice, searchPlaces } from "../lib/weather";
 import { NEWS_REGIONS, NEWS_TOPICS } from "../lib/news";
 import { pairingCode } from "../lib/util";
+import { resolveAccent, THEME_ACCENT } from "../lib/themes";
 import {
   backupToDrive,
   googleConfigured,
@@ -92,6 +93,7 @@ function ThemeTile({ id, name, selected }: { id: ThemeName; name: string; select
 
 export function ThemePicker() {
   const s = useStore();
+  const shown = resolveAccent(s.settings.theme, s.settings.accent, window.matchMedia("(prefers-color-scheme: dark)").matches);
   return (
     <div className="stack">
       <div className="theme-tile-wrap">
@@ -114,6 +116,14 @@ export function ThemePicker() {
         <span className="muted" style={{ width: 70 }}>
           Accent
         </span>
+        <button
+          className="accent-dot"
+          title="Match theme"
+          aria-label="Match theme"
+          style={{ background: shown }}
+          aria-pressed={s.settings.accent === THEME_ACCENT}
+          onClick={() => s.updateSettings((st) => void (st.accent = THEME_ACCENT))}
+        />
         {ACCENTS.map((a) => (
           <button
             key={a.c}
@@ -127,11 +137,14 @@ export function ThemePicker() {
         ))}
         <input
           type="color"
-          value={s.settings.accent}
+          value={shown}
           onChange={(e) => s.updateSettings((st) => void (st.accent = e.target.value))}
           aria-label="Custom accent"
           style={{ width: 32, height: 28, border: 0, background: "none" }}
         />
+        <span className="faint" style={{ fontSize: 12.5 }}>
+          {s.settings.accent === THEME_ACCENT ? "Following the theme's own accent" : "First dot: match the theme"}
+        </span>
       </div>
       {s.settings.theme === "contrast" && (
         <div className="faint" style={{ fontSize: 12.5 }}>

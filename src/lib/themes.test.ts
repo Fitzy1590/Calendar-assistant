@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { accentText, contrastRatio, luminance, readableOn, CONTRAST_ACCENT } from "./themes";
+import { accentText, contrastRatio, luminance, readableOn, resolveAccent, CONTRAST_ACCENT, THEME_ACCENT, THEME_ACCENTS } from "./themes";
 
 const css = readFileSync(new URL("../styles.css", import.meta.url), "utf8");
 const themes: Record<string, Record<string, string>> = {};
@@ -106,4 +106,31 @@ describe("note colours", () => {
       }
     });
   }
+});
+
+describe("each theme's own accent", () => {
+  it("has one for every theme except high contrast", () => {
+    expect(Object.keys(THEME_ACCENTS).sort()).toEqual(
+      Object.keys(themes)
+        .filter((n) => n !== "contrast")
+        .sort(),
+    );
+  });
+  for (const [name, a] of Object.entries(THEME_ACCENTS)) {
+    it(`${name}: button text, outlines and accent text are readable`, () => {
+      const t = themes[name];
+      expect(contrastRatio(readableOn(a), a), "text on accent button").toBeGreaterThanOrEqual(4.5);
+      expect(contrastRatio(a, t.bg), "accent against page").toBeGreaterThanOrEqual(3);
+      expect(contrastRatio(a, t.surface), "accent against surface").toBeGreaterThanOrEqual(3);
+      expect(contrastRatio(accentText(a, t.surface), t.surface), "accent as text").toBeGreaterThanOrEqual(4.5);
+    });
+  }
+  it("resolves: high contrast wins, a chosen colour is kept, otherwise the theme's own", () => {
+    expect(resolveAccent("contrast", THEME_ACCENT, false)).toBe(CONTRAST_ACCENT);
+    expect(resolveAccent("contrast", "#123456", false)).toBe(CONTRAST_ACCENT);
+    expect(resolveAccent("lavender", "#123456", false)).toBe("#123456");
+    expect(resolveAccent("lavender", THEME_ACCENT, false)).toBe(THEME_ACCENTS.lavender);
+    expect(resolveAccent("system", THEME_ACCENT, true)).toBe(THEME_ACCENTS.ink);
+    expect(resolveAccent("system", THEME_ACCENT, false)).toBe(THEME_ACCENTS.paper);
+  });
 });

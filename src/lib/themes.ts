@@ -53,3 +53,32 @@ export function accentText(accent: string, bg: string, min = 4.5): string {
   }
   return target ? "#ffffff" : "#000000";
 }
+
+/** The "use my theme's own accent" setting value (Settings.accent). */
+export const THEME_ACCENT = "theme";
+
+/** Each theme's own matching accent (used when Settings.accent is "theme"). High contrast uses CONTRAST_ACCENT. */
+export const THEME_ACCENTS: Record<string, string> = {
+  paper: "#2f5d8a",
+  sand: "#a4512a",
+  ink: "#6ea8e6",
+  slate: "#5aa9c9",
+  oled: "#6ea8e6",
+  forest: "#5fbf7a",
+  midnight: "#8191ff",
+  ember: "#e8894a",
+  graphite: "#7aa2f7",
+  nord: "#88c0d0",
+  sky: "#0b62c4",
+  lavender: "#6a3fd1",
+  lagoon: "#0b7a82",
+  ocean: "#2ec4c9",
+};
+
+/** The accent colour actually drawn: the high-contrast yellow, the person's own pick, or the theme's matching one. */
+export function resolveAccent(theme: string, accent: string, systemDark: boolean): string {
+  if (theme === "contrast") return CONTRAST_ACCENT;
+  if (accent !== THEME_ACCENT) return accent;
+  const name = theme === "system" ? (systemDark ? "ink" : "paper") : theme;
+  return THEME_ACCENTS[name] ?? THEME_ACCENTS.paper;
+}

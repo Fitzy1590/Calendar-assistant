@@ -36,7 +36,7 @@ import { startDriveSync } from "./lib/driveSyncApp";
 import { startSportsCalendar } from "./lib/sportsCalendar";
 import { StaleBanner } from "./components/DriveSync";
 import { startMailPolling } from "./lib/mail/engine";
-import { accentText, CONTRAST_ACCENT, readableOn } from "./lib/themes";
+import { accentText, readableOn, resolveAccent } from "./lib/themes";
 import { checkTrackedPrices } from "./lib/shopping";
 
 const PAGES = {
@@ -61,8 +61,8 @@ function useTheme() {
     const apply = () => {
       const dark = window.matchMedia("(prefers-color-scheme: dark)").matches;
       root.dataset.theme = theme === "system" ? (dark ? "ink" : "paper") : theme;
-      // the high-contrast theme uses its own accent; otherwise the chosen one, with readable text on it and as text
-      const fill = theme === "contrast" ? CONTRAST_ACCENT : accent;
+      // the high-contrast theme uses its own accent; "theme" means the theme's matching one; otherwise the chosen one, with readable text on it and as text
+      const fill = resolveAccent(theme, accent, dark);
       root.style.setProperty("--accent", fill);
       root.style.setProperty("--accent-ink", readableOn(fill));
       const surface = getComputedStyle(root).getPropertyValue("--surface").trim() || "#ffffff";

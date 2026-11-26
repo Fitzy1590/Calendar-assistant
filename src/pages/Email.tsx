@@ -170,7 +170,7 @@ export function Email() {
         <>
           <span className="sync-dot" aria-hidden="true" />
           <span>
-            {lastResult.text} · {formatDistanceToNowStrict(lastResult.at, { addSuffix: true })}
+            {lastResult.text.replace(/\.$/, "")} · {formatDistanceToNowStrict(lastResult.at, { addSuffix: true })}
           </span>
         </>
       ) : null}

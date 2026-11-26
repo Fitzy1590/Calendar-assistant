@@ -122,6 +122,10 @@ src/lib/subscriptions.ts + bankStatement.ts   bank statement scan; pages/Subscri
 
 ## Releases
 
+**Current focus: Windows only (until the user says otherwise).** Release with `skip_android` = true so no APK is built
+or published, and don't spend time on Android builds, Android-only fixes or Android screenshots. Say "Windows only" in
+release notes. Shared code still has to keep working on Android; just don't build or ship it.
+
 Merging to `main` then pushing a `release/vX.Y.Z` branch (or Actions → build → Run workflow with a
 version) builds Windows + Android and publishes a GitHub Release. See `docs/RELEASING.md`.
 After a feature is fully published to the repo, show the user mock screenshots of it (Playwright, 1280 px and 412 px).

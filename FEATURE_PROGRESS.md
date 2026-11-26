@@ -223,3 +223,7 @@ Windows side and the shared engine first; Android joins next. Every stage also n
 | [x] | **Guardrails**: `.p12` deny rules, CLAUDE.md hard boundaries, `.claude/skills/release`, `.claude/rules/rust.md` | files on disk |
 | [x] | **Home Tasks card is a 7-day view**: overdue group first, then Today, Tomorrow and each weekday to day 7 (empty days say "Nothing due"), undated tasks last; ticking a task completes it. Customise label is "Tasks, next 7 days" | `tsc`, build; Playwright mock screenshots at 1280 px and 412 px (light theme only; dark not checked) |
 | [~] | **Home Headlines card** shows "Loading headlines…", the real error text and a Try again button, instead of always blaming browser CORS. NOT DONE: the underlying fetch failure on the user's device is undiagnosed (the sandbox has no internet, so real headlines were never seen) | Playwright screenshot of the error state only; needs a run in the Windows/Android app |
+
+## 0d. Android app + Z Fold 6 layout (Phase 1 done, waiting for vote; design in `SPEC.md` §11)
+
+Card: `VOTING_CARD_MOBILE.html`. No code written. Windows-only rule lifted (`CLAUDE.md`).

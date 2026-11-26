@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Voting card: Android and Z Fold 6 layout</title>
+<style>
+:root{--bg:#f3f0e8;--surface:#fbfaf6;--line:#d9d4c7;--text:#1d2430;--mute:#5d6676;--accent:#2f5d8a;--ok:#1f7a4d;--warn:#9a5b00;--bad:#a32d2d;--ui:"IBM Plex Sans",system-ui,"Segoe UI",sans-serif;--mono:"IBM Plex Mono",ui-monospace,Consolas,monospace}
+@media (prefers-color-scheme:dark){:root{--bg:#12161d;--surface:#1a202a;--line:#2c3441;--text:#e8ecf2;--mute:#9aa5b5;--accent:#7fb0e0;--ok:#4cc38a;--warn:#e0a040;--bad:#e07070}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 var(--ui);padding:24px 16px 96px}
+main{max-width:1100px;margin:0 auto}h1{font-size:22px;margin:0 0 4px}h2{font-size:17px;margin:32px 0 8px}h3{font-size:14px;margin:0 0 6px}
+.mute{color:var(--mute)}.mono{font-family:var(--mono)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px}
+.tag{font:600 11px var(--mono);padding:2px 8px;border:1px solid currentColor;border-radius:6px;white-space:nowrap}
+.ok{color:var(--ok)}.warn{color:var(--warn)}.bad{color:var(--bad)}
+table{width:100%;border-collapse:collapse;font-size:13px}td,th{text-align:left;padding:8px;border-bottom:1px solid var(--line);vertical-align:top}th{color:var(--mute);font-weight:500}
+.opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px}
+label.opt{display:flex;gap:12px;align-items:flex-start;min-height:44px;padding:12px;border:1px solid var(--line);border-radius:10px;cursor:pointer;background:var(--surface)}
+label.opt:has(input:checked){border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+input[type=radio]{width:20px;height:20px;margin-top:3px;accent-color:var(--accent);flex:none}
+.opt b{display:block}.opt small{display:block;color:var(--mute)}
+.mock{display:flex;gap:6px;margin:8px 0;align-items:flex-start}
+/* device frames (illustrative, not to scale) */
+.dev{border:2px solid var(--text);border-radius:14px;background:var(--bg);overflow:hidden;display:flex;flex-direction:column;font-size:9px;line-height:1.3;flex:none}
+.cover{width:104px;height:236px}.inner{width:236px;height:208px}
+.dev .top{padding:5px 6px;font-weight:600;border-bottom:1px solid var(--line);background:var(--surface)}
+.dev .body{flex:1;padding:5px;display:flex;flex-direction:column;gap:3px;min-height:0;overflow:hidden}
+.dev .row{background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:3px 4px}
+.dev .row.sel{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,var(--surface))}
+.bar{display:flex;border-top:1px solid var(--line);background:var(--surface)}
+.bar span{flex:1;text-align:center;padding:5px 0 4px;font-size:8px}.bar .on{color:var(--accent);box-shadow:inset 0 2px 0 var(--accent);font-weight:600}
+.bar.scroll{overflow:hidden}.bar.scroll span{flex:none;width:34px}
+.split{display:flex;flex:1;min-height:0}.rail{width:34px;border-right:1px solid var(--line);background:var(--surface);display:flex;flex-direction:column;gap:6px;padding:6px 0;align-items:center;font-size:7px}
+.rail .on{color:var(--accent);font-weight:600}.pane{flex:1;padding:5px;display:flex;flex-direction:column;gap:3px;min-width:0;border-right:1px solid var(--line)}.pane:last-child{border:0}
+.dots{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;text-align:center}.dots i{font-style:normal;font-size:7px}.dots i.d::after{content:"•";display:block;color:var(--accent);line-height:.5}
+.cap{font-size:12px;color:var(--mute);margin:0 0 4px}
+.sticky{position:sticky;bottom:0;background:var(--bg);border-top:1px solid var(--line);padding:12px 0;margin-top:24px}
+#out{font:13px var(--mono);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px;margin-bottom:10px;white-space:pre-wrap}
+button.copy{min-height:44px;padding:0 20px;border-radius:10px;border:1px solid var(--accent);background:transparent;color:var(--accent);font:600 14px var(--ui);cursor:pointer}
+</style>
+</head>
+<body><main>
+<h1>Voting card: Android app and Galaxy Z Fold 6 layout</h1>
+<p class="mute">Windows-only rule lifted. Goal: the Android app matches the Windows features, laid out for a phone, in both the folded (cover screen) and unfolded (inner screen) states. Mocks are illustrative, drawn with the app's current theme. Nothing is built yet.</p>
+
+<h2>Audit: what exists and what is missing</h2>
+<div class="card"><table>
+<tr><th>Finding</th><th>Evidence</th><th></th></tr>
+<tr><td>One phone breakpoint (760 px). Below it the desktop screens are squeezed and the 12-item menu becomes a scrolling bottom bar. No layout between 760 and 1100 px other than the desktop top bar.</td><td><span class="mono">styles.css</span> @media 760 / 900 / 1100</td><td><span class="tag ok">ESTABLISHED</span></td></tr>
+<tr><td>Nothing reacts to folding. Fold and unfold is just a window resize, so the layout must be driven by width, and the Android activity must not restart on resize.</td><td>no fold or window-class code in <span class="mono">src/</span></td><td><span class="tag ok">ESTABLISHED</span></td></tr>
+<tr><td>Mail from "other" (IMAP/SMTP) mailboxes is not compiled for Android: the IMAP crates are desktop-only. Gmail and Outlook work through web APIs.</td><td><span class="mono">Cargo.toml</span> <span class="mono">cfg(not(android))</span></td><td><span class="tag ok">ESTABLISHED</span></td></tr>
+<tr><td>Reminders fire only while the app is open (30 s poll). Android needs OS-scheduled notifications to match Windows' behaviour.</td><td><span class="mono">FEATURE_PROGRESS.md</span> open item</td><td><span class="tag ok">ESTABLISHED</span></td></tr>
+<tr><td>Android tokens sit in app-private storage (no OS secure store). Windows uses Credential Manager.</td><td><span class="mono">FEATURE_PROGRESS.md</span> checkpoint</td><td><span class="tag ok">ESTABLISHED</span></td></tr>
+<tr><td>Untested on a real phone: sign-in, file save, Drive sync, wake word, SQLite store, WebRTC in the Android WebView.</td><td>progress file "not verified" lists</td><td><span class="tag warn">UNVERIFIED</span></td></tr>
+<tr><td>Z Fold 6 sizes: cover screen is a narrow, very tall phone (roughly 350 to 360 dp wide); inner screen is a near-square tablet size (roughly 650 to 850 dp wide). I will design by width class (under 600, 600 to 840, over 840) and test at several widths, not by device name.</td><td>my recollection, not from the repo</td><td><span class="tag bad">UNCERTAIN: check on the phone</span></td></tr>
+<tr><td>Half-folded (Flex mode) posture is not exposed to a web view. I will not design for a hinge split.</td><td>platform limit, unconfirmed</td><td><span class="tag bad">UNCERTAIN</span></td></tr>
+</table></div>
+
+<form id="vote">
+<h2>Vote 1: navigation on the folded (cover) screen</h2>
+<div class="opts">
+<label class="opt"><input type="radio" name="nav" value="A" checked><span><b>A. Five tabs + More [recommended]</b><small>Home, Calendar, Tasks, Mail, More. More opens a sheet with the other pages. Big touch targets, nothing scrolls sideways.</small>
+<div class="mock"><div class="dev cover"><div class="top">Today</div><div class="body"><div class="row">Dentist 3pm</div><div class="row">Pay rates</div></div><div class="bar"><span class="on">Home</span><span>Cal</span><span>Tasks</span><span>Mail</span><span>More</span></div></div></div></span></label>
+<label class="opt"><input type="radio" name="nav" value="B"><span><b>B. Keep the scrolling 12-item bar</b><small>Today's behaviour. Every page one tap away, but items hide off-screen on a narrow cover screen.</small>
+<div class="mock"><div class="dev cover"><div class="top">Today</div><div class="body"><div class="row">Dentist 3pm</div><div class="row">Pay rates</div></div><div class="bar scroll"><span class="on">Home</span><span>Cal</span><span>Mail</span><span>Task</span></div></div></div></span></label>
+</div>
+
+<h2>Vote 2: unfolded (inner) screen</h2>
+<div class="opts">
+<label class="opt"><input type="radio" name="wide" value="A" checked><span><b>A. Side rail + list and detail [recommended]</b><small>Icon rail on the left. Mail, Tasks, Notes, Contacts and Shopping show the list beside the open item. Folding while an item is open keeps it open.</small>
+<div class="mock"><div class="dev inner"><div class="split"><div class="rail"><span class="on">Mail</span><span>Cal</span><span>Task</span><span>Note</span><span>More</span></div><div class="pane"><div class="row sel">Bank: bill due</div><div class="row">Rates notice</div><div class="row">Dentist</div></div><div class="pane"><b>Bank: bill due</b><div class="row">Amount $214 · due Fri</div><div class="row">Add to calendar</div></div></div></div></div></span></label>
+<label class="opt"><input type="radio" name="wide" value="B"><span><b>B. Side rail, one pane</b><small>Same rail, but each page is a single stretched column like on the cover screen. Simpler, wastes the width.</small>
+<div class="mock"><div class="dev inner"><div class="split"><div class="rail"><span class="on">Mail</span><span>Cal</span><span>Task</span><span>Note</span><span>More</span></div><div class="pane"><div class="row sel">Bank: bill due</div><div class="row">Rates notice</div><div class="row">Dentist</div><div class="row">Newsletter</div></div></div></div></div></span></label>
+<label class="opt"><input type="radio" name="wide" value="C"><span><b>C. Desktop layout as it is</b><small>Top bar and full desktop pages. Familiar but cramped for touch.</small></span></label>
+</div>
+
+<h2>Vote 3: Calendar on a phone</h2>
+<div class="opts">
+<label class="opt"><input type="radio" name="cal" value="A" checked><span><b>A. Month strip with dots + agenda [recommended]</b><small>Cover: compact month, tap a day, agenda below. Unfolded: month on the left, the day's agenda on the right.</small>
+<div class="mock"><div class="dev cover"><div class="top">November</div><div class="body"><div class="dots"><i>M</i><i>T</i><i>W</i><i>T</i><i>F</i><i>S</i><i>S</i><i class="d">9</i><i>10</i><i class="d">11</i><i>12</i><i class="d">13</i><i>14</i><i>15</i></div><div class="row sel">Dentist 3pm</div><div class="row">Rates due</div></div></div></div></span></label>
+<label class="opt"><input type="radio" name="cal" value="B"><span><b>B. Agenda list only</b><small>A scrolling list of days. Month grid is a button. Fastest on the cover screen.</small></span></label>
+<label class="opt"><input type="radio" name="cal" value="C"><span><b>C. Month grid with event pills (today)</b><small>Cells shrink to about 64 px with tiny pills; hard to read on the cover screen.</small></span></label>
+</div>
+
+<h2>Vote 4: what Android gets first (after the layout)</h2>
+<div class="opts">
+<label class="opt"><input type="radio" name="then" value="A" checked><span><b>A. Parity gaps first [recommended]</b><small>Scheduled reminder notifications, Back button handling, safe areas, keyboard overlap, then a real-phone checklist.</small></span></label>
+<label class="opt"><input type="radio" name="then" value="B"><span><b>B. Layout only, gaps later</b><small>Ship the new layout, leave notifications and Back-button work for a later release.</small></span></label>
+</div>
+
+<div class="sticky"><div id="out" aria-live="polite"></div><button class="copy" type="button" id="copy">Copy my vote</button> <span class="mute" id="copied"></span>
+<p class="mute" style="margin:8px 0 0">Paste it into chat, or type your own tweak.</p></div>
+</form></main>
+<script>
+const f=document.getElementById("vote"),out=document.getElementById("out");
+const v=()=>{const d=new FormData(f);out.textContent=`Vote: nav=${d.get("nav")} | unfolded=${d.get("wide")} | calendar=${d.get("cal")} | then=${d.get("then")}`};
+f.addEventListener("change",v);v();
+document.getElementById("copy").onclick=()=>{const done=t=>document.getElementById("copied").textContent=t;try{navigator.clipboard.writeText(out.textContent).then(()=>done(" Copied."),()=>done(" Select the text above."))}catch(e){done(" Select the text above.")}};
+</script></body></html>

@@ -15,30 +15,21 @@ const ACCENTS = ["#2f5d8a", "#4f6b3a", "#b4532a", "#b8860b", "#8a3a55", "#50606e
 describe("theme tokens (read from styles.css)", () => {
   it("defines every theme", () => {
     expect(Object.keys(themes).sort()).toEqual([
-      "berry",
-      "blossom",
-      "cobalt",
       "contrast",
       "ember",
-      "emerald",
       "forest",
       "graphite",
       "ink",
       "lagoon",
       "lavender",
-      "lemon",
       "midnight",
-      "mint",
       "nord",
       "ocean",
       "oled",
       "paper",
-      "plum",
       "sand",
       "sky",
       "slate",
-      "sunrise",
-      "sunset",
     ]);
   });
   for (const [name, t] of Object.entries(themes)) {

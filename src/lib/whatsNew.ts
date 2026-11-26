@@ -13,6 +13,14 @@ export interface WhatsNewEntry {
 
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    version: "0.3.6",
+    title: "Four new colour themes",
+    points: [
+      "Sky, Lavender and Lagoon (light) and Ocean (dark) join the theme picker in Settings.",
+      "Every theme now brings its own matching accent colour. Pick a colour yourself, or the first dot, Match theme, to go back to the theme's own. Windows only.",
+    ],
+  },
+  {
     version: "0.3.5",
     title: "Humidity for every day",
     points: [

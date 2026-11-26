@@ -61,8 +61,10 @@ export const ACCENTS = [
 
 function ThemeTile({ id, name, selected }: { id: ThemeName; name: string; selected: boolean }) {
   const update = useStore((s) => s.updateSettings);
+  const accent = useStore((s) => s.settings.accent);
+  // each tile shows the accent it would really get: its own when following the theme, otherwise the chosen colour
   const preview = (theme: string) => (
-    <div className="sw" data-theme={theme}>
+    <div className="sw" data-theme={theme} style={{ "--accent": resolveAccent(theme, accent, theme === "ink") } as React.CSSProperties}>
       <div className="sw-nav">
         <b />
         <i />

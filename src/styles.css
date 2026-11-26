@@ -991,3 +991,11 @@ input[type="range"], input[type="checkbox"] { accent-color: var(--accent); }
 .agenda-row { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 8px; align-items: center; min-height: 44px; padding: 6px 10px; text-align: left; background: var(--surface); border: 1px solid var(--line); border-left: 3px solid var(--c, var(--accent)); border-radius: var(--radius); color: var(--text); font: inherit; cursor: pointer; }
 .agenda-row .mono { font-size: 12px; color: var(--muted); }
 .agenda-row.task.done span:last-child { text-decoration: line-through; color: var(--muted); }
+
+/* Swiping between main tabs: the new page slides in from the side you swiped toward */
+@keyframes swipe-in-next { from { transform: translateX(28px); opacity: 0.4; } }
+@keyframes swipe-in-prev { from { transform: translateX(-28px); opacity: 0.4; } }
+@media (prefers-reduced-motion: no-preference) {
+  [data-swipe="next"] .content > * { animation: swipe-in-next 160ms ease-out; }
+  [data-swipe="prev"] .content > * { animation: swipe-in-prev 160ms ease-out; }
+}

@@ -39,6 +39,7 @@ import { startMailPolling } from "./lib/mail/engine";
 import { accentText, readableOn, resolveAccent } from "./lib/themes";
 import { checkTrackedPrices } from "./lib/shopping";
 import { useWindowClass } from "./lib/windowClass";
+import { useSwipeNav } from "./lib/swipeNav";
 import { remindersScheduled, startReminderSchedule, useAndroidBack } from "./lib/androidApp";
 
 const PAGES = {
@@ -167,6 +168,7 @@ export default function App() {
   const s = useStore();
   const wc = useWindowClass();
   useAndroidBack();
+  useSwipeNav();
   useKeyboardShortcuts();
   useNoBrowserMenu();
   useTheme();

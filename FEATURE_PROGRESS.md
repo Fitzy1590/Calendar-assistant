@@ -234,6 +234,7 @@ Windows-only rule lifted. Card: `VOTING_CARD_MOBILE.html`. Every stage also need
 | [x] | **A2 Unfolded list + detail**: event, task, contact and note editors and the day panel dock beside the page (`Modal dock`); Mail list + reader from 600 px | Screenshots (Contacts, Calendar day panel). Mail two-pane NOT seen with real mail (no account in the test run) |
 | [x] | **A3 Calendar month strip + agenda** under 600 px | Screenshot at 360 px; `windowClass.test.ts` |
 | [x] | **A4 Android gaps**: Back button (`backButton.ts`, registered only while something is open), reminders scheduled with the OS (`reminderSchedule.ts`, in-app 30 s check pauses to avoid doubles), exact-alarm permissions, fold-safe activity (`android-permissions.mjs`, tested on a sample manifest) | `windowClass.test.ts` (5: classes, back rules, reminder plan). NOT verified on a phone |
+| [x] | **A4b Swipe between tabs** (`swipeNav.ts`): left = next, right = previous menu item, touch screens under 1100 px, own-gesture areas excluded, short slide animation (off with reduced motion) | `windowClass.test.ts` (2 more); Chromium touch emulation (8 checks: next, previous, no wrap, vertical, short, task row, last tab, week grid). NOT tried on a phone |
 | [ ] | **A5 Real Z Fold 6 check** (checklist in `docs/ANDROID.md`) | Manual; also the open Android items above (sign-in, Drive sync, wake word, SQLite, WebRTC) |
 
 ---

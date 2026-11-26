@@ -8,6 +8,8 @@ Layout follows the window width, so folding or unfolding is just a resize (the A
 | 600 to 1100 px | unfolded inner screen | left rail with every page; editors (event, task, contact, note) and the day panel dock beside the page; Mail list beside the reader |
 | over 1100 px | Windows | top bar, as before |
 
+Swipe: on a touch screen under 1100 px, swiping the page content left or right moves to the next or previous menu item, in menu order, with no wrap-around. Swipes that start on a text box, dialog, side panel, task or shopping row, task board card, week/day grid, or any scrolling strip keep their own gesture.
+
 Android-only behaviour: Back closes what is open (dialog, assistant, day panel, mail reader), then goes Home, then leaves the app.
 Reminders for the next 7 days are scheduled with Android so they fire with the app closed (re-planned after any change and every 6 hours).
 `scripts/android-permissions.mjs` adds the notification, exact-alarm, microphone and location permissions and the fold-safe activity settings after `tauri android init`.
@@ -20,6 +22,7 @@ Reminders for the next 7 days are scheduled with Android so they fire with the a
 4. Back button from an open editor, from Tasks, from Home.
 5. Add an event with a reminder 3 minutes ahead, close the app: the notification arrives. If not, Settings > Apps > Calendar Assistant > Alarms & reminders.
 6. Keyboard: typing in a note or task keeps the field visible.
-7. Real-time sync with the PC (docs/P2P_SYNC.md) and SQLite data surviving an app restart.
+7. Swipe left and right on Home, Notes and Settings: pages change in menu order; swiping a task row still reveals Delete; scrolling the week grid sideways does not change page.
+8. Real-time sync with the PC (docs/P2P_SYNC.md) and SQLite data surviving an app restart.
 
 Not available on Android: other-mailbox (IMAP/SMTP) accounts (the Rust crates are desktop only), tray, taskbar full screen, in-app updater (use the new APK).

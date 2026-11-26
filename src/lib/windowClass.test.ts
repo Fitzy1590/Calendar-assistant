@@ -48,3 +48,20 @@ describe("scheduled reminders", () => {
     expect(notificationId("k1")).toBeGreaterThan(0);
   });
 });
+
+import { swipeTarget } from "./swipeNav";
+describe("tab swipe", () => {
+  const tabs = ["home", "calendar", "email"];
+  it("left goes next, right goes previous, no wrap", () => {
+    expect(swipeTarget(tabs, "calendar", -120, 10, 200)).toBe("email");
+    expect(swipeTarget(tabs, "calendar", 120, 10, 200)).toBe("home");
+    expect(swipeTarget(tabs, "home", 120, 0, 200)).toBeNull();
+    expect(swipeTarget(tabs, "email", -120, 0, 200)).toBeNull();
+  });
+  it("ignores short, slow or mostly vertical moves", () => {
+    expect(swipeTarget(tabs, "calendar", -40, 0, 100)).toBeNull();
+    expect(swipeTarget(tabs, "calendar", -120, 100, 200)).toBeNull();
+    expect(swipeTarget(tabs, "calendar", -120, 0, 900)).toBeNull();
+    expect(swipeTarget(tabs, "settings", -120, 0, 100)).toBeNull();
+  });
+});

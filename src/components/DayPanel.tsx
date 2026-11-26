@@ -56,7 +56,8 @@ export function DayPanel() {
                   </span>
                 </div>
                 <div className="muted">
-                  {skyOf(w.code).label} · rain {w.rainChance}% · UV {Math.round(w.uv)} · wind {Math.round(w.wind)}
+                  {skyOf(w.code).label} · rain {w.rainChance}%{w.humidity !== undefined ? ` · humidity ${w.humidity}%` : ""} · UV{" "}
+                  {Math.round(w.uv)} · wind {Math.round(w.wind)}
                 </div>
               </div>
             </div>

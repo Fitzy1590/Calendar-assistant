@@ -124,12 +124,16 @@ export function reportUrl(e: { message: string; stack?: string; where?: string; 
 export const detailsText = (e: LoggedError) =>
   `Calendar Assistant ${useUpdates.getState().current} · ${platformName()}\n${new Date(e.at).toISOString()} · ${e.where}\n${e.message}\n${e.stack ?? ""}`;
 
+/** Browser notices that are not errors: a ResizeObserver that couldn't deliver every size change this frame. Nothing is lost. */
+export const isHarmlessBrowserNotice = (msg: string) =>
+  /^ResizeObserver loop (limit exceeded|completed with undelivered notifications)/.test(msg);
+
 /** Catch errors nothing else handled (a failed background job, a bug in a button) and explain them. */
 export function startErrorCapture() {
   window.addEventListener("error", (ev) => {
     // ignore resource load errors (a missing image or font) and cross-origin "Script error."
     if (!(ev.error instanceof Error) && !ev.message) return;
-    if (ev.message === "Script error.") return;
+    if (ev.message === "Script error." || isHarmlessBrowserNotice(ev.message ?? "")) return;
     recordError(ev.error ?? ev.message, "background");
   });
   window.addEventListener("unhandledrejection", (ev) => {

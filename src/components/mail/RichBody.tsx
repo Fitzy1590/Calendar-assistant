@@ -28,10 +28,19 @@ export function RichBody({
     const frame = ref.current;
     if (!frame) return;
     let ro: ResizeObserver | undefined;
+    let raf = 0;
     const onLoad = () => {
       const d = frame.contentDocument;
       if (!d) return;
-      const fit = () => setHeight(Math.max(120, d.documentElement.scrollHeight));
+      // measure the content itself (not the frame's own height) and apply it on the next frame, so resizing
+      // the frame can never feed back into the observer that triggered it
+      const fit = () => {
+        cancelAnimationFrame(raf);
+        raf = requestAnimationFrame(() => {
+          const h = Math.min(30000, Math.max(120, Math.ceil(d.body.getBoundingClientRect().height))); // capped: a message can never grow the frame without end
+          setHeight((prev) => (Math.abs(prev - h) < 2 ? prev : h));
+        });
+      };
       fit();
       ro?.disconnect();
       ro = new ResizeObserver(fit);
@@ -49,6 +58,7 @@ export function RichBody({
     if (frame.contentDocument?.readyState === "complete") onLoad();
     return () => {
       frame.removeEventListener("load", onLoad);
+      cancelAnimationFrame(raf);
       ro?.disconnect();
     };
   }, [doc]);

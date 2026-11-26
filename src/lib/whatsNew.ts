@@ -13,6 +13,14 @@ export interface WhatsNewEntry {
 
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    version: "0.3.4",
+    title: 'Fix for the email "Something went wrong" message',
+    points: [
+      'Some HTML emails (the ones styled to fill the whole screen) made the message area grow and showed "ResizeObserver loop completed". They now open at their natural size.',
+      "Windows only.",
+    ],
+  },
+  {
     version: "0.3.3",
     title: "Emails with links, and more colour",
     points: [

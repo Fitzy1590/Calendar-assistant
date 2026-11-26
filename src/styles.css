@@ -790,3 +790,12 @@ input[type="range"], input[type="checkbox"] { accent-color: var(--accent); }
 .sec-link { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 14px var(--pad); background: none; border: 0; border-top: 1px solid var(--line); color: var(--text); cursor: pointer; text-align: left; font: inherit; min-height: 48px; }
 .sec-link:first-child { border-top: 0; }
 .sec-link:hover { background: var(--surface-2); }
+.sync-status { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--muted); margin-bottom: 10px; min-height: 20px; }
+.sync-status.bad { color: var(--bad); }
+.sync-status.ok .sync-dot { background: var(--ok); }
+.sync-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--bad); flex: none; }
+.sync-bar { flex: 0 1 220px; height: 6px; border-radius: 3px; background: var(--surface-2); overflow: hidden; border: 1px solid var(--border, var(--surface-2)); }
+.sync-bar > span { display: block; height: 100%; background: var(--accent); transition: width .2s linear; }
+.sync-bar.indeterminate > span { width: 35%; animation: sync-slide 1.2s ease-in-out infinite; }
+@keyframes sync-slide { 0% { transform: translateX(-100%); } 100% { transform: translateX(300%); } }
+@media (prefers-reduced-motion: reduce) { .sync-bar.indeterminate > span { animation: none; width: 100%; } }

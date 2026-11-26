@@ -1,5 +1,5 @@
 import { decodeWords, parseAddrList, unescapeSnippet } from "./headers";
-import type { InboxSync, MailProvider } from "./provider";
+import type { InboxSync, MailProvider, SyncProgress } from "./provider";
 import { htmlToText } from "./text";
 import type { RawMail } from "./types";
 
@@ -76,7 +76,12 @@ async function pool<T, R>(items: T[], size: number, fn: (x: T) => Promise<R>): P
 /** The 404 Gmail returns when the history bookmark is too old. */
 const expired = (e: unknown) => /Google 404/.test((e as Error).message);
 
-export async function syncGmail(api: GmailApi, acct: { id: string; deltaLink?: string }, sinceDays = 30): Promise<InboxSync> {
+export async function syncGmail(
+  api: GmailApi,
+  acct: { id: string; deltaLink?: string },
+  sinceDays = 30,
+  onProgress?: SyncProgress,
+): Promise<InboxSync> {
   const profile = await api(`${GMAIL}/profile`);
   const historyId = String(profile?.historyId ?? "");
   const touched = new Map<string, "present" | "gone">();
@@ -108,11 +113,13 @@ export async function syncGmail(api: GmailApi, acct: { id: string; deltaLink?: s
 
   if (initial) {
     let page = "";
-    for (let i = 0; i < 3; i++) {
+    // The old cap of 3 pages meant only the newest 300 messages were ever pulled in.
+    for (let i = 0; i < 100; i++) {
       const j = await api(
-        `${GMAIL}/messages?labelIds=INBOX&maxResults=100&q=${encodeURIComponent(`newer_than:${sinceDays}d`)}${page ? `&pageToken=${page}` : ""}`,
+        `${GMAIL}/messages?labelIds=INBOX&maxResults=500&q=${encodeURIComponent(`newer_than:${sinceDays}d`)}${page ? `&pageToken=${page}` : ""}`,
       );
       for (const m of j?.messages ?? []) touched.set(m.id, "present");
+      onProgress?.(touched.size, undefined, `Found ${touched.size} messages`);
       page = j?.nextPageToken ?? "";
       if (!page) break;
     }
@@ -121,8 +128,10 @@ export async function syncGmail(api: GmailApi, acct: { id: string; deltaLink?: s
   const removedIds: string[] = [...touched].filter(([, v]) => v === "gone").map(([id]) => `${acct.id}:${id}`);
   const want = [...touched].filter(([, v]) => v === "present").map(([id]) => id);
   const upserts: RawMail[] = [];
+  let got = 0;
   const fetched = await pool(want, 6, async (id) => {
     try {
+      onProgress?.(got++, want.length, `Downloading ${Math.min(got, want.length)} of ${want.length}`);
       return await api(`${GMAIL}/messages/${id}?format=metadata${META.map((h) => `&metadataHeaders=${h}`).join("")}`);
     } catch (e) {
       if (expired(e)) return null; // deleted since the list
@@ -157,7 +166,7 @@ export function bodyOf(payload: any): string {
 }
 
 export const gmailProvider = (api: GmailApi): MailProvider => ({
-  sync: (account) => syncGmail(api, account),
+  sync: (account, onProgress) => syncGmail(api, account, 30, onProgress),
   bodyText: async (id) => bodyOf((await api(`${GMAIL}/messages/${id}?format=full`))?.payload),
 });
 

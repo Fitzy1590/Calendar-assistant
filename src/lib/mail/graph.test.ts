@@ -113,3 +113,23 @@ describe("Outlook inbox sync", () => {
     expect(await fetchBodyText(g.api, "h")).toBe("Hi there\nBye");
   });
 });
+
+describe("big inbox", () => {
+  it("pages past 2,000 messages, reports progress and still gets the bookmark", async () => {
+    const PAGES = 60;
+    let n = 0;
+    const api: GraphApi = async (url) => {
+      if (url.includes("$batch")) return { responses: [] };
+      const page = ++n;
+      const value = Array.from({ length: 50 }, (_, i) => ({ id: `m${page}-${i}`, receivedDateTime: "2026-11-20T00:00:00Z" }));
+      return page < PAGES
+        ? { value, "@odata.nextLink": `https://graph.test/next/${page}` }
+        : { value, "@odata.deltaLink": "https://graph.test/delta/1" };
+    };
+    const seen: number[] = [];
+    const r = await syncInbox(api, { id: "acc" }, 30, (done) => seen.push(done));
+    expect(r.upserts).toHaveLength(PAGES * 50);
+    expect(r.deltaLink).toBe("https://graph.test/delta/1");
+    expect(seen.length).toBeGreaterThan(PAGES);
+  });
+});

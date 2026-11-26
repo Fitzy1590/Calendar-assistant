@@ -8,7 +8,7 @@ import { allMessages, deleteMessages, evictOver, getMessage, getMessages, putMes
 import { classify, type ClassifyContext } from "./classify";
 import { checkFollowUps, dueSnoozes, isSnoozed } from "./followups";
 import { graphProvider, type GraphApi } from "./graph";
-import type { MailProvider } from "./provider";
+import type { MailProvider, SyncProgress } from "./provider";
 import { providerFor } from "./providers";
 import { sendDue } from "./sender";
 import { recordOverride, ruleForFolder, ruleForSender, type SenderAction } from "./rules";
@@ -16,13 +16,31 @@ import type { MailAccountMeta, MailFolder, MailMessage, MailRule, RawMail } from
 
 /** Sync every connected account, sort the mail, and raise alerts for new important mail. Windows app / browser only. */
 
-export const useMail = create<{ messages: MailMessage[]; syncing: boolean; error?: string; selectedId?: string; tab: "mail" | "bills" }>(
-  () => ({
-    messages: [],
-    syncing: false,
-    tab: "mail",
-  }),
-);
+/** What the sync button shows while a sync runs: a label and, when the total is known, a 0–100 percentage. */
+export interface SyncStatus {
+  label: string;
+  percent?: number;
+}
+/** How the last sync ended, kept so the person can see it worked. */
+export interface SyncResult {
+  at: number;
+  ok: boolean;
+  text: string;
+}
+
+export const useMail = create<{
+  messages: MailMessage[];
+  syncing: boolean;
+  error?: string;
+  selectedId?: string;
+  tab: "mail" | "bills";
+  progress?: SyncStatus;
+  lastResult?: SyncResult;
+}>(() => ({
+  messages: [],
+  syncing: false,
+  tab: "mail",
+}));
 
 /** Important, unread and not dismissed here: what the Home card, the badge and alerts are about. */
 export const needsAttention = (msgs: MailMessage[]) =>
@@ -106,10 +124,17 @@ export async function syncAccountWithProvider(
   provider: MailProvider,
   account: MailAccountMeta,
   alert: Notifier = mailNotify,
+  onProgress?: SyncProgress,
+  stats?: { fetched: number; removed: number },
 ): Promise<MailMessage[]> {
   const settings = useStore.getState().settings.mail;
   try {
-    const r = await provider.sync(account);
+    const r = await provider.sync(account, onProgress);
+    if (stats) {
+      stats.fetched += r.upserts.length;
+      stats.removed += r.removedIds.length;
+    }
+    onProgress?.(r.upserts.length, r.upserts.length, "Saving to this device");
     const old = await getMessages(r.upserts.map((m) => m.id));
     const ctx = ctxFor(account.address);
     const sorted = r.upserts.map((m) => sortMail(m, ctx, old.get(m.id)));
@@ -389,22 +414,37 @@ export function syncMail(): Promise<string> {
   inflight ??= (async () => {
     const accounts = useStore.getState().settings.mail.accounts.filter((a) => a.enabled);
     if (!accounts.length) return "No email accounts connected.";
-    useMail.setState({ syncing: true, error: undefined });
+    useMail.setState({ syncing: true, error: undefined, progress: { label: "Starting…", percent: 0 } });
     let failed = 0;
     let fresh = 0;
-    for (const a of accounts) {
+    const stats = { fetched: 0, removed: 0 };
+    const total = accounts.length;
+    for (const [n, a] of accounts.entries()) {
+      const prefix = total > 1 ? `${a.address}: ` : "";
+      // each account owns an equal slice of the bar; inside it, the percent follows the provider's own count when it has a total
+      const onProgress: SyncProgress = (done, of, label) => {
+        const inner = of ? Math.min(1, done / of) : undefined;
+        useMail.setState({
+          progress: { label: prefix + label, percent: inner === undefined ? undefined : Math.round(((n + inner) / total) * 100) },
+        });
+      };
       try {
-        fresh += (await syncAccountWithProvider(providerFor(a), a)).length;
+        fresh += (await syncAccountWithProvider(providerFor(a), a, undefined, onProgress, stats)).length;
       } catch (e) {
         failed++;
         useMail.setState({ error: `${a.address}: ${(e as Error).message.slice(0, 120)}` });
       }
     }
+    useMail.setState({ progress: { label: "Sorting your mail…", percent: 100 } });
     await refreshMail();
     await maybeDailyDigest().catch(() => {});
     await maybeBillReminders().catch(() => {});
-    useMail.setState({ syncing: false });
-    return failed ? `${failed} account(s) couldn't sync.` : `Email synced${fresh ? `: ${fresh} new important` : ""}.`;
+    const inbox = useMail.getState().messages.length;
+    const text = failed
+      ? `${failed} of ${total} account${total === 1 ? "" : "s"} couldn't sync.`
+      : `Synced ${inbox} message${inbox === 1 ? "" : "s"} (${stats.fetched} checked${stats.removed ? `, ${stats.removed} removed` : ""}${fresh ? `, ${fresh} new important` : ""}).`;
+    useMail.setState({ syncing: false, progress: undefined, lastResult: { at: Date.now(), ok: !failed, text } });
+    return text;
   })().finally(() => (inflight = null));
   return inflight;
 }

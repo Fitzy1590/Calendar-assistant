@@ -93,6 +93,7 @@ export function Tasks() {
       {adding && (
         <Modal
           title="Add a task"
+          dock
           onClose={() => setAdding(false)}
           footer={
             <>

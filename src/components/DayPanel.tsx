@@ -9,12 +9,14 @@ import { fromYmd, fmtTime, localIso } from "../lib/util";
 import { skyOf, tempUnit } from "../lib/weather";
 import { openUrl } from "../lib/platform";
 import { EventEditor } from "./EventEditor";
+import { useDock } from "./ui";
 import { IExternal, ILeft, IPlus, IRight, IX, WeatherIcon } from "./Icons";
 import type { CalEvent } from "../types";
 
 /** Selecting any day opens this: weather, your plans, and what's on locally (suburb + city). */
 export function DayPanel() {
   const s = useStore();
+  useDock(true);
   const day = s.selectedDay!;
   const date = fromYmd(day);
   const wx = useForecast();

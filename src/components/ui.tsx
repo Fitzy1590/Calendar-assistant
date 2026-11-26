@@ -1,26 +1,42 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { IMore, IX, ISliders } from "./Icons";
 
+let docks = 0;
+/** While a docked panel is open, the page makes room for it (CSS reads `body[data-dock]`). */
+export function useDock(on?: boolean) {
+  useEffect(() => {
+    if (!on) return () => {};
+    docks++;
+    document.body.dataset.dock = "1";
+    return () => {
+      if (--docks === 0) delete document.body.dataset.dock;
+    };
+  }, [on]);
+}
+
 export function Modal({
   title,
   onClose,
   children,
   footer,
   wide,
+  dock,
 }: {
   title: string;
   onClose: () => void;
   children: ReactNode;
   footer?: ReactNode;
   wide?: boolean;
+  dock?: boolean; // on an unfolded phone (600 to 1100 px) sit beside the page as a side panel instead of covering it
 }) {
+  useDock(dock);
   useEffect(() => {
     const k = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", k);
     return () => window.removeEventListener("keydown", k);
   }, [onClose]);
   return (
-    <div className="modal-back" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+    <div className={"modal-back" + (dock ? " dock" : "")} onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
       <div className={"modal" + (wide ? " wide" : "")} role="dialog" aria-label={title}>
         <header>
           <h3>{title}</h3>

@@ -72,6 +72,10 @@ src/lib/subscriptions.ts + bankStatement.ts   bank statement scan; pages/Subscri
 - `src/lib/sync/`: `sqliteStorage.ts` (rows in `calendar.db`, Tauri only), `crdtEngine.ts` (Yjs doc <-> store), `p2p.ts` (y-webrtc + relay), `diagnostics.ts` (off by default, redacted export). Server: `server/crdt-relay.mjs`. Guide: `docs/P2P_SYNC.md`.
 - Store loads from SQLite before first render (`main.tsx` -> `initStorage`). With real-time sync on, per-record relay data and Drive sync are paused.
 
+## Android and fold layout (rules lifted 2026-11-26; `docs/ANDROID.md`)
+
+- Layout follows width: under 600 px bottom bar, 600-1100 px left rail + docked editors (`Modal dock`), `useWindowClass()` in `lib/windowClass.ts`. Android-only code: `lib/androidApp.ts` (Back, scheduled reminders). Check every UI change at 344, 360, 412, 673 and 841 px.
+
 ## Email module (in progress: see `SPEC.md`, stages in `FEATURE_PROGRESS.md`)
 
 - Code: `src/lib/mail/` built: `provider.ts` (the interface every adapter implements; `providers.ts` picks one per account), `graph.ts` (Outlook), `gmail.ts`, `imap.ts` + Rust `src-tauri/src/imap_core.rs` (any IMAP mailbox), `accounts.ts` (add/remove Gmail/IMAP), `microsoft.ts` (sign-in), `html.ts` (HTML mail cleaner + sandbox page; shown by `components/mail/RichBody.tsx`), `classify.ts` (buckets +

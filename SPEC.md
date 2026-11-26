@@ -146,14 +146,14 @@ Status: built behind `settings.sync.p2p` (default off). Card: `VOTING_CARD.html`
 - [ ] 2 Option B: cloud-only polling (redundant with Drive sync and relay)
 - Option A refinements (voted): [x] SQLite now / [ ] Yjs first, SQLite later; [x] y-webrtc / [ ] LAN WebSocket + relay; [ ] HUD whole app / [x] sync panel only / [ ] existing tokens
 
-## 11. Android app and Z Fold 6 layout (Phase 1: awaiting vote)
+## 11. Android app and Z Fold 6 layout (voted; Phase 2 in progress)
 
 Windows-only rule lifted 2026-11-26 (`CLAUDE.md` Releases). Card: `VOTING_CARD_MOBILE.html`. Not built.
 
 **Audit.** One phone breakpoint (760 px) turns the desktop screens into a squeezed column with a 12-item scrolling bottom bar; nothing between 760 and 1100 px; nothing reacts to folding (fold = window resize). IMAP/SMTP crates are desktop-only (no "other mail" on Android). Reminders only fire while the app is open. Android tokens are in app-private storage. Untested on a real phone: sign-in, file save, Drive sync, wake word, SQLite, WebRTC in the WebView. Fold 6 sizes (cover roughly 350-360 dp wide and very tall; inner roughly 650-850 dp, near square) are [UNCERTAIN]: design by width class (<600, 600-840, >840) and verify on the phone.
 
 ### Vote
-- Navigation (cover): [ ] A five tabs + More / [ ] B scrolling bar
-- Unfolded: [ ] A rail + list/detail / [ ] B rail, one pane / [ ] C desktop layout
-- Calendar: [ ] A month strip + agenda / [ ] B agenda only / [ ] C month grid
-- After layout: [ ] A parity gaps first / [ ] B layout only
+- Navigation (cover): [ ] A five tabs + More / [x] B scrolling bar (voted 2026-11-26)
+- Unfolded: [x] A rail + list/detail / [ ] B rail, one pane / [ ] C desktop layout
+- Calendar: [x] A month strip + agenda / [ ] B agenda only / [ ] C month grid
+- After layout: [x] A parity gaps first / [ ] B layout only

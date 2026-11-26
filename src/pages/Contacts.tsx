@@ -114,6 +114,7 @@ function ContactEditor({ c, onClose }: { c: Partial<Contact>; onClose: () => voi
   return (
     <Modal
       title={c.id ? "Edit contact" : "New contact"}
+      dock
       onClose={onClose}
       footer={
         <>

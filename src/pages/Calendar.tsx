@@ -25,12 +25,14 @@ import { EventEditor } from "../components/EventEditor";
 import { MiniCalendar } from "../components/MiniCalendar";
 import { ICake, IDrop, ILeft, IMail, IPlus, IRight, WeatherIcon } from "../components/Icons";
 import { PageHead, Seg, Toggle } from "../components/ui";
+import { useWindowClass } from "../lib/windowClass";
 
 type View = "day" | "week" | "month" | "year";
 const HOUR_PX = 48;
 
 export function Calendar() {
   const s = useStore();
+  const wc = useWindowClass();
   const cfg = s.settings.pages.calendar;
   const view = cfg.view;
   const setView = (v: View) => s.updateSettings((st) => void (st.pages.calendar.view = v));
@@ -177,7 +179,12 @@ export function Calendar() {
           ]}
         />
       </div>
-      {view === "month" && <MonthView cursor={cursor} onNew={(d) => newAt(d, true)} onOpen={openOcc} />}
+      {view === "month" &&
+        (wc === "compact" ? (
+          <MonthStrip cursor={cursor} onNew={(d) => newAt(d, true)} onOpen={openOcc} />
+        ) : (
+          <MonthView cursor={cursor} onNew={(d) => newAt(d, true)} onOpen={openOcc} />
+        ))}
       {(view === "week" || view === "day") && (
         <TimeGrid
           jump={jump}
@@ -306,6 +313,79 @@ function MonthView({ cursor, onNew, onOpen }: { cursor: Date; onNew: (d: Date) =
           </div>
         );
       })}
+    </div>
+  );
+}
+
+/** Folded / phone layout: a compact month with dots, and the chosen day's agenda underneath. */
+function MonthStrip({ cursor, onNew, onOpen }: { cursor: Date; onNew: (d: Date) => void; onOpen: (o: Occurrence) => void }) {
+  const s = useStore();
+  const ws = s.settings.weekStartsOn;
+  const start = startOfWeek(startOfMonth(cursor), { weekStartsOn: ws });
+  const weeks = Math.ceil((differenceInMinutes(addDays(startOfMonth(addMonths(cursor, 1)), -1), start) / 1440 + 1) / 7);
+  const days = Array.from({ length: weeks * 7 }, (_, i) => addDays(start, i));
+  const data = useRange(start, addDays(start, days.length));
+  const sel = s.selectedDay ?? ymd(new Date());
+  const day = data.get(sel);
+  const selDate = days.find((d) => ymd(d) === sel) ?? new Date(sel + "T00:00");
+  return (
+    <div className="mstrip">
+      <div className="mstrip-grid" role="grid" aria-label={format(cursor, "MMMM yyyy")}>
+        {days.slice(0, 7).map((d) => (
+          <div key={d.getDay()} className="h" role="columnheader">
+            {format(d, "EEEEE")}
+          </div>
+        ))}
+        {days.map((d) => {
+          const k = ymd(d);
+          const cell = data.get(k);
+          const n = (cell?.occ.length ?? 0) + (cell?.tasks.length ?? 0);
+          return (
+            <button
+              key={k}
+              role="gridcell"
+              className={cx("mcell", !isSameMonth(d, cursor) && "out", isSameDay(d, new Date()) && "today", k === sel && "sel")}
+              aria-selected={k === sel}
+              aria-current={isSameDay(d, new Date()) ? "date" : undefined}
+              aria-label={`${format(d, "EEEE d MMMM")}, ${n} item${n === 1 ? "" : "s"}`}
+              onClick={() => s.selectDay(k)}
+            >
+              <b>{format(d, "d")}</b>
+              <span className="dots" aria-hidden="true">
+                {Array.from({ length: Math.min(n, 3) }, (_, i) => (
+                  <i key={i} />
+                ))}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+      <div className="agenda" aria-live="polite">
+        <div className="agenda-head">
+          <h3>{format(selDate, "EEEE d MMMM")}</h3>
+          <button className="btn" onClick={() => onNew(selDate)}>
+            <IPlus /> Add
+          </button>
+        </div>
+        {!day || day.occ.length + day.tasks.length === 0 ? <p className="faint">Nothing planned.</p> : null}
+        {(day?.occ ?? []).map((o) => (
+          <button key={o.key} className="agenda-row" style={{ ["--c" as string]: o.event.color }} onClick={() => onOpen(o)}>
+            <span className="mono">{o.event.allDay ? "All day" : fmtTime(o.start, s.settings.clock24)}</span>
+            <span>{o.event.title}</span>
+          </button>
+        ))}
+        {(day?.tasks ?? []).map((t) => (
+          <button
+            key={t.id}
+            className={cx("agenda-row task", t.done && "done")}
+            onClick={() => s.upsert("tasks", { id: t.id, done: !t.done, doneAt: Date.now() })}
+            aria-pressed={t.done}
+          >
+            <span className="mono">{t.done ? "Done" : "Task"}</span>
+            <span>{t.title}</span>
+          </button>
+        ))}
+      </div>
     </div>
   );
 }

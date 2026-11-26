@@ -391,6 +391,7 @@ function NoteEditor({ n, onClose, onDelete }: { n: Note; onClose: () => void; on
   return (
     <Modal
       title="Note"
+      dock
       onClose={save}
       wide
       footer={

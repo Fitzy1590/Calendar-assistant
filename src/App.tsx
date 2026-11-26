@@ -38,6 +38,8 @@ import { StaleBanner } from "./components/DriveSync";
 import { startMailPolling } from "./lib/mail/engine";
 import { accentText, readableOn, resolveAccent } from "./lib/themes";
 import { checkTrackedPrices } from "./lib/shopping";
+import { useWindowClass } from "./lib/windowClass";
+import { remindersScheduled, startReminderSchedule, useAndroidBack } from "./lib/androidApp";
 
 const PAGES = {
   home: Home,
@@ -83,6 +85,7 @@ function useBackground() {
     const tickReminders = () => {
       const s = useStore.getState().settings;
       if (!s.onboarded || !s.reminders.desktopNotifications) return;
+      if (remindersScheduled()) return; // Android already has these scheduled with the system
       for (const r of dueNow()) notify(r.title, r.detail);
     };
     const tickSync = () => {
@@ -101,7 +104,8 @@ function useBackground() {
     const stopMail = startMailPolling();
     const stopDrive = startDriveSync();
     const stopSports = startSportsCalendar();
-    return () => (clearInterval(a), clearInterval(b), stopGoogle(), stopMail(), stopDrive(), stopSports());
+    const stopSchedule = startReminderSchedule();
+    return () => (clearInterval(a), clearInterval(b), stopGoogle(), stopMail(), stopDrive(), stopSports(), stopSchedule());
   }, []);
 }
 
@@ -161,6 +165,8 @@ function useNoBrowserMenu() {
 
 export default function App() {
   const s = useStore();
+  const wc = useWindowClass();
+  useAndroidBack();
   useKeyboardShortcuts();
   useNoBrowserMenu();
   useTheme();
@@ -202,7 +208,9 @@ export default function App() {
           </ErrorBoundary>
         </div>
       </main>
-      {s.selectedDay && !s.assistantOpen && <DayPanel />}
+      {s.selectedDay && !s.assistantOpen && !(wc === "compact" && s.page === "calendar" && s.settings.pages.calendar.view === "month") && (
+        <DayPanel />
+      )}
       {s.assistantOpen && <AssistantDrawer />}
       {s.feedbackOpen && <FeedbackModal />}
       {s.emailImportOpen && <EmailImport />}

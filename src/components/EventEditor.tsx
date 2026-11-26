@@ -80,6 +80,7 @@ export function EventEditor({
   return (
     <Modal
       title={ev.id ? "Edit event" : "New event"}
+      dock
       onClose={onClose}
       footer={
         <>

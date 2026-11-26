@@ -13,6 +13,15 @@ export interface WhatsNewEntry {
 
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    version: "0.3.3",
+    title: "Emails with links, and more colour",
+    points: [
+      "Gmail and Outlook emails now open as real HTML with clickable links, tables and buttons. Switch to Rich or Plain above any message. Other mailboxes still show plain text.",
+      "Pictures in emails follow your choice in Settings: always show, only for senders you trust, or blocked until you allow. Scripts never run.",
+      "A calmer use of colour: each folder tab, row label and message heading is coloured by type (important, action, financial and so on), in every theme. Windows only.",
+    ],
+  },
+  {
     version: "0.3.2",
     title: "Email now pulls in everything",
     points: [

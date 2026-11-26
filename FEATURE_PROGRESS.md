@@ -28,6 +28,12 @@ Package manager is **npm** (`package-lock.json`, CI runs `npm ci`); commands bel
 
 ---
 
+## 0c. Local-first CRDT sync (Phase 1 done, waiting for vote; design in `SPEC.md` §10)
+
+Card: `VOTING_CARD.html`, `.claude/VOTING_CARD.md`. No code written. Vote: [ ] 1 Option A  [ ] 2 Option B  [ ] custom. Existing sync (relay, Drive) stays until replaced.
+
+---
+
 ## 0. Email module (approved vote; design in `SPEC.md`)
 
 Resume here after `/clear`. Work one stage at a time; tick it only when its checks pass. Every stage also needs B1-B3 and B5.

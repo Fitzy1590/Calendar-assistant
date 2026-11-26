@@ -17,7 +17,9 @@
       "Read(./dist/**)",
       "Read(./src-tauri/target/**)",
       "Read(./src-tauri/gen/**)",
-      "Read(./node_modules/**)"
+      "Read(./node_modules/**)",
+      "Read(*.lock)",
+      "Read(./.env*)"
     ]
   },
   "hooks": {
@@ -46,5 +48,6 @@
         ]
       }
     ]
-  }
+  },
+  "outputStyle": "concise"
 }

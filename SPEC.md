@@ -128,3 +128,18 @@ Extends the existing tokens (`styles.css` `[data-theme]`, `[data-density]`, `--a
 ## 9. Testing approach
 
 Pure modules (`thread.ts`, `classify.ts`, `actions.ts` parsing, theme contrast, storage thresholds) get Vitest tests next to the code. Provider adapters take an injected API function (like `googleSync.ts`) and are tested against fakes of the Gmail and Graph APIs, including history/delta, expired tokens, 429s and `invalid_grant`. UI gets Playwright checks at 1280 px and 412 px, keyboard-only walkthroughs and axe-core. Rust `secure_store` is checked standalone with `cargo test` where possible and by the Windows CI job.
+
+## 10. Local-first CRDT sync upgrade (Phase 1: awaiting vote)
+
+Status: audited, **not built**. Card: `VOTING_CARD.html`, `.claude/VOTING_CARD.md`. Stages go in `FEATURE_PROGRESS.md` §0c after the vote.
+
+**Audit.** Existing: `sync.ts` + `server/sync-server.mjs` (WebSocket relay, per-record LWW, tombstones, offline queue); `driveSync.ts` (Drive, one file per device). Storage: Zustand `persist` (`store.ts`). Absent: Yjs, y-webrtc, `tauri-plugin-sql`. Gap: LWW per record loses one of two concurrent field edits. Unmeasured: <10 ms LAN latency, 0 ms cold start, Android WebView LAN WebRTC.
+
+**Design if Option A.** `src/lib/sync/crdtEngine.ts`: one `Y.Doc`, a `Y.Map` per collection keyed by record id, each record a `Y.Map` of fields (field-level merge). Existing `Synced` records and tombstones map 1:1. Excluded from the doc: mail, statement rows, API keys, tokens (CLAUDE.md boundaries). Transport: y-webrtc with signaling through the existing relay, relay fallback. Pairing code stays the shared secret. Reuse `store.upsert/remove/applyRemote`; do not add a second command surface.
+
+**Pause points (CLAUDE.md + your rules):** secrets/`.env`, force-push or DB-file deletion, theme/framework swap.
+
+### Vote (Phase 1)
+- [ ] 1 Option A: SQLite + Yjs + WebRTC P2P + relay fallback + Tauri 2 targets
+- [ ] 2 Option B: cloud-only polling (redundant with Drive sync and relay)
+- Option A refinements: [ ] SQLite now / [ ] Yjs first, SQLite later; [ ] y-webrtc / [ ] LAN WebSocket + relay; [ ] HUD whole app / [ ] sync panel only / [ ] existing tokens

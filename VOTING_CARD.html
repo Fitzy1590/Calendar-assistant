@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Voting card: local-first 2-way sync</title>
+<style>
+:root{--bg:#0B0E14;--panel:#121722;--line:#1f2937;--text:#e6edf3;--mute:#8b98a9;--mint:#10B981;--cyan:#00F2FE;--amber:#F59E0B;--red:#ef4444;--ui:Inter,Outfit,system-ui,"Segoe UI",sans-serif;--mono:"JetBrains Mono","Space Grotesk",ui-monospace,Consolas,monospace}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 var(--ui);padding:24px 16px 80px}
+main{max-width:1180px;margin:0 auto}
+h1{font-size:22px;margin:0 0 4px}h2{font-size:16px;margin:32px 0 12px;color:var(--cyan);font-weight:600}
+h3{font-size:14px;margin:0 0 8px}
+p{margin:0 0 8px}.mute{color:var(--mute)}.mono{font-family:var(--mono)}
+.tag{font:600 11px var(--mono);padding:2px 8px;border:1px solid var(--line);border-radius:6px;color:var(--mute)}
+.tag.ok{color:var(--mint);border-color:var(--mint)}.tag.warn{color:var(--amber);border-color:var(--amber)}.tag.unk{color:var(--red);border-color:var(--red)}
+.grid{display:grid;gap:16px}.g2{grid-template-columns:repeat(auto-fit,minmax(340px,1fr))}.g3{grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+.card{background:rgba(18,23,34,.85);backdrop-filter:blur(8px);border:1px solid var(--line);border-radius:12px;padding:16px}
+label.opt{display:flex;gap:12px;align-items:flex-start;min-height:44px;padding:12px;border:1px solid var(--line);border-radius:10px;cursor:pointer;margin-bottom:8px}
+label.opt:hover{border-color:var(--cyan)}
+label.opt:has(input:checked){border-color:var(--mint);background:rgba(16,185,129,.08)}
+input[type=radio]{margin-top:4px;width:20px;height:20px;accent-color:var(--mint);flex:none}
+.opt b{display:block}.opt small{color:var(--mute);display:block}
+.sw{display:flex;gap:8px;flex-wrap:wrap}.sw div{width:84px;height:56px;border-radius:8px;border:1px solid var(--line);font:11px var(--mono);padding:6px;display:flex;align-items:flex-end;color:#000}
+/* device mocks */
+.devs{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:16px;align-items:start}
+@media(max-width:820px){.devs{grid-template-columns:1fr}}
+.dev{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#0d1119}
+.bar{display:flex;gap:6px;align-items:center;padding:8px 12px;border-bottom:1px solid var(--line);font:11px var(--mono);color:var(--mute)}
+.bar i{width:9px;height:9px;border-radius:50%;background:var(--line)}
+.nav{display:flex;gap:4px;padding:6px 12px;border-bottom:1px solid var(--line);font-size:12px;color:var(--mute)}
+.nav span{padding:4px 10px;border-radius:6px}.nav .on{background:rgba(0,242,254,.12);color:var(--cyan)}
+.body{padding:14px}
+.chip{display:inline-flex;gap:6px;align-items:center;font:600 12px var(--mono);padding:4px 10px;border-radius:999px;border:1px solid var(--mint);color:var(--mint)}
+.chip:before{content:"";width:8px;height:8px;border-radius:50%;background:var(--mint)}
+.chip.amber{border-color:var(--amber);color:var(--amber)}.chip.amber:before{background:var(--amber)}
+.row{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:8px;margin-top:8px;font-size:13px;background:rgba(255,255,255,.02)}
+.row .mono{font-size:12px;color:var(--cyan)}
+.merge{border-color:var(--amber);background:rgba(245,158,11,.07)}
+.phone{max-width:300px;margin:0 auto}
+.fab{float:right;width:44px;height:44px;border-radius:50%;background:var(--mint);color:#000;display:grid;place-items:center;font-size:22px}
+table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;padding:8px;border-bottom:1px solid var(--line);vertical-align:top}th{color:var(--mute);font-weight:500}
+button.copy{min-height:44px;padding:0 20px;border-radius:10px;border:1px solid var(--cyan);background:transparent;color:var(--cyan);font:600 14px var(--ui);cursor:pointer}
+button.copy:hover{background:rgba(0,242,254,.12)}
+#out{font:13px var(--mono);background:#0d1119;border:1px solid var(--line);border-radius:8px;padding:12px;margin:12px 0;white-space:pre-wrap}
+.sticky{position:sticky;bottom:0;background:var(--bg);padding:12px 0;border-top:1px solid var(--line);margin-top:24px}
+</style>
+</head>
+<body><main>
+
+<h1>Voting card: Calendar Assistant local-first 2-way sync</h1>
+<p class="mute">Audited against <span class="mono">main</span> + <span class="mono">CLAUDE.md</span>, <span class="mono">SPEC.md</span>, <span class="mono">FEATURE_PROGRESS.md</span>, <span class="mono">src/lib/sync.ts</span>, <span class="mono">driveSync.ts</span>, <span class="mono">server/sync-server.mjs</span>. Nothing is built yet. Numbers in the mocks are illustrative, not measured.</p>
+
+<h2>What the audit found (read before voting)</h2>
+<div class="card">
+<table>
+<tr><th>Finding</th><th>Evidence</th><th></th></tr>
+<tr><td>Real-time 2-way sync already exists: WebSocket relay, offline queue, heartbeat, tombstones, last-writer-wins <i>per record</i>.</td><td><span class="mono">sync.ts</span>, <span class="mono">sync-server.mjs</span></td><td><span class="tag ok">ESTABLISHED</span></td></tr>
+<tr><td>Serverless Drive sync also exists (D1 to D5 built; D6 two-device check not done).</td><td><span class="mono">driveSync.ts</span>, <span class="mono">docs/DRIVE_SYNC.md</span></td><td><span class="tag ok">ESTABLISHED</span></td></tr>
+<tr><td>Real gap: LWW is per record. Complete a task on Android while changing its due date on Windows and one edit is lost. Yjs field-level merge fixes exactly this.</td><td><span class="mono">sync.ts</span> header; <span class="mono">Synced {id, updatedAt, deleted}</span> in <span class="mono">types.ts</span></td><td><span class="tag ok">ESTABLISHED</span></td></tr>
+<tr><td>Local storage is Zustand <span class="mono">persist</span> in localStorage; mail uses IndexedDB. No SQLite, Yjs, y-webrtc or <span class="mono">tauri-plugin-sql</span> in <span class="mono">package.json</span> / <span class="mono">Cargo.toml</span>.</td><td><span class="mono">store.ts:145,230</span></td><td><span class="tag ok">ESTABLISHED</span></td></tr>
+<tr><td>Option B (cloud polling) duplicates the Drive sync and the relay already shipped. Per your de-duplication rule it adds nothing.</td><td>above</td><td><span class="tag warn">PLAUSIBLE</span></td></tr>
+<tr><td>y-webrtc needs a signaling server even on one LAN. The existing relay can play that role, so no new server is needed.</td><td>y-webrtc design; <span class="mono">sync-server.mjs</span> already runs on :8787</td><td><span class="tag warn">PLAUSIBLE</span></td></tr>
+<tr><td>Android WebView may hide LAN addresses from WebRTC (mDNS candidates), so direct P2P may not connect on every router. Needs a test on a real phone.</td><td>none in repo</td><td><span class="tag unk">UNCERTAIN</span></td></tr>
+<tr><td>"&lt;10 ms" and "0 ms cold start" are targets, not measured. Moving localStorage to SQLite does not by itself prove faster start.</td><td>none in repo</td><td><span class="tag unk">UNCERTAIN</span></td></tr>
+<tr><td>The "Tactical Glassmorphism HUD" look conflicts with <span class="mono">.claude/rules/calendar-ui.md</span> (bans glassmorphism, glow shadows, new hex colours). A theme change is one of your pause points, so it is a vote below.</td><td><span class="mono">calendar-ui.md</span> "Look"</td><td><span class="tag warn">CONFLICT</span></td></tr>
+<tr><td>CLAUDE.md: "Windows only until the user says otherwise". Android code stays compatible but is not built or shipped in this work unless you lift that.</td><td><span class="mono">CLAUDE.md</span> Releases</td><td><span class="tag ok">ESTABLISHED</span></td></tr>
+<tr><td>Mail bodies, statement rows, API keys and tokens must never enter the Yjs doc or leave the device. The synced doc covers events, tasks, notes, shopping, contacts and shared prefs only.</td><td><span class="mono">CLAUDE.md</span> boundaries</td><td><span class="tag ok">ESTABLISHED</span></td></tr>
+</table>
+</div>
+
+<h2>Mock screenshots (Option A, sync status)</h2>
+<div class="devs">
+ <div class="dev" role="img" aria-label="Windows mock of Settings, Phone and sync panel">
+  <div class="bar"><i></i><i></i><i></i>&nbsp; Calendar Assistant · 1280 px</div>
+  <div class="nav"><span>Home</span><span>Calendar</span><span>Tasks</span><span>Notes</span><span class="on">Settings</span></div>
+  <div class="body">
+   <div style="display:flex;justify-content:space-between;align-items:center"><h3>Phone &amp; sync</h3><span class="chip">P2P · 2 peers · 6 ms</span></div>
+   <div class="row"><span>Pixel 8 <span class="mute">Android · Wi-Fi direct</span></span><span class="mono">in sync · 12:04:31</span></div>
+   <div class="row"><span>Home relay <span class="mute">fallback</span></span><span class="mono" style="color:var(--amber)">standby</span></div>
+   <div class="row merge"><span><b>Buy milk</b> <span class="mute">concurrent edit merged</span><br><span class="mono" style="color:var(--mute)">done ← Android 12:04:30 · due Fri ← Windows 12:04:30</span></span><span class="mono" style="color:var(--mint)">both kept</span></div>
+   <div class="row"><span class="mute">Offline queue</span><span class="mono">0 pending</span></div>
+   <p style="margin-top:12px"><button class="copy" type="button" tabindex="-1">Export diagnostic package</button></p>
+  </div>
+ </div>
+ <div class="dev phone" role="img" aria-label="Phone mock of the Tasks page">
+  <div class="bar">Tasks · 412 px</div>
+  <div class="body">
+   <div style="display:flex;justify-content:space-between;align-items:center"><h3>This week</h3><span class="chip" style="font-size:11px">P2P 8 ms</span></div>
+   <div class="row"><span>◯ Pay rates</span><span class="mono">Mon</span></div>
+   <div class="row merge"><span>● Buy milk</span><span class="mono">Fri</span></div>
+   <div class="row"><span>◯ Book dentist</span><span class="mono">Wed</span></div>
+   <div style="height:56px;margin-top:12px"><span class="fab">+</span></div>
+  </div>
+ </div>
+</div>
+
+<h2>Palette (your spec) next to the app's current tokens</h2>
+<div class="grid g2">
+ <div class="card"><h3>Tactical HUD (requested)</h3><div class="sw"><div style="background:#0B0E14;color:#e6edf3">#0B0E14<br>Obsidian</div><div style="background:#10B981">#10B981<br>Mint</div><div style="background:#00F2FE">#00F2FE<br>Cyan</div><div style="background:#F59E0B">#F59E0B<br>Amber</div></div>
+ <p class="mute" style="margin-top:8px">Inter / Outfit UI, JetBrains Mono for sync status and counts, 44 dp targets, 8 dp grid, 0 ms tab transitions.</p></div>
+ <div class="card"><h3>Existing system</h3><p class="mute">Themes and per-theme accents live in <span class="mono">lib/themes.ts</span> and <span class="mono">styles.css</span> tokens (Midnight, Ember, Graphite, Nord, Ocean…). All are contrast-tested in <span class="mono">themes.test.ts</span>. Midnight is the closest existing dark theme.</p></div>
+</div>
+
+<form id="vote">
+<h2>Vote 1: build option</h2>
+<label class="opt"><input type="radio" name="main" value="1" checked><span><b>1️⃣ Option A [recommended]: Local CRDT sync</b><small>SQLite (<span class="mono">tauri-plugin-sql</span>) + Yjs document binding + Wi-Fi WebRTC/P2P + relay fallback + real-time 2-way task and calendar sync + Tauri 2 Windows (Android compatible, not shipped).</small><small>Justification: field-level merge with no data loss, offline-first, no new cloud cost. Target &lt;10 ms on one LAN (unmeasured).</small></span></label>
+<label class="opt"><input type="radio" name="main" value="2"><span><b>2️⃣ Option B: Cloud-only polling</b><small>Needs an external cloud DB and internet. Overlaps the Drive sync and relay already built; audit rates it redundant.</small></span></label>
+
+<h2>Vote 2 (only if Option A): refinements from the audit</h2>
+<p class="mute">Defaults follow your spec exactly. Pick the alternative only if you agree with the finding.</p>
+<div class="grid g3">
+ <div class="card"><h3>Storage</h3>
+  <label class="opt"><input type="radio" name="store" value="sqlite" checked><span><b>As specified</b><small>Move all collections to SQLite now. Migrates existing localStorage saves; largest change.</small></span></label>
+  <label class="opt"><input type="radio" name="store" value="persist"><span><b>Yjs first, SQLite later</b><small>Keep Zustand persist for stage 1; add SQLite as its own stage once Yjs is proven. Smaller risk to existing data.</small></span></label></div>
+ <div class="card"><h3>Transport</h3>
+  <label class="opt"><input type="radio" name="net" value="webrtc" checked><span><b>As specified: y-webrtc</b><small>Signaling through the existing relay; LAN P2P; relay fallback.</small></span></label>
+  <label class="opt"><input type="radio" name="net" value="ws"><span><b>LAN WebSocket + relay</b><small>Windows hosts a local WebSocket the phone connects to by pairing code; avoids the Android mDNS risk. Same Yjs updates.</small></span></label></div>
+ <div class="card"><h3>HUD look</h3>
+  <label class="opt"><input type="radio" name="ui" value="app"><span><b>Whole app</b><small>New theme across every page. Overrides <span class="mono">calendar-ui.md</span>; theme swap, so it needs your explicit yes.</small></span></label>
+  <label class="opt"><input type="radio" name="ui" value="panel" checked><span><b>Sync panel only</b><small>HUD styling on the sync status panel and chip only; rest of the app keeps its themes.</small></span></label>
+  <label class="opt"><input type="radio" name="ui" value="none"><span><b>Existing tokens</b><small>Use current theme tokens, no new palette.</small></span></label></div>
+</div>
+
+<div class="sticky">
+ <div id="out" aria-live="polite"></div>
+ <button class="copy" type="button" id="copy">Copy my vote</button>
+ <span class="mute" id="copied"></span>
+ <p class="mute" style="margin-top:8px">Paste into chat, or reply 1 / 2 / custom tweak.</p>
+</div>
+</form>
+</main>
+<script>
+const f=document.getElementById("vote"),out=document.getElementById("out");
+function v(){const d=new FormData(f);const m=d.get("main");
+ out.textContent=m==="2"?"Vote: 2 (Option B)":"Vote: 1 (Option A) | storage="+d.get("store")+" | transport="+d.get("net")+" | hud="+d.get("ui");}
+f.addEventListener("change",v);v();
+document.getElementById("copy").addEventListener("click",()=>{
+ const done=t=>document.getElementById("copied").textContent=t;
+ try{navigator.clipboard.writeText(out.textContent).then(()=>done(" Copied."),()=>done(" Select the text above and copy."))}catch(e){done(" Select the text above and copy.")}});
+</script>
+</body>
+</html>

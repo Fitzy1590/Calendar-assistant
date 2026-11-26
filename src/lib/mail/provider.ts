@@ -17,4 +17,6 @@ export type SyncProgress = (done: number, total: number | undefined, label: stri
 export interface MailProvider {
   sync(account: { id: string; deltaLink?: string }, onProgress?: SyncProgress): Promise<InboxSync>;
   bodyText(providerId: string): Promise<string>;
+  /** The message as text and, when the provider has it, as HTML (for the rich view). IMAP gives text only for now. */
+  bodyFull?(providerId: string): Promise<{ text: string; html?: string }>;
 }

@@ -124,6 +124,15 @@ export async function fetchBodyText(api: GraphApi, providerId: string): Promise<
   return b.contentType === "html" ? htmlToText(b.content) : String(b.content).trim();
 }
 
+/** Full message as text and, when it is an HTML message, the HTML too. */
+export async function fetchBodyFull(api: GraphApi, providerId: string): Promise<{ text: string; html?: string }> {
+  const j = await api(`${GRAPH}/me/messages/${providerId}?$select=body`);
+  const b = j?.body;
+  if (!b?.content) return { text: "" };
+  const content = String(b.content);
+  return b.contentType === "html" ? { text: htmlToText(content), html: content } : { text: content.trim() };
+}
+
 /** The signed-in person's address and name. */
 export async function fetchProfile(api: GraphApi): Promise<{ address: string; name: string }> {
   const j = await api(`${GRAPH}/me?$select=mail,userPrincipalName,displayName`);
@@ -133,4 +142,5 @@ export async function fetchProfile(api: GraphApi): Promise<{ address: string; na
 export const graphProvider = (api: GraphApi): MailProvider => ({
   sync: (account, onProgress) => syncInbox(api, account, 30, onProgress),
   bodyText: (id) => fetchBodyText(api, id),
+  bodyFull: (id) => fetchBodyFull(api, id),
 });

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fetchBodyText, syncInbox, type GraphApi } from "./graph";
+import { fetchBodyFull, fetchBodyText, syncInbox, type GraphApi } from "./graph";
 
 /** A tiny fake Graph: an inbox with delta bookmarks, $batch headers and message bodies. */
 function fakeGraph() {
@@ -111,6 +111,14 @@ describe("Outlook inbox sync", () => {
     g.add("h", { body: { contentType: "html", content: "<p>Hi&nbsp;there</p><script>x()</script><div>Bye</div>" } });
     expect(await fetchBodyText(g.api, "t")).toBe("Hello");
     expect(await fetchBodyText(g.api, "h")).toBe("Hi there\nBye");
+  });
+
+  it("fetchBodyFull gives the HTML as well as the text for HTML mail, and text only for plain mail", async () => {
+    const g = fakeGraph();
+    g.add("t", { body: { contentType: "text", content: " Hello \n" } });
+    g.add("h", { body: { contentType: "html", content: "<p>Hi&nbsp;there</p><div>Bye</div>" } });
+    expect(await fetchBodyFull(g.api, "t")).toEqual({ text: "Hello" });
+    expect(await fetchBodyFull(g.api, "h")).toEqual({ text: "Hi there\nBye", html: "<p>Hi&nbsp;there</p><div>Bye</div>" });
   });
 });
 

@@ -20,6 +20,7 @@ export interface MailMessage {
   isRead: boolean;
   preview: string;
   text?: string; // full text, only when the cache keeps message text
+  html?: string; // the HTML version for the rich view, same rule as `text` (this device only)
   folder: "inbox" | "junk";
   /** Subset of headers, lower-case keys: list-unsubscribe, list-id, precedence, auto-submitted. */
   headers: Record<string, string>;
@@ -111,6 +112,10 @@ export interface MailSettings {
   pollMins: number;
   cacheText: boolean; // keep message text on this device (off = metadata and preview only)
   cacheMaxMB: number;
+  /** Rich (HTML) or plain reading, and whether remote pictures load. */
+  view: "rich" | "plain";
+  images: "always" | "trusted" | "block";
+  trustedImageSenders: string[]; // addresses allowed to load pictures when `images` is "trusted"
   /** Which mail counts as important. */
   important: { actionUrgent: boolean; contacts: boolean; financial: boolean; everything: boolean };
   /** How important mail shows up. */
@@ -136,6 +141,9 @@ export const DEFAULT_MAIL_SETTINGS: MailSettings = {
   pollMins: 3,
   cacheText: true,
   cacheMaxMB: 300,
+  view: "rich",
+  images: "always",
+  trustedImageSenders: [],
   important: { actionUrgent: true, contacts: true, financial: true, everything: false },
   alerts: { homeCard: true, desktop: true, sound: false, badge: true, dailySummary: true, summaryHour: 8 },
   rules: [],

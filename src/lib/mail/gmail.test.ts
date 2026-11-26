@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { bodyOf, GMAIL, gmailProvider, mapGmail, syncGmail, type GmailApi } from "./gmail";
+import { bodyOf, GMAIL, htmlOf, gmailProvider, mapGmail, syncGmail, type GmailApi } from "./gmail";
 
 const b64 = (s: string) =>
   btoa(String.fromCharCode(...new TextEncoder().encode(s)))
@@ -71,6 +71,19 @@ describe("Gmail mapping", () => {
     };
     expect(bodyOf(plain)).toBe("Hello, café");
     expect(bodyOf({ mimeType: "text/html", body: { data: b64("<p>Amount due</p><p>$40</p>") } })).toContain("Amount due");
+  });
+
+  it("htmlOf returns the HTML part of a multipart message, or nothing for plain mail", () => {
+    const both = {
+      mimeType: "multipart/alternative",
+      parts: [
+        { mimeType: "text/plain", body: { data: b64("Hi") } },
+        { mimeType: "text/html", body: { data: b64('<p>Hi <a href="https://a.com">link</a></p>') } },
+      ],
+    };
+    expect(htmlOf(both)).toBe('<p>Hi <a href="https://a.com">link</a></p>');
+    expect(bodyOf(both)).toBe("Hi");
+    expect(htmlOf({ mimeType: "text/plain", body: { data: b64("Hi") } })).toBeUndefined();
   });
 });
 

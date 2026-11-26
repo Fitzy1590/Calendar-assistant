@@ -34,7 +34,8 @@ paths: ["src/components/**/*.tsx", "src/pages/**/*.tsx", "src/views/**/*.tsx", "
 ## Inbox and mail UI
 - Message lists are one `role="listbox"` with `role="option"` rows and a roving `tabIndex`: ↑/↓ or j/k move, Enter opens, Esc returns to the list, Home/End jump. Never a `<div onClick>` per row.
 - Each row's `aria-label` = sender, subject, time, unread/priority state. New mail is announced in a polite live region ("3 new messages"), never by moving focus.
-- Mail HTML is rendered only after sanitising; remote images and links are blocked until the person allows them. External links open via `openUrl`.
+- Mail HTML is rendered only after sanitising (`lib/mail/html.ts`) and only inside the sandboxed frame (`RichBody`): no scripts, ever. Remote pictures follow the person's setting (Always show / Trusted senders / Blocked; the owner chose Always show) with a Show pictures bar whenever some are held back. Links are web, mail and phone only and open via `openUrl`. Plain text is always one tap away (Rich / Plain).
 - Folder drag-and-drop always has a keyboard equivalent (a "Move to…" menu). Drop targets are labelled.
 - AI draft panels: the draft is editable text in a labelled textarea; "Send" is a separate, explicit button. Voice dictation shows a live transcript and a visible stop control.
+- Mail colour: by message type, calm. Colour sits on the folder tabs, the small type label on each row and the open message's pill only; rows stay neutral. Use the `--k-*` tokens (`.k-urgent`, `.k-action`, …) which are tuned per light/dark theme for AA text contrast; never a literal colour. This is the one place more than one hue is allowed (owner's vote, Nov 2026).
 - Themes come only from tokens (`[data-theme]`, `[data-density]`, `--accent`). Every theme meets WCAG AA text contrast; the high-contrast theme meets AAA.

@@ -38,7 +38,7 @@ export async function putMessages(msgs: MailMessage[], keepText: boolean): Promi
   const d = await db();
   const tx = d.transaction(STORE, "readwrite");
   const s = tx.objectStore(STORE);
-  for (const m of msgs) s.put(keepText ? m : { ...m, text: undefined });
+  for (const m of msgs) s.put(keepText ? m : { ...m, text: undefined, html: undefined });
   await done(tx);
 }
 

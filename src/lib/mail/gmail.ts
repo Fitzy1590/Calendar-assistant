@@ -150,8 +150,8 @@ const b64url = (s: string) => {
   return new TextDecoder("utf-8").decode(Uint8Array.from(bin, (c) => c.charCodeAt(0)));
 };
 
-/** Walk the MIME tree for the readable text: plain if there is some, else the HTML turned into text. */
-export function bodyOf(payload: any): string {
+/** Walk the MIME tree: the plain parts and the HTML parts. */
+function partsOf(payload: any): { plain: string[]; html: string[] } {
   const plain: string[] = [];
   const html: string[] = [];
   const walk = (p: any) => {
@@ -162,12 +162,28 @@ export function bodyOf(payload: any): string {
     for (const c of p.parts ?? []) walk(c);
   };
   walk(payload);
+  return { plain, html };
+}
+
+/** The readable text: plain if there is some, else the HTML turned into text. */
+export function bodyOf(payload: any): string {
+  const { plain, html } = partsOf(payload);
   return plain.length ? plain.join("\n").trim() : htmlToText(html.join("\n"));
+}
+
+/** The HTML part, when the message has one. */
+export function htmlOf(payload: any): string | undefined {
+  const { html } = partsOf(payload);
+  return html.length ? html.join("\n") : undefined;
 }
 
 export const gmailProvider = (api: GmailApi): MailProvider => ({
   sync: (account, onProgress) => syncGmail(api, account, 30, onProgress),
   bodyText: async (id) => bodyOf((await api(`${GMAIL}/messages/${id}?format=full`))?.payload),
+  bodyFull: async (id) => {
+    const payload = (await api(`${GMAIL}/messages/${id}?format=full`))?.payload;
+    return { text: bodyOf(payload), html: htmlOf(payload) };
+  },
 });
 
 /** The signed-in Google account's address. */

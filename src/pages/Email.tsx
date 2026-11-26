@@ -33,7 +33,7 @@ const when = (t: number) => (isToday(t) ? format(t, "h:mm a") : formatDistanceTo
 
 export function Email() {
   const s = useStore();
-  const { messages, syncing, error, selectedId, tab } = useMail();
+  const { messages, syncing, error, selectedId, tab, progress, lastResult } = useMail();
   const [view, setView] = useState<View>("important");
   const [ctx, setCtx] = useState<{ m: MailMessage; x: number; y: number } | null>(null);
   const [fileFor, setFileFor] = useState<MailMessage | null>(null);
@@ -147,6 +147,35 @@ export function Email() {
       <ISync className={syncing ? "spin" : undefined} />
     </button>
   );
+  const syncStatus = (
+    <div className={"sync-status" + (!syncing && lastResult ? (lastResult.ok ? " ok" : " bad") : "")} role="status" aria-live="polite">
+      {syncing ? (
+        <>
+          <div
+            className={"sync-bar" + (progress?.percent === undefined ? " indeterminate" : "")}
+            role="progressbar"
+            aria-label="Email sync"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={progress?.percent}
+          >
+            <span style={progress?.percent === undefined ? undefined : { width: `${progress.percent}%` }} />
+          </div>
+          <span>
+            {progress?.label ?? "Syncing…"}
+            {progress?.percent !== undefined ? ` · ${progress.percent}%` : ""}
+          </span>
+        </>
+      ) : lastResult ? (
+        <>
+          <span className="sync-dot" aria-hidden="true" />
+          <span>
+            {lastResult.text.replace(/\.$/, "")} · {formatDistanceToNowStrict(lastResult.at, { addSuffix: true })}
+          </span>
+        </>
+      ) : null}
+    </div>
+  );
   const goView = (v: View) => (useMail.setState({ tab: "mail" }), setView(v));
   const folderNav = (
     <nav className="mail-folders chips-row" aria-label="Mail folders">
@@ -195,6 +224,7 @@ export function Email() {
     <>
       <div className={"mail-page" + (reading ? " reading" : "")}>
         <PageHead title="Email" sub={accounts.map((a) => a.address).join(", ")} actions={sync} />
+        {syncStatus}
         {error && (
           <div role="alert" style={{ color: "var(--bad)", fontSize: 13, marginBottom: 8 }}>
             {error}

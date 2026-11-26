@@ -1,5 +1,5 @@
 import { htmlToText } from "./text";
-import type { InboxSync, MailProvider } from "./provider";
+import type { InboxSync, MailProvider, SyncProgress } from "./provider";
 import type { MailAddr, RawMail } from "./types";
 
 /**
@@ -41,9 +41,14 @@ export function mapMessage(g: any, accountId: string): RawMail {
 }
 
 /** The few headers that say "this is a mailing list", for up to 20 messages per request ($batch). */
-export async function fetchHeaders(api: GraphApi, providerIds: string[]): Promise<Record<string, Record<string, string>>> {
+export async function fetchHeaders(
+  api: GraphApi,
+  providerIds: string[],
+  onChunk?: (done: number) => void,
+): Promise<Record<string, Record<string, string>>> {
   const out: Record<string, Record<string, string>> = {};
   for (let i = 0; i < providerIds.length; i += 20) {
+    onChunk?.(i);
     const chunk = providerIds.slice(i, i + 20);
     const res = await api(`${GRAPH}/$batch`, {
       method: "POST",
@@ -66,17 +71,25 @@ export async function fetchHeaders(api: GraphApi, providerIds: string[]): Promis
 }
 
 /** What changed in the inbox since `deltaLink`; without one, the last `sinceDays` days. */
-export async function syncInbox(api: GraphApi, acct: { id: string; deltaLink?: string }, sinceDays = 30): Promise<InboxSync> {
+export async function syncInbox(
+  api: GraphApi,
+  acct: { id: string; deltaLink?: string },
+  sinceDays = 30,
+  onProgress?: SyncProgress,
+): Promise<InboxSync> {
   const fresh = () =>
     `${GRAPH}/me/mailFolders/inbox/messages/delta?$select=${SELECT}&$filter=receivedDateTime ge ${new Date(Date.now() - sinceDays * 864e5).toISOString()}`;
   const run = async (start: string): Promise<{ items: any[]; deltaLink?: string } | null> => {
     const items: any[] = [];
     let url: string | undefined = start;
     let deltaLink: string | undefined;
-    for (let i = 0; i < 40 && url; i++) {
-      const j = await api(url, { headers: { Prefer: "odata.maxpagesize=50" } });
+    // The old cap of 40 pages (2,000 messages) stopped before Graph handed over its bookmark, so a big
+    // inbox never finished: the next sync started over and newer mail could be left out.
+    for (let i = 0; i < 1000 && url; i++) {
+      const j = await api(url, { headers: { Prefer: "odata.maxpagesize=100" } });
       if (!j) return null; // 410: the bookmark expired
       items.push(...(j.value ?? []));
+      onProgress?.(items.length, undefined, `Fetched ${items.length} messages`);
       deltaLink = j["@odata.deltaLink"] ?? deltaLink;
       url = j["@odata.nextLink"];
     }
@@ -94,6 +107,7 @@ export async function syncInbox(api: GraphApi, acct: { id: string; deltaLink?: s
     const hdrs = await fetchHeaders(
       api,
       upserts.map((m) => m.providerId),
+      (n) => onProgress?.(n, upserts.length, `Checking senders ${n} of ${upserts.length}`),
     );
     for (const m of upserts) m.headers = hdrs[m.providerId] ?? {};
   } catch {
@@ -117,6 +131,6 @@ export async function fetchProfile(api: GraphApi): Promise<{ address: string; na
 }
 
 export const graphProvider = (api: GraphApi): MailProvider => ({
-  sync: (account) => syncInbox(api, account),
+  sync: (account, onProgress) => syncInbox(api, account, 30, onProgress),
   bodyText: (id) => fetchBodyText(api, id),
 });

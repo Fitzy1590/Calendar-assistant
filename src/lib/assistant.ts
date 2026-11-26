@@ -91,7 +91,7 @@ export async function runLocal(input: string): Promise<A.ActionResult> {
     return A.setCalendarView(m[1] as "day");
   if (
     (m = low.match(
-      /\b(dark|light|paper|ink|slate|sand|midnight|ember|graphite|nord)\b (?:mode|theme)|theme (?:to )?(dark|light|paper|ink|slate|sand|midnight|ember|graphite|nord)/,
+      /\b(dark|light|paper|ink|slate|sand|midnight|ember|graphite|nord|sky|lavender|lagoon|ocean)\b (?:mode|theme)|theme (?:to )?(dark|light|paper|ink|slate|sand|midnight|ember|graphite|nord|sky|lavender|lagoon|ocean)/,
     ))
   ) {
     const name = (m[1] || m[2]) as string;
@@ -270,7 +270,12 @@ const TOOLS: Anthropic.Tool[] = [
   tool(
     "set_theme",
     "Change the colour theme.",
-    { theme: { type: "string", enum: ["paper", "ink", "slate", "sand", "midnight", "ember", "graphite", "nord", "system"] } },
+    {
+      theme: {
+        type: "string",
+        enum: ["paper", "ink", "slate", "sand", "midnight", "ember", "graphite", "nord", "sky", "lavender", "lagoon", "ocean", "system"],
+      },
+    },
     ["theme"],
   ),
   tool("plan_week", "Spread unscheduled and overdue tasks across the next 7 days.", { apply: { type: "boolean" } }, ["apply"]),

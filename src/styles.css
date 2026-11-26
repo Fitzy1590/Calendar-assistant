@@ -164,6 +164,66 @@
   --bad: #f09098;
   color-scheme: dark;
 }
+/* Sky: clear blue */
+[data-theme="sky"] {
+  --bg: #d6e9fb;
+  --surface: #edf6ff;
+  --surface-2: #bcd9f4;
+  --text: #0d2843;
+  --muted: #385b7f;
+  --faint: #7ea0c4;
+  --line: #adcdee;
+  --line-strong: #7eaedc;
+  --ok: #27642b;
+  --warn: #785000;
+  --bad: #a52c27;
+  color-scheme: light;
+}
+/* Lavender: soft purple */
+[data-theme="lavender"] {
+  --bg: #e4dbf8;
+  --surface: #f4f0ff;
+  --surface-2: #d3c6f2;
+  --text: #221244;
+  --muted: #57468a;
+  --faint: #9a8cc4;
+  --line: #cabdec;
+  --line-strong: #a592d8;
+  --ok: #245d28;
+  --warn: #6f4a00;
+  --bad: #9a2924;
+  color-scheme: light;
+}
+/* Lagoon: bright teal */
+[data-theme="lagoon"] {
+  --bg: #cdeff0;
+  --surface: #e7fafa;
+  --surface-2: #aee3e4;
+  --text: #082c2d;
+  --muted: #2c6263;
+  --faint: #74aaab;
+  --line: #a2dadb;
+  --line-strong: #6cc2c4;
+  --ok: #27662d;
+  --warn: #7b5200;
+  --bad: #a82d27;
+  color-scheme: light;
+}
+/* Ocean: deep teal */
+[data-theme="ocean"] {
+  --bg: #05272f;
+  --surface: #0a3843;
+  --surface-2: #104b59;
+  --text: #e3f8fa;
+  --muted: #98cfd6;
+  --faint: #5f9ba3;
+  --line: #14515e;
+  --line-strong: #228094;
+  --ok: #7fe08a;
+  --warn: #f2c14e;
+  --bad: #ff9e93;
+  color-scheme: dark;
+}
 /* High contrast: black and white, AAA text, strong outlines. It brings its own accent (set in App.tsx). */
 [data-theme="contrast"] {
   --bg: #000000;
@@ -581,10 +641,10 @@ mark { color: inherit; border-radius: 2px; }
 }
 
 /* ---------- notes (sticky notes) ---------- */
-:root, [data-theme="paper"], [data-theme="sand"] {
+:root, [data-theme="paper"], [data-theme="sand"], [data-theme="sky"], [data-theme="lavender"], [data-theme="lagoon"] {
   --n-yellow: #f6e7a6; --n-mint: #cfe8d5; --n-sky: #cfe0f1; --n-rose: #f3d3d3; --n-lilac: #e1d8f0; --n-sand: #ecdcc4; --n-ink: #24211b;
 }
-:root[data-theme="ink"], :root[data-theme="slate"], :root[data-theme="midnight"], :root[data-theme="ember"], :root[data-theme="graphite"], :root[data-theme="nord"], :root[data-theme="oled"], :root[data-theme="forest"], :root[data-theme="contrast"] {
+:root[data-theme="ink"], :root[data-theme="slate"], :root[data-theme="midnight"], :root[data-theme="ember"], :root[data-theme="graphite"], :root[data-theme="nord"], :root[data-theme="oled"], :root[data-theme="forest"], :root[data-theme="ocean"], :root[data-theme="contrast"] {
   --n-yellow: #4a4326; --n-mint: #2c4433; --n-sky: #283d52; --n-rose: #4d2f31; --n-lilac: #3b3350; --n-sand: #4a3f30; --n-ink: #efece4;
 }
 .notes-board { columns: var(--note-w, 260px); column-gap: var(--gap); }
@@ -803,10 +863,10 @@ input[type="range"], input[type="checkbox"] { accent-color: var(--accent); }
 
 /* ---------- Email: calm colour by message type (calm colour option from the vote) ----------
    Colour sits on the tabs, the small type labels and the open message's heading only; rows stay neutral. */
-:root, [data-theme="paper"], [data-theme="sand"] {
+:root, [data-theme="paper"], [data-theme="sand"], [data-theme="sky"], [data-theme="lavender"], [data-theme="lagoon"] {
   --k-urgent: #c4262f; --k-action: #9a5b00; --k-financial: #1b7a43; --k-social: #6d44c4; --k-inbox: #285fc2; --k-subscriptions: #0b7480; --k-bills: #b0390a; --k-spam: #6b655b; --k-ink: #fff;
 }
-:root[data-theme="ink"], :root[data-theme="slate"], :root[data-theme="midnight"], :root[data-theme="ember"], :root[data-theme="graphite"], :root[data-theme="nord"], :root[data-theme="oled"], :root[data-theme="forest"], :root[data-theme="contrast"] {
+:root[data-theme="ink"], :root[data-theme="slate"], :root[data-theme="midnight"], :root[data-theme="ember"], :root[data-theme="graphite"], :root[data-theme="nord"], :root[data-theme="oled"], :root[data-theme="forest"], :root[data-theme="ocean"], :root[data-theme="contrast"] {
   --k-urgent: #ff6b76; --k-action: #f5b43a; --k-financial: #4cd08a; --k-social: #a98bff; --k-inbox: #6ea8ff; --k-subscriptions: #3cc9d6; --k-bills: #ff9a5c; --k-spam: #9b988f; --k-ink: #0d0f1a;
 }
 .k-urgent { --k: var(--k-urgent); } .k-action { --k: var(--k-action); } .k-financial { --k: var(--k-financial); }

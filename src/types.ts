@@ -173,6 +173,10 @@ export type ThemeName =
   | "graphite"
   | "nord"
   | "contrast"
+  | "sky"
+  | "lavender"
+  | "lagoon"
+  | "ocean"
   | "system";
 export type PageId =
   | "home"
@@ -198,7 +202,7 @@ export interface Settings {
   setupSkipped: string[]; // wizard steps skipped, offered again from Home
   displayName: string;
   theme: ThemeName;
-  accent: string;
+  accent: string; // "#rrggbb", or "theme" to use the theme's own matching accent
   density: "compact" | "comfortable" | "spacious";
   fontScale: number;
   location?: Place;

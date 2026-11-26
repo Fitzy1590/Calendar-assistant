@@ -5,6 +5,7 @@ import { toast, useStore } from "../store";
 import { placeFromDevice, searchPlaces } from "../lib/weather";
 import { NEWS_REGIONS, NEWS_TOPICS } from "../lib/news";
 import { pairingCode } from "../lib/util";
+import { resolveAccent, THEME_ACCENT } from "../lib/themes";
 import {
   backupToDrive,
   googleConfigured,
@@ -31,12 +32,16 @@ import { cityGuesses, DEVICE_NAMES, KEY_LINKS, NEWS_KEYWORDS, regionDefaults, SY
 export const THEMES: { id: ThemeName; name: string; group: "light" | "dark" | "other"; legacy?: boolean }[] = [
   { id: "paper", name: "Paper", group: "light" },
   { id: "sand", name: "Sand", group: "light" },
+  { id: "sky", name: "Sky", group: "light" },
+  { id: "lavender", name: "Lavender", group: "light" },
+  { id: "lagoon", name: "Lagoon", group: "light" },
   { id: "ink", name: "Ink", group: "dark" },
   { id: "slate", name: "Slate", group: "dark" },
   { id: "midnight", name: "Midnight", group: "dark" },
   { id: "ember", name: "Ember", group: "dark" },
   { id: "graphite", name: "Graphite", group: "dark" },
   { id: "nord", name: "Nord", group: "dark" },
+  { id: "ocean", name: "Ocean", group: "dark" },
   // still work for anyone who already chose them, but no longer offered
   { id: "oled", name: "OLED dark", group: "dark", legacy: true },
   { id: "forest", name: "Forest", group: "dark", legacy: true },
@@ -56,8 +61,10 @@ export const ACCENTS = [
 
 function ThemeTile({ id, name, selected }: { id: ThemeName; name: string; selected: boolean }) {
   const update = useStore((s) => s.updateSettings);
+  const accent = useStore((s) => s.settings.accent);
+  // each tile shows the accent it would really get: its own when following the theme, otherwise the chosen colour
   const preview = (theme: string) => (
-    <div className="sw" data-theme={theme}>
+    <div className="sw" data-theme={theme} style={{ "--accent": resolveAccent(theme, accent, theme === "ink") } as React.CSSProperties}>
       <div className="sw-nav">
         <b />
         <i />
@@ -88,6 +95,7 @@ function ThemeTile({ id, name, selected }: { id: ThemeName; name: string; select
 
 export function ThemePicker() {
   const s = useStore();
+  const shown = resolveAccent(s.settings.theme, s.settings.accent, window.matchMedia("(prefers-color-scheme: dark)").matches);
   return (
     <div className="stack">
       <div className="theme-tile-wrap">
@@ -110,6 +118,14 @@ export function ThemePicker() {
         <span className="muted" style={{ width: 70 }}>
           Accent
         </span>
+        <button
+          className="accent-dot"
+          title="Match theme"
+          aria-label="Match theme"
+          style={{ background: shown }}
+          aria-pressed={s.settings.accent === THEME_ACCENT}
+          onClick={() => s.updateSettings((st) => void (st.accent = THEME_ACCENT))}
+        />
         {ACCENTS.map((a) => (
           <button
             key={a.c}
@@ -123,11 +139,14 @@ export function ThemePicker() {
         ))}
         <input
           type="color"
-          value={s.settings.accent}
+          value={shown}
           onChange={(e) => s.updateSettings((st) => void (st.accent = e.target.value))}
           aria-label="Custom accent"
           style={{ width: 32, height: 28, border: 0, background: "none" }}
         />
+        <span className="faint" style={{ fontSize: 12.5 }}>
+          {s.settings.accent === THEME_ACCENT ? "Following the theme's own accent" : "First dot: match the theme"}
+        </span>
       </div>
       {s.settings.theme === "contrast" && (
         <div className="faint" style={{ fontSize: 12.5 }}>

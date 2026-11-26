@@ -9,7 +9,7 @@ export const DEFAULT_SETTINGS: Settings = {
   setupSkipped: [],
   displayName: "",
   theme: "system",
-  accent: "#2f5d8a",
+  accent: "theme",
   density: "comfortable",
   fontScale: 1,
   units: "metric",
@@ -243,6 +243,8 @@ export const useStore = create<State>()(
         if (!persisted) return current; // nothing saved yet (first launch)
         const p = persisted as Partial<State>;
         const settings = deepMerge(DEFAULT_SETTINGS, p.settings ?? {}) as Settings;
+        // the old built-in default blue was never a deliberate pick: follow the theme's accent from now on
+        if (settings.accent === "#2f5d8a") settings.accent = "theme";
         // pages and widgets added in later versions are appended to saved lists
         for (const d of DEFAULT_SETTINGS.sidebar)
           if (!settings.sidebar.some((x) => x.id === d.id)) settings.sidebar.splice(-1, 0, { ...d });

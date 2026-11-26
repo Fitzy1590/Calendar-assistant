@@ -1,3 +1,4 @@
+import { P2pSyncPanel } from "../components/P2pSyncPanel";
 import { format } from "date-fns";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { PageId } from "../types";
@@ -197,6 +198,14 @@ export function Settings() {
         keywords: "sync android phone pair pairing code server call sms text phone link devices force sync now share preferences",
         wide: true,
         render: () => <SyncSetup />,
+      },
+      {
+        id: "p2p",
+        section: "Phone & sync",
+        label: "Real-time sync (beta)",
+        keywords: "real time realtime p2p peer wifi webrtc yjs crdt instant merge phone pc diagnostic sqlite relay direct",
+        wide: true,
+        render: () => <P2pSyncPanel />,
       },
       {
         id: "drive",

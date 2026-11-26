@@ -24,6 +24,10 @@
     "fs:allow-write-text-file",
     "oauth:allow-start",
     "oauth:allow-cancel",
+    "sql:allow-load",
+    "sql:allow-execute",
+    "sql:allow-select",
+    "sql:allow-close",
     {
       "identifier": "opener:allow-open-url",
       "allow": [

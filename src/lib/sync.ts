@@ -53,6 +53,8 @@ const commandHandlers = new Set<(c: DeviceCommand, from: string) => void>();
 const resultHandlers = new Set<(r: { id: string; ok: boolean; message?: string }) => void>();
 let peers: string[] = [];
 const QUEUE_KEY = "sync-queue";
+/** Real-time (Yjs) sync on: this relay path only carries commands, presence and guest replies. */
+const p2pOn = () => useStore.getState().settings.sync.p2p;
 
 const queue = (): Change[] => JSON.parse(store.get(QUEUE_KEY) || "[]");
 const saveQueue = (q: Change[]) => store.set(QUEUE_KEY, JSON.stringify(q.slice(-5000)));
@@ -111,7 +113,7 @@ export function connect() {
     setStatus("online");
     // a forced sync pulls everything (since 0) and re-sends every local record; normally only what's new
     send({ type: "hello", since: fullResync ? 0 : lastSyncSeq });
-    const q = fullResync ? allLocalChanges() : queue();
+    const q = p2pOn() ? [] : fullResync ? allLocalChanges() : queue(); // real-time sync carries the data when it is on
     q.forEach((change) => send({ type: "change", change }));
     saveQueue([]);
     fullResync = false;
@@ -121,10 +123,11 @@ export function connect() {
     const msg = JSON.parse(ev.data);
     switch (msg.type) {
       case "snapshot":
-        useStore.getState().applyRemote(msg.changes, msg.seq);
+        if (!p2pOn()) useStore.getState().applyRemote(msg.changes, msg.seq);
         markSynced();
         break;
       case "change":
+        if (p2pOn() && msg.from !== "rsvp") break; // guest replies still arrive; device records come through real-time sync
         if (msg.from !== deviceId) useStore.getState().applyRemote([msg.change], msg.seq);
         else useStore.getState().applyRemote([], msg.seq);
         markSynced();
@@ -194,6 +197,7 @@ export function forceSync() {
 /** Wire the store to the socket. Call once at startup. */
 export function startSync() {
   onLocalChange((change) => {
+    if (p2pOn()) return;
     if (!send({ type: "change", change })) saveQueue([...queue(), change]);
   });
   // catch up as soon as the app is back on screen or the network returns (Android resumes, laptop wakes)

@@ -107,7 +107,7 @@ export function startDriveSync(): () => void {
   let lastTry = 0;
   const ready = () => {
     const d = useStore.getState().settings.driveSync;
-    return d.enabled && googleConnected(SCOPES.drive) ? d : null;
+    return d.enabled && !useStore.getState().settings.sync.p2p && googleConnected(SCOPES.drive) ? d : null; // paused while real-time sync is on
   };
   const run = (onOpen = false) => {
     const d = ready();

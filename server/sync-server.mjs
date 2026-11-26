@@ -7,6 +7,7 @@
  * - WebSocket /sync?room=<pairing code>&device=<id>&kind=<platform:name>
  *   Keeps an append-only change log per room (last-writer-wins per record) on disk in ./server/data,
  *   fans changes out to the other devices in the room and relays phone commands (call/SMS).
+ * - WebSocket /signal and /crdt  real-time CRDT sync: WebRTC signaling and a fallback relay (server/crdt-relay.mjs).
  * - GET /proxy?url=...  CORS proxy for the browser build (news RSS, sports, events), restricted to an allow-list.
  * - GET/POST /rsvp/<token>  the invite page a guest opens from their email or text: event details, map,
  *   Accept / Maybe / Can't make it with a note, and "add to my calendar". Their answer is written onto the
@@ -21,6 +22,7 @@ import { mkdirSync, readFileSync, writeFileSync, existsSync, readdirSync } from 
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { WebSocketServer } from "ws";
+import { attachCrdt } from "./crdt-relay.mjs";
 import { lookup } from "node:dns/promises";
 import { isIP } from "node:net";
 
@@ -279,7 +281,12 @@ ${calendarLinks(token, ev)}
 </div>`));
 }
 
-const wss = new WebSocketServer({ server, path: "/sync", maxPayload: 2 * 1024 * 1024 });
+const wss = new WebSocketServer({ noServer: true, maxPayload: 2 * 1024 * 1024 });
+const crdtUpgrade = attachCrdt(join(DATA, "crdt")); // /signal (WebRTC signaling) and /crdt (fallback relay)
+server.on("upgrade", (req, socket, head) => {
+  if (new URL(req.url, "http://x").pathname === "/sync") wss.handleUpgrade(req, socket, head, (ws) => wss.emit("connection", ws, req));
+  else if (!crdtUpgrade(req, socket, head)) socket.destroy();
+});
 wss.on("connection", (ws, req) => {
   const url = new URL(req.url, "http://x");
   const roomName = url.searchParams.get("room");

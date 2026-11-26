@@ -10,3 +10,5 @@ server/data
 *.key
 client_secret*.json
 .claude/settings.local.json
+temp/
+.claude/scratch/

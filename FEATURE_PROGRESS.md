@@ -28,9 +28,18 @@ Package manager is **npm** (`package-lock.json`, CI runs `npm ci`); commands bel
 
 ---
 
-## 0c. Local-first CRDT sync (Phase 1 done, waiting for vote; design in `SPEC.md` §10)
+## 0c. Local-first CRDT sync (voted Option A: SQLite now, y-webrtc, HUD on the sync panel only; design in `SPEC.md` §10)
 
-Card: `VOTING_CARD.html`, `.claude/VOTING_CARD.md`. No code written. Vote: [ ] 1 Option A  [ ] 2 Option B  [ ] custom. Existing sync (relay, Drive) stays until replaced.
+Opt-in (`settings.sync.p2p`, default off). Guide: `docs/P2P_SYNC.md`. Every stage also needs B1-B3 and B5.
+
+| | Stage | Verification |
+|---|---|---|
+| [x] | **S1 SQLite store** (`sqliteStorage.ts`, `initStorage.ts`): row per record, only changed rows written, migrates the old localStorage save (kept), no write before first read; Tauri only, localStorage elsewhere; `tauri-plugin-sql` + `sql:*` capabilities | `sqliteStorage.test.ts` (4) on real SQLite (`node:sqlite`). NOT built: Rust/Tauri (CI `build` decides), Android, real migration on a user's data |
+| [x] | **S2 Yjs engine** (`crdtEngine.ts`): doc <-> store, field-level merge, doc saved with the data | `crdtEngine.test.ts` (6: defect shown, merge, convergence, seed guard), `crdtBinding.test.ts` (3) |
+| [x] | **S3 Transport** (`p2p.ts`, `server/crdt-relay.mjs`): y-webrtc signaling `/signal`, fallback relay `/crdt`, room = hash of pairing code, loaded only when switched on | `temp/relay-smoke.mjs` (8 checks pass); two Chromium contexts linked directly: task arrived in about 35 ms (same machine, 50 ms polling; NOT a Wi-Fi figure), concurrent complete + reschedule merged on both |
+| [x] | **S4 Panel + diagnostics**: HUD status panel (Settings > Phone & sync), off-by-default redacted export | `diagnostics.test.ts` (3); screenshots 1280 px and 412 px |
+| [x] | **S5 Dual-target config**: plugin, capabilities (`sql:*`), no new fs scopes | `rustfmt` clean; NOT compiled here |
+| [ ] | **S6 Real devices**: PC + phone on one router (mDNS/WebRTC in Android WebView), away from home via relay, SQLite migration on a real save | Manual checklist; Windows only until told otherwise |
 
 ---
 

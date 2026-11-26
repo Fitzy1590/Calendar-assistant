@@ -906,3 +906,44 @@ input[type="range"], input[type="checkbox"] { accent-color: var(--accent); }
   .month .cell .wxmini { margin-left: auto; }
   .month .cell.today .n b { min-width: 20px; height: 20px; padding: 0 3px; }
 }
+
+/* Real-time sync panel: the only place with the dark HUD look (.claude/rules/calendar-ui.md "Sync panel exception") */
+.sync-hud {
+  --hud-bg: #0b0e14;
+  --hud-line: #1f2937;
+  --hud-text: #e6edf3;
+  --hud-mute: #9aa7b8;
+  --hud-mint: #10b981;
+  --hud-cyan: #00f2fe;
+  --hud-amber: #f59e0b;
+  background: var(--hud-bg);
+  color: var(--hud-text);
+  border: 1px solid var(--hud-line);
+  border-radius: var(--radius);
+  padding: 16px;
+  font-family: var(--font-ui);
+}
+.sync-hud * { transition: none; }
+.sync-hud .hud-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+.sync-hud .hud-title { font: 600 13px var(--font-mono); color: var(--hud-mute); text-transform: uppercase; letter-spacing: 0.06em; }
+.sync-hud .hud-note { color: var(--hud-mute); margin: 8px 0; font-size: 13px; line-height: 1.5; }
+.sync-hud .hud-warn { color: var(--hud-amber); }
+.sync-hud .hud-chip { font: 600 12px var(--font-mono); padding: 4px 10px; border-radius: 999px; border: 1px solid currentColor; }
+.sync-hud .hud-chip.mint { color: var(--hud-mint); }
+.sync-hud .hud-chip.cyan { color: var(--hud-cyan); }
+.sync-hud .hud-chip.amber { color: var(--hud-amber); }
+.sync-hud .hud-chip.mute { color: var(--hud-mute); }
+.sync-hud .hud-grid { display: grid; grid-template-columns: 1fr auto; gap: 8px 16px; margin: 16px 0; }
+.sync-hud dt { color: var(--hud-mute); font-size: 13px; }
+.sync-hud dd { margin: 0; font: 13px var(--font-mono); color: var(--hud-cyan); text-align: right; }
+.sync-hud .hud-actions { display: flex; gap: 8px 16px; flex-wrap: wrap; align-items: center; border-top: 1px solid var(--hud-line); padding-top: 12px; }
+.sync-hud .hud-switch, .sync-hud .hud-btn {
+  min-height: 44px; display: inline-flex; align-items: center; gap: 12px; padding: 0 12px; cursor: pointer;
+  background: transparent; color: var(--hud-text); border: 1px solid var(--hud-line); border-radius: 8px; font: inherit;
+}
+.sync-hud .hud-btn { color: var(--hud-cyan); border-color: var(--hud-cyan); }
+.sync-hud .hud-knob { width: 32px; height: 18px; border-radius: 9px; background: var(--hud-line); position: relative; flex: none; }
+.sync-hud .hud-knob::after { content: ""; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: var(--hud-text); }
+.sync-hud [aria-checked="true"] .hud-knob { background: var(--hud-mint); }
+.sync-hud [aria-checked="true"] .hud-knob::after { left: 16px; background: var(--hud-bg); }
+.sync-hud button:focus-visible { outline: 2px solid var(--hud-cyan); outline-offset: 2px; }

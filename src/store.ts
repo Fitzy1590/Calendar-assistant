@@ -1,8 +1,9 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { createJSONStorage, persist } from "zustand/middleware";
 import type { CollectionName, Contact, PageId, RecordOf, Settings, Synced } from "./types";
 import { pairingCode, uid } from "./lib/util";
 import { DEFAULT_MAIL_SETTINGS } from "./lib/mail/types";
+import { appStorage } from "./lib/sync/storage";
 
 export const DEFAULT_SETTINGS: Settings = {
   onboarded: false,
@@ -44,7 +45,7 @@ export const DEFAULT_SETTINGS: Settings = {
     history: [],
   },
   updates: { checkOnLaunch: true, installAutomatically: true, autoDefaultApplied: true },
-  sync: { shareSettings: true, enabled: false, serverUrl: "", pairingCode: pairingCode(), deviceName: "" },
+  sync: { shareSettings: true, p2p: false, enabled: false, serverUrl: "", pairingCode: pairingCode(), deviceName: "" },
   phone: { route: "companion" },
   subscriptions: { items: [], cancelled: {} },
   assistant: { provider: "local", apiKey: "", geminiKey: "", geminiModel: "gemini-2.5-flash", voiceLang: "en-AU", speakReplies: false },
@@ -208,6 +209,8 @@ export const useStore = create<State>()(
     {
       name: "calendar-assistant",
       version: 1,
+      storage: createJSONStorage(() => appStorage),
+      skipHydration: typeof window !== "undefined" && "__TAURI_INTERNALS__" in window, // Tauri: main.tsx loads SQLite first
       partialize: (s) => ({
         deviceId: s.deviceId,
         settings: s.settings,

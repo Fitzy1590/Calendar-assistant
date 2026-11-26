@@ -246,6 +246,7 @@ export interface Settings {
     lastSeenVersion?: string; // version whose "What's new" window was last shown or skipped
   };
   sync: {
+    p2p: boolean; // real-time Yjs sync (peer-to-peer + relay fallback); pauses the per-record relay and Drive data sync
     shareSettings: boolean; // keep news, sports, reminders, invites and shopping preferences the same on every device
     enabled: boolean;
     serverUrl: string;

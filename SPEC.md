@@ -129,17 +129,19 @@ Extends the existing tokens (`styles.css` `[data-theme]`, `[data-density]`, `--a
 
 Pure modules (`thread.ts`, `classify.ts`, `actions.ts` parsing, theme contrast, storage thresholds) get Vitest tests next to the code. Provider adapters take an injected API function (like `googleSync.ts`) and are tested against fakes of the Gmail and Graph APIs, including history/delta, expired tokens, 429s and `invalid_grant`. UI gets Playwright checks at 1280 px and 412 px, keyboard-only walkthroughs and axe-core. Rust `secure_store` is checked standalone with `cargo test` where possible and by the Windows CI job.
 
-## 10. Local-first CRDT sync upgrade (Phase 1: awaiting vote)
+## 10. Local-first CRDT sync upgrade (voted: Option A; Phase 2 in progress)
 
-Status: audited, **not built**. Card: `VOTING_CARD.html`, `.claude/VOTING_CARD.md`. Stages go in `FEATURE_PROGRESS.md` §0c after the vote.
+Status: built behind `settings.sync.p2p` (default off). Card: `VOTING_CARD.html`, `.claude/VOTING_CARD.md`. Stages: `FEATURE_PROGRESS.md` §0c. Guide: `docs/P2P_SYNC.md`.
 
 **Audit.** Existing: `sync.ts` + `server/sync-server.mjs` (WebSocket relay, per-record LWW, tombstones, offline queue); `driveSync.ts` (Drive, one file per device). Storage: Zustand `persist` (`store.ts`). Absent: Yjs, y-webrtc, `tauri-plugin-sql`. Gap: LWW per record loses one of two concurrent field edits. Unmeasured: <10 ms LAN latency, 0 ms cold start, Android WebView LAN WebRTC.
 
 **Design if Option A.** `src/lib/sync/crdtEngine.ts`: one `Y.Doc`, a `Y.Map` per collection keyed by record id, each record a `Y.Map` of fields (field-level merge). Existing `Synced` records and tombstones map 1:1. Excluded from the doc: mail, statement rows, API keys, tokens (CLAUDE.md boundaries). Transport: y-webrtc with signaling through the existing relay, relay fallback. Pairing code stays the shared secret. Reuse `store.upsert/remove/applyRemote`; do not add a second command surface.
 
+**Decisions made while building.** SQLite: table per collection + `kv` + `blobs` (Yjs doc), Tauri only, old localStorage save migrated and kept. Merge stamp: a merged record keeps the newer `updatedAt` so `applyRemote` accepts it. While P2P is on the per-record relay data path and Drive sync are paused (they would revert merged fields); RSVP replies (`from: "rsvp"`) still apply. Known edge: two devices that seed the same record id at the same time with different values keep one whole record (Yjs nested-map rule); the seed never overwrites a newer record. Relay payloads are readable by the relay (same as the older relay); signaling is encrypted with the pairing code.
+
 **Pause points (CLAUDE.md + your rules):** secrets/`.env`, force-push or DB-file deletion, theme/framework swap.
 
 ### Vote (Phase 1)
-- [ ] 1 Option A: SQLite + Yjs + WebRTC P2P + relay fallback + Tauri 2 targets
+- [x] 1 Option A: SQLite + Yjs + WebRTC P2P + relay fallback + Tauri 2 targets (voted 2026-11-26)
 - [ ] 2 Option B: cloud-only polling (redundant with Drive sync and relay)
-- Option A refinements: [ ] SQLite now / [ ] Yjs first, SQLite later; [ ] y-webrtc / [ ] LAN WebSocket + relay; [ ] HUD whole app / [ ] sync panel only / [ ] existing tokens
+- Option A refinements (voted): [x] SQLite now / [ ] Yjs first, SQLite later; [x] y-webrtc / [ ] LAN WebSocket + relay; [ ] HUD whole app / [x] sync panel only / [ ] existing tokens

@@ -10,6 +10,7 @@ paths: ["src/components/**/*.tsx", "src/pages/**/*.tsx", "src/views/**/*.tsx", "
 - Copy is plain and specific ("3 events clash on Tue"), not marketing ("Supercharge your day ✨"). Sentence case.
 - Reuse `components/ui.tsx` (`Modal`, `Toggle`, `Seg`, `PageHead`, `Field`) before writing a new primitive.
 - Check both themes and 412 px width before finishing.
+- Sync panel exception (voted 2026-11-26): `.sync-hud` in `styles.css` may use its own dark HUD palette and glass look. Nowhere else.
 
 ## Keyboard
 - Anything clickable is a `<button>` or `<a>`. A `<div onClick>` needs `role`, `tabIndex={0}` and Enter/Space handling; prefer a button.

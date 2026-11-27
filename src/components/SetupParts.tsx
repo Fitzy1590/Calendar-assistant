@@ -35,6 +35,8 @@ export const THEMES: { id: ThemeName; name: string; group: "light" | "dark" | "o
   { id: "sky", name: "Sky", group: "light" },
   { id: "lavender", name: "Lavender", group: "light" },
   { id: "lagoon", name: "Lagoon", group: "light" },
+  { id: "editorial", name: "Editorial", group: "light" },
+  { id: "pastel", name: "Pastel Dreams", group: "light" },
   { id: "ink", name: "Ink", group: "dark" },
   { id: "slate", name: "Slate", group: "dark" },
   { id: "midnight", name: "Midnight", group: "dark" },
@@ -43,10 +45,19 @@ export const THEMES: { id: ThemeName; name: string; group: "light" | "dark" | "o
   { id: "nord", name: "Nord", group: "dark" },
   { id: "ocean", name: "Ocean", group: "dark" },
   { id: "glass", name: "Glass", group: "dark" },
+  { id: "tokyo", name: "Tokyo Night", group: "dark" },
+  { id: "solarized", name: "Solarized Dark", group: "dark" },
+  { id: "rosegold", name: "Rose Gold", group: "dark" },
+  { id: "crimson", name: "Crimson Eclipse", group: "dark" },
+  { id: "deepspace", name: "Deep Space", group: "dark" },
+  { id: "sunset", name: "Sunset Horizon", group: "dark" },
   // still work for anyone who already chose them, but no longer offered
   { id: "oled", name: "OLED dark", group: "dark", legacy: true },
   { id: "forest", name: "Forest", group: "dark", legacy: true },
   { id: "contrast", name: "High contrast", group: "other" },
+  { id: "synthwave", name: "Retro Synthwave", group: "other" },
+  { id: "neumorphic", name: "Neumorphic", group: "other" },
+  { id: "arcade", name: "Arcade 16-bit", group: "other" },
 ];
 const THEME_GROUPS: { id: "light" | "dark" | "other"; label: string }[] = [
   { id: "light", label: "Light" },

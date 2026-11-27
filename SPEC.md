@@ -176,8 +176,10 @@ Status: Phase 1 only. No app code written. Options and contrast ratios: `VOTING_
 - Section 0 items already met: concise output style and `permissions.deny` in `.claude/settings.json`, build Stop hook, CLAUDE.md 132 lines. `.claude/rules/theme-engine.md` and `tauri-windows.md` are created in Phase 2.
 
 ## Vote (record here)
-- [ ] 1 Material Glass  - [ ] 2 Tokyo Night  - [ ] 3 OLED Stealth  - [ ] 4 Nordic Frost
-- [ ] 5 Solarized Dark  - [ ] 6 Solarized Light  - [ ] 7 Retro Synthwave  - [ ] 8 Emerald Matrix
-- [ ] 9 Editorial Paper  - [ ] 10 Neumorphic Soft  - [ ] 11 Rose Gold  - [ ] 12 Pastel Dreams
-- [ ] 13 Crimson Eclipse  - [ ] 14 Amber Glow  - [ ] 15 Deep Space  - [ ] 16 Sunset Horizon
-- [ ] 17 Industrial Titanium  - [ ] 18 Hyper Minimal  - [ ] 19 High Contrast  - [ ] 20 Arcade 16-Bit
+- [x] 1 Material Glass  - [x] 2 Tokyo Night  - [ ] 3 OLED Stealth  - [x] 4 Nordic Frost
+- [x] 5 Solarized Dark  - [ ] 6 Solarized Light  - [x] 7 Retro Synthwave  - [ ] 8 Emerald Matrix
+- [x] 9 Editorial Paper  - [x] 10 Neumorphic Soft  - [x] 11 Rose Gold  - [x] 12 Pastel Dreams
+- [x] 13 Crimson Eclipse  - [ ] 14 Amber Glow  - [x] 15 Deep Space  - [x] 16 Sunset Horizon
+- [ ] 17 Industrial Titanium  - [ ] 18 Hyper Minimal  - [x] 19 High Contrast  - [x] 20 Arcade 16-Bit
+
+Voted 2026-11-27: 1, 2, 4, 5, 7, 9, 10, 11, 12, 13, 15, 16, 19, 20. Not built: 3, 6, 8, 14, 17, 18 (OLED stays blue; Solarized is dark only).

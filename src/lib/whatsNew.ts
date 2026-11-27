@@ -13,6 +13,15 @@ export interface WhatsNewEntry {
 
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    version: "0.3.9",
+    title: "11 new themes and a Theme button",
+    points: [
+      "New themes: Tokyo Night, Solarized Dark, Retro Synthwave, Editorial, Neumorphic, Rose Gold, Pastel Dreams, Crimson Eclipse, Deep Space, Sunset Horizon and Arcade 16-bit.",
+      "The new Theme button in the top bar opens every theme; one tap switches, with no animation delay.",
+      "High contrast now has thicker borders. Windows only.",
+    ],
+  },
+  {
     version: "0.3.8",
     title: "Glass theme and a quicker top bar",
     points: [

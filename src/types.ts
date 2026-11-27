@@ -178,6 +178,17 @@ export type ThemeName =
   | "lagoon"
   | "ocean"
   | "glass"
+  | "tokyo"
+  | "solarized"
+  | "synthwave"
+  | "editorial"
+  | "neumorphic"
+  | "rosegold"
+  | "pastel"
+  | "crimson"
+  | "deepspace"
+  | "sunset"
+  | "arcade"
   | "system";
 export type PageId =
   | "home"

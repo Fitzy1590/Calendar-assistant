@@ -216,7 +216,8 @@ Windows side and the shared engine first; Android joins next. Every stage also n
 
 ---
 
-## 20-theme suite (Windows): Phase 1 done 2026-11-27, **waiting for vote**
-- Audit + conflicts in `SPEC.md` ("20-theme suite"); `VOTING_CARD.html` and `.claude/VOTING_CARD.md` replace the earlier Glass/Bento card (history in git).
-- Vote: none yet. Existing themes already covering the list: Glass, OLED, Nord, High contrast.
-- Phase 2 (after vote): add chosen `[data-theme]` blocks + `THEME_ACCENTS` + `ThemeName`, top-bar 1-tap theme control, contrast tests in `themes.test.ts`, rule updates, `.claude/rules/theme-engine.md`, `tauri-windows.md`, What's new entry.
+## 20-theme suite (Windows): built 2026-11-27, awaiting your look
+- Voted 1, 2, 4, 5, 7, 9, 10, 11, 12, 13, 15, 16, 19, 20. Built 11 new themes (tokyo, solarized, synthwave, editorial, neumorphic, rosegold, pastel, crimson, deepspace, sunset, arcade); Glass, Nord and High contrast already existed (High contrast got 3px borders).
+- Top-bar Theme button opens the picker modal (`ThemeSwitcher.tsx`). New themes switch with no transition. What's new 0.3.9.
+- Accent tweaks so the contrast tests pass: Pastel #a855f7 (voted #C084FC was 2.5:1 against the page), Neumorphic #4a66ee, Deep Space #6064f0. Second accents (lavender, cyan, violet…) are not used: one accent per theme.
+- Not built: 3 OLED (stays blue), 6, 8, 14, 17, 18. Not verified: WebView2 (Chromium only), narrow phone width, every page in every theme (home page checked in all 11 + High contrast).

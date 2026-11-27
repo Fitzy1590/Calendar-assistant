@@ -967,3 +967,18 @@ input[type="range"], input[type="checkbox"] { accent-color: var(--accent); }
   [data-theme="glass"] .card, [data-theme="glass"] .side, [data-theme="glass"] .topbar, [data-theme="glass"] .modal { background: var(--surface); }
 }
 @media (max-width: 700px) { .topbar > :first-child { min-width: 0; flex: 1 1 0; } .topbar { gap: 6px; } .topbar .btn.ghost { padding: 0 8px; } }
+.month .wk { display: contents; }
+
+/* ---- Glass: bento grid and one icon stroke ---- */
+[data-theme="glass"] svg { stroke-width: 2; } /* every icon draws at 2px (Icons.tsx draws 1.6 in the other themes) */
+[data-theme="glass"] .home { grid-auto-flow: dense; gap: var(--sp-3); }
+[data-theme="glass"] .home > .card { padding: var(--sp-3); }
+[data-theme="glass"] .home > .card > h2, [data-theme="glass"] .card-title { font-family: var(--font-display); }
+[data-theme="glass"] .home > .card > h2 .count { font-family: var(--font-num); color: var(--accent-text, var(--accent)); }
+[data-theme="glass"] .week-board { gap: var(--sp-3); }
+[data-theme="glass"] .week-board .daycol { padding: var(--sp-2) var(--sp-3) var(--sp-3); }
+[data-theme="glass"] .week-board .daycol.today { border-color: var(--accent); box-shadow: 0 0 12px rgba(0, 242, 254, 0.3); background: rgba(0, 242, 254, 0.06); }
+[data-theme="glass"] .board-card, [data-theme="glass"] .task-row { border-radius: calc(var(--radius) - 4px); }
+[data-theme="glass"] .board-card { background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.1); }
+[data-theme="glass"] .task-row .check:not(.on) { border-color: var(--line-strong); }
+[data-theme="glass"] .month .cell:focus-visible { outline-offset: -2px; }

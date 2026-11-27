@@ -13,6 +13,15 @@ export interface WhatsNewEntry {
 
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    version: "0.3.7",
+    title: "Glass theme and a quicker top bar",
+    points: [
+      "A new dark Glass theme (Settings, Theme): frosted cards, a glow on today, and no animation delay when you switch pages.",
+      "The top bar shows the date and sync status, and the + button starts a new event in one tap.",
+      "The month view now works with the keyboard: arrow keys move between days, Page Up and Page Down change month. Windows only.",
+    ],
+  },
+  {
     version: "0.3.6",
     title: "Four new colour themes",
     points: [

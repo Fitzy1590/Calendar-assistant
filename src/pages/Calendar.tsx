@@ -47,8 +47,9 @@ export function Calendar() {
   useEffect(() => {
     const k = (e: KeyboardEvent) => {
       if ((e.target as HTMLElement).closest("input,textarea,select")) return;
-      if (e.key === "ArrowLeft") step(-1);
-      if (e.key === "ArrowRight") step(1);
+      const inGrid = !!(e.target as HTMLElement).closest('[role="gridcell"]'); // the month grid uses the arrows itself
+      if (e.key === "ArrowLeft" && !inGrid) step(-1);
+      if (e.key === "ArrowRight" && !inGrid) step(1);
       if (e.key === "t") setCursor(new Date());
       const map: Record<string, View> = { d: "day", w: "week", m: "month", y: "year" };
       if (map[e.key]) setView(map[e.key]);
@@ -186,7 +187,7 @@ export function Calendar() {
           ]}
         />
       </div>
-      {view === "month" && <MonthView cursor={cursor} onNew={(d) => newAt(d, true)} onOpen={openOcc} />}
+      {view === "month" && <MonthView cursor={cursor} onNew={(d) => newAt(d, true)} onOpen={openOcc} onMonth={step} />}
       {(view === "week" || view === "day") && (
         <TimeGrid
           jump={jump}
@@ -239,7 +240,17 @@ function useRange(from: Date, to: Date) {
   }, [events, tasks, contacts, showTasks, showB, from.getTime(), to.getTime()]);
 }
 
-function MonthView({ cursor, onNew, onOpen }: { cursor: Date; onNew: (d: Date) => void; onOpen: (o: Occurrence) => void }) {
+function MonthView({
+  cursor,
+  onNew,
+  onOpen,
+  onMonth,
+}: {
+  cursor: Date;
+  onNew: (d: Date) => void;
+  onOpen: (o: Occurrence) => void;
+  onMonth: (n: number) => void;
+}) {
   const s = useStore();
   const ws = s.settings.weekStartsOn;
   const start = startOfWeek(startOfMonth(cursor), { weekStartsOn: ws });
@@ -248,73 +259,116 @@ function MonthView({ cursor, onNew, onOpen }: { cursor: Date; onNew: (d: Date) =
   const wx = useForecast();
   const wxBy = new Map((wx.data?.daily ?? []).map((d) => [d.date, d]));
   const toggleTask = (t: Task) => s.upsert("tasks", { id: t.id, done: !t.done, doneAt: Date.now() });
+  // roving focus: only one day is in the tab order; arrows, Home/End and PgUp/PgDn move it
+  const keys = days.map(ymd);
+  const [focusDay, setFocusDay] = useState<string | null>(null);
+  const roving =
+    focusDay && keys.includes(focusDay)
+      ? focusDay
+      : keys.includes(s.selectedDay ?? "")
+        ? s.selectedDay!
+        : keys.includes(ymd(new Date()))
+          ? ymd(new Date())
+          : keys[7];
+  const moveFocus = (k: string) => {
+    setFocusDay(k);
+    document.querySelector<HTMLElement>(`.month [data-day="${k}"]`)?.focus();
+  };
+  const onCellKey = (e: React.KeyboardEvent, k: string) => {
+    if (e.target !== e.currentTarget) return;
+    const i = keys.indexOf(k);
+    const to = (j: number) => (e.preventDefault(), moveFocus(keys[Math.max(0, Math.min(41, j))]));
+    if (e.key === "ArrowLeft") to(i - 1);
+    else if (e.key === "ArrowRight") to(i + 1);
+    else if (e.key === "ArrowUp") to(i - 7);
+    else if (e.key === "ArrowDown") to(i + 7);
+    else if (e.key === "Home") to(i - (i % 7));
+    else if (e.key === "End") to(i - (i % 7) + 6);
+    else if (e.key === "PageUp" || e.key === "PageDown") (e.preventDefault(), onMonth(e.key === "PageUp" ? -1 : 1));
+    else if (e.key === "Enter" || e.key === " ") (e.preventDefault(), s.selectDay(k));
+  };
   return (
-    <div className="month">
-      {days.slice(0, 7).map((d) => (
-        <div key={d.getDay()} className="h">
-          {format(d, "EEE")}
-        </div>
-      ))}
-      {days.map((d) => {
-        const k = ymd(d);
-        const cell = data.get(k);
-        const w = wxBy.get(k);
-        const items = [...(cell?.occ ?? [])];
-        return (
-          <div
-            key={k}
-            className={cx("cell", !isSameMonth(d, cursor) && "out", isSameDay(d, new Date()) && "today")}
-            onClick={() => s.selectDay(k)}
-            onDoubleClick={() => onNew(d)}
-          >
-            <div className="n">
-              <b>{format(d, "d")}</b>
-              {w && (
-                <span className="wxmini">
-                  <WeatherIcon sky={skyOf(w.code).sky} size={13} />
-                  {Math.round(w.max)}°
-                  {w.humidity !== undefined && (
-                    <span className="hum" title={`Humidity ${w.humidity}%`} aria-label={`Humidity ${w.humidity}%`}>
-                      <IDrop size={10} />
-                      {w.humidity}%
+    <div className="month" role="grid" aria-label={format(cursor, "MMMM yyyy")}>
+      <div role="row" className="wk">
+        {days.slice(0, 7).map((d) => (
+          <div key={d.getDay()} className="h" role="columnheader">
+            {format(d, "EEE")}
+          </div>
+        ))}
+      </div>
+      {Array.from({ length: 6 }, (_, r) => (
+        <div key={r} role="row" className="wk">
+          {days.slice(r * 7, r * 7 + 7).map((d) => {
+            const k = ymd(d);
+            const cell = data.get(k);
+            const w = wxBy.get(k);
+            const items = [...(cell?.occ ?? [])];
+            return (
+              <div
+                key={k}
+                className={cx("cell", !isSameMonth(d, cursor) && "out", isSameDay(d, new Date()) && "today")}
+                role="gridcell"
+                data-day={k}
+                tabIndex={k === roving ? 0 : -1}
+                aria-selected={s.selectedDay === k}
+                aria-current={isSameDay(d, new Date()) ? "date" : undefined}
+                aria-label={`${format(d, "EEEE d MMMM")}, ${items.length + (cell?.tasks.length ?? 0)} item${items.length + (cell?.tasks.length ?? 0) === 1 ? "" : "s"}`}
+                onFocus={(e) => e.target === e.currentTarget && setFocusDay(k)}
+                onKeyDown={(e) => onCellKey(e, k)}
+                onClick={() => s.selectDay(k)}
+                onDoubleClick={() => onNew(d)}
+              >
+                <div className="n">
+                  <b>{format(d, "d")}</b>
+                  {w && (
+                    <span className="wxmini">
+                      <WeatherIcon sky={skyOf(w.code).sky} size={13} />
+                      {Math.round(w.max)}°
+                      {w.humidity !== undefined && (
+                        <span className="hum" title={`Humidity ${w.humidity}%`} aria-label={`Humidity ${w.humidity}%`}>
+                          <IDrop size={10} />
+                          {w.humidity}%
+                        </span>
+                      )}
                     </span>
                   )}
-                </span>
-              )}
-            </div>
-            {items.slice(0, 3).map((o) => (
-              <div
-                key={o.key}
-                className="pill"
-                style={{ ["--c" as string]: o.event.color }}
-                onClick={(e) => (e.stopPropagation(), onOpen(o))}
-              >
-                {!o.event.allDay && (
-                  <span className="mono" style={{ fontSize: 10.5 }}>
-                    {fmtTime(o.start, s.settings.clock24)}{" "}
-                  </span>
+                </div>
+                {items.slice(0, 3).map((o) => (
+                  <div
+                    key={o.key}
+                    className="pill"
+                    aria-label={`${o.event.title}${o.event.allDay ? ", all day" : ", " + fmtTime(o.start, s.settings.clock24)}`}
+                    style={{ ["--c" as string]: o.event.color }}
+                    onClick={(e) => (e.stopPropagation(), onOpen(o))}
+                  >
+                    {!o.event.allDay && (
+                      <span className="mono" style={{ fontSize: 10.5 }}>
+                        {fmtTime(o.start, s.settings.clock24)}{" "}
+                      </span>
+                    )}
+                    {o.event.title}
+                  </div>
+                ))}
+                {(cell?.tasks ?? []).slice(0, Math.max(0, 4 - items.length)).map((t) => (
+                  <div
+                    key={t.id}
+                    className={cx("pill task", t.done && "done")}
+                    onClick={(e) => (e.stopPropagation(), toggleTask(t))}
+                    title="Click to toggle done"
+                  >
+                    {t.title}
+                  </div>
+                ))}
+                {items.length + (cell?.tasks.length ?? 0) > 4 && (
+                  <div className="faint" style={{ fontSize: 11 }}>
+                    +{items.length + (cell?.tasks.length ?? 0) - 4} more
+                  </div>
                 )}
-                {o.event.title}
               </div>
-            ))}
-            {(cell?.tasks ?? []).slice(0, Math.max(0, 4 - items.length)).map((t) => (
-              <div
-                key={t.id}
-                className={cx("pill task", t.done && "done")}
-                onClick={(e) => (e.stopPropagation(), toggleTask(t))}
-                title="Click to toggle done"
-              >
-                {t.title}
-              </div>
-            ))}
-            {items.length + (cell?.tasks.length ?? 0) > 4 && (
-              <div className="faint" style={{ fontSize: 11 }}>
-                +{items.length + (cell?.tasks.length ?? 0) - 4} more
-              </div>
-            )}
-          </div>
-        );
-      })}
+            );
+          })}
+        </div>
+      ))}
     </div>
   );
 }

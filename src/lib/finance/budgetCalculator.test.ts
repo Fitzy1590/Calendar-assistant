@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { pace, rollover, split503020, zeroBased } from "./budgetCalculator";
+import { goalPlan, pace, rollover, split503020, zeroBased } from "./budgetCalculator";
 
 describe("split503020", () => {
   it("always sums to income", () => {
@@ -36,5 +36,20 @@ describe("pace", () => {
   it("handles a zero budget", () => {
     expect(pace(0, 0, d).status).toBe("under");
     expect(pace(1, 0, d).status).toBe("over");
+  });
+});
+
+describe("goalPlan", () => {
+  const today = new Date(2026, 10, 27);
+  const g = { id: "g", name: "Trip", targetCents: 120000, savedCents: 20000 };
+  it("has no monthly figure without a date", () =>
+    expect(goalPlan(g, today)).toMatchObject({ remainingCents: 100000, perMonthCents: null, done: false }));
+  it("rounds the monthly amount up", () => {
+    expect(goalPlan({ ...g, targetDate: "2027-03-15" }, today).perMonthCents).toBe(25000); // 4 months
+    expect(goalPlan({ ...g, savedCents: 20003, targetDate: "2027-03-15" }, today).perMonthCents).toBe(25000); // 99997/4 = 24999.25, rounds up
+  });
+  it("is done at the target and late past the date", () => {
+    expect(goalPlan({ ...g, savedCents: 120000 }, today).done).toBe(true);
+    expect(goalPlan({ ...g, targetDate: "2026-11-01" }, today)).toMatchObject({ perMonthCents: 100000, late: true });
   });
 });

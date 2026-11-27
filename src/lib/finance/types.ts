@@ -53,3 +53,20 @@ export interface BudgetRow {
   carriedCents?: Cents; // unspent (or overspent) from last month
   month: string; // yyyy-MM the spending belongs to
 }
+
+export interface Goal {
+  id: string;
+  name: string;
+  targetCents: Cents;
+  savedCents: Cents;
+  targetDate?: string; // yyyy-MM-dd
+}
+
+/** One imported statement line. `cents` is negative for money out. */
+export interface TxnRow {
+  id: string;
+  date: string;
+  cents: Cents;
+  desc: string;
+  envelopeId?: string;
+}

@@ -3,13 +3,14 @@ import { useMemo, useState } from "react";
 import { Menu, Seg } from "../ui";
 import { AccountForm, BudgetForm, ScheduleForm, SubForm } from "./FinanceForms";
 import type { useFinanceData } from "./useFinanceData";
-import { pace, rollover, split503020 } from "../../lib/finance/budgetCalculator";
+import { pace, rollover, split503020, zeroBased } from "../../lib/finance/budgetCalculator";
 import { expand, monthlyEquivalent, project } from "../../lib/finance/cashflowEngine";
 import { fmtCents, parseCents } from "../../lib/finance/money";
 import { dueAlerts, fromDetected, hikePercent, isPriceHike, monthlyCents } from "../../lib/finance/subscriptionTracker";
 import type { BudgetRow, FinAccount, ProjectedDay, Schedule } from "../../lib/finance/types";
 import { fromYmd, todayYmd, uid, ymd } from "../../lib/util";
 import { toast, useStore } from "../../store";
+import { GoalsTile, TransactionsTile } from "./FinanceMore";
 
 type Data = ReturnType<typeof useFinanceData>;
 type Form =
@@ -73,6 +74,7 @@ export function FinanceDashboard({ data }: { data: Data }) {
   const { accounts, schedules, subs, budgets, save, remove } = data;
   const [form, setForm] = useState<Form>(null);
   const [horizon, setHorizon] = useState<"30" | "60" | "90">("60");
+  const [method, setMethod] = useState<"503020" | "zero">("503020");
   const today = todayYmd();
   const month = today.slice(0, 7);
   const end = ymd(addDays(fromYmd(today), Number(horizon) - 1));
@@ -88,6 +90,11 @@ export function FinanceDashboard({ data }: { data: Data }) {
   const split = split503020(income);
   const thisMonth = budgets.filter((b) => b.month === month);
   const lastMonth = budgets.filter((b) => b.month !== month);
+  const planned = (bucket: BudgetRow["bucket"]) => thisMonth.filter((b) => b.bucket === bucket).reduce((n, b) => n + b.cents, 0);
+  const zero = zeroBased(
+    income,
+    thisMonth.map((b) => ({ id: b.id, name: b.name, cents: b.cents })),
+  );
   const alerts = dueAlerts(subs, today);
   const subMonthly = subs.reduce((n, r) => n + monthlyCents(r), 0);
 
@@ -316,13 +323,30 @@ export function FinanceDashboard({ data }: { data: Data }) {
               Add envelope
             </button>
           </div>
-          {income > 0 ? (
+          <Seg
+            value={method}
+            onChange={setMethod}
+            options={[
+              { value: "503020", label: "50/30/20" },
+              { value: "zero", label: "Zero-based" },
+            ]}
+          />
+          {income <= 0 ? (
+            <div className="muted">Add a payday to plan against your income.</div>
+          ) : method === "503020" ? (
             <div className="muted">
               Monthly income about {fmtCents(income)}: needs {fmtCents(split.needs)}, wants {fmtCents(split.wants)}, savings{" "}
-              {fmtCents(split.savings)} (50/30/20).
+              {fmtCents(split.savings)}. Planned so far: needs {fmtCents(planned("needs"))}, wants {fmtCents(planned("wants"))}, savings{" "}
+              {fmtCents(planned("savings"))}.
             </div>
           ) : (
-            <div className="muted">Add a payday to see a 50/30/20 split of your income.</div>
+            <div className={zero.leftCents < 0 ? "alert bad" : "muted"} role="status">
+              {zero.balanced
+                ? `Every dollar of your ${fmtCents(income)} monthly income has a job.`
+                : zero.leftCents > 0
+                  ? `${fmtCents(zero.leftCents)} of your ${fmtCents(income)} monthly income is not assigned yet.`
+                  : `You have planned ${fmtCents(-zero.leftCents)} more than your ${fmtCents(income)} monthly income.`}
+            </div>
           )}
           {thisMonth.map((b) => {
             const budget = b.cents + (b.carriedCents ?? 0);
@@ -370,6 +394,8 @@ export function FinanceDashboard({ data }: { data: Data }) {
             );
           })}
         </section>
+        <GoalsTile data={data} />
+        <TransactionsTile data={data} />
       </div>
 
       {form?.k === "account" && (

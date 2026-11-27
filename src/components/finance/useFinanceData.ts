@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { deleteRow, isLocked, listRows, openVault, putRow, type Table } from "../../lib/finance/vault";
-import type { BudgetRow, FinAccount, Schedule } from "../../lib/finance/types";
+import type { BudgetRow, FinAccount, Goal, Schedule, TxnRow } from "../../lib/finance/types";
 import type { SubRecord } from "../../lib/finance/subscriptionTracker";
 
 export type FinanceStatus = "loading" | "ready" | "locked" | "error";
@@ -13,20 +13,26 @@ export function useFinanceData(enabled: boolean) {
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [subs, setSubs] = useState<SubRecord[]>([]);
   const [budgets, setBudgets] = useState<BudgetRow[]>([]);
+  const [goals, setGoals] = useState<Goal[]>([]);
+  const [txns, setTxns] = useState<TxnRow[]>([]);
 
   const reload = useCallback(async () => {
     try {
       await openVault();
-      const [a, s, u, b] = await Promise.all([
+      const [a, s, u, b, g, t] = await Promise.all([
         listRows<FinAccount>("accounts"),
         listRows<Schedule>("schedules"),
         listRows<SubRecord>("subscriptions"),
         listRows<BudgetRow>("budgets"),
+        listRows<Goal>("savings_goals"),
+        listRows<TxnRow>("transactions"),
       ]);
       setAccounts(a);
       setSchedules(s);
       setSubs(u);
       setBudgets(b);
+      setGoals(g);
+      setTxns(t);
       setStatus("ready");
     } catch (e) {
       setError(String(e).replace(/^vault_locked:\s*/, ""));
@@ -47,5 +53,5 @@ export function useFinanceData(enabled: boolean) {
     await reload();
   };
 
-  return { status, error, accounts, schedules, subs, budgets, reload, save, remove };
+  return { status, error, accounts, schedules, subs, budgets, goals, txns, reload, save, remove };
 }

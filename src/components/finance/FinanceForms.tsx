@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Field, Modal } from "../ui";
 import { parseCents } from "../../lib/finance/money";
-import type { BudgetRow, Every, FinAccount, Schedule } from "../../lib/finance/types";
+import type { BudgetRow, Every, FinAccount, Goal, Schedule } from "../../lib/finance/types";
 import type { SubRecord } from "../../lib/finance/subscriptionTracker";
 import { todayYmd, uid } from "../../lib/util";
 
@@ -237,6 +237,41 @@ export function BudgetForm({ month, onSave, onClose }: { month: string; onSave: 
       </Field>
       <Field label="Monthly amount ($)">
         <input className="input" inputMode="decimal" value={amt} onChange={(e) => setAmt(e.target.value)} />
+      </Field>
+    </Shell>
+  );
+}
+
+export function GoalForm({ existing, onSave, onClose }: { existing?: Goal; onSave: (g: Goal) => void; onClose: () => void }) {
+  const [name, setName] = useState(existing?.name ?? "");
+  const [target, setTarget] = useState(existing ? String(existing.targetCents / 100) : "");
+  const [saved, setSaved] = useState(existing ? String(existing.savedCents / 100) : "0");
+  const [date, setDate] = useState(existing?.targetDate ?? "");
+  return (
+    <Shell
+      title={existing ? "Edit goal" : "Add a savings goal"}
+      onClose={onClose}
+      onSave={() => {
+        const t = parseCents(target);
+        const sv = parseCents(saved);
+        if (!name.trim()) return "Give the goal a name.";
+        if (t === null || t <= 0) return "Enter the target as a positive number, like 1200.";
+        if (sv === null || sv < 0) return "Enter what you have saved so far, or 0.";
+        onSave({ id: existing?.id ?? uid(), name: name.trim(), targetCents: t, savedCents: sv, targetDate: date || undefined });
+        return null;
+      }}
+    >
+      <Field label="Name">
+        <input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="Holiday" />
+      </Field>
+      <Field label="Target ($)">
+        <input className="input" inputMode="decimal" value={target} onChange={(e) => setTarget(e.target.value)} />
+      </Field>
+      <Field label="Saved so far ($)">
+        <input className="input" inputMode="decimal" value={saved} onChange={(e) => setSaved(e.target.value)} />
+      </Field>
+      <Field label="Target date (optional)">
+        <input className="input" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
       </Field>
     </Shell>
   );

@@ -1,5 +1,6 @@
-import { getDate, getDaysInMonth } from "date-fns";
-import type { Cents } from "./types";
+import { differenceInCalendarMonths, getDate, getDaysInMonth } from "date-fns";
+import { fromYmd } from "../util";
+import type { Cents, Goal } from "./types";
 
 /** Envelope budgets. Pure. */
 
@@ -40,4 +41,14 @@ export function pace(spentCents: Cents, budgetCents: Cents, today: Date): Pace {
   const expected = Math.round(budgetCents * elapsed);
   const ratio = expected > 0 ? spentCents / expected : spentCents > 0 ? Infinity : 0;
   return { status: spentCents > expected ? "over" : "under", ratio, expectedCents: expected, elapsed };
+}
+
+/** What is left to save and, with a target date, what to put aside each month (rounded up so the date is met). */
+export function goalPlan(g: Goal, today: Date): { remainingCents: Cents; perMonthCents: Cents | null; done: boolean; late: boolean } {
+  const remaining = Math.max(0, g.targetCents - g.savedCents);
+  if (remaining === 0) return { remainingCents: 0, perMonthCents: 0, done: true, late: false };
+  if (!g.targetDate) return { remainingCents: remaining, perMonthCents: null, done: false, late: false };
+  const months = differenceInCalendarMonths(fromYmd(g.targetDate), today);
+  if (months <= 0) return { remainingCents: remaining, perMonthCents: remaining, done: false, late: fromYmd(g.targetDate) < today };
+  return { remainingCents: remaining, perMonthCents: Math.ceil(remaining / months), done: false, late: false };
 }

@@ -1235,3 +1235,6 @@ input[type="range"], input[type="checkbox"] { accent-color: var(--accent); }
 .fin-gauge i.bad { background: var(--bad); }
 .fin-gauge s { position: absolute; top: -4px; bottom: -4px; width: 2px; background: var(--text); }
 .fin-spent { width: 110px; min-height: 44px; }
+.fin-mark { font-size: 10px; font-weight: 600; padding: 0 4px; border: 1px solid currentColor; border-radius: 4px; margin-left: 4px; }
+.fin-mark.low { color: var(--warn); }
+.fin-mark.overdraft { color: var(--bad); }

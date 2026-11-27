@@ -60,6 +60,7 @@ export function Email() {
   const [body, setBody] = useState<{ id: string; text: string; html?: string; loading: boolean } | null>(null);
   const [showPics, setShowPics] = useState<string | null>(null); // a message you chose to show pictures for, once
   const listRef = useRef<HTMLDivElement>(null);
+  const [unreadOnly, setUnreadOnly] = useState(false);
   const accounts = s.settings.mail.accounts;
 
   useEffect(() => {
@@ -82,8 +83,10 @@ export function Email() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [messages, view, folderIds.join(",")],
   );
-  const shown = useMemo(() => groupRows(searchMail(rows, query)).flatMap((g) => g.rows), [rows, query]);
-  const groups = useMemo(() => groupRows(searchMail(rows, query)), [rows, query]);
+  // unread-only: opening a message marks it seen (dismissed), so it drops out of this list
+  const visible = useMemo(() => (unreadOnly ? rows.filter((m) => !m.isRead && !m.dismissed) : rows), [rows, unreadOnly]);
+  const shown = useMemo(() => groupRows(searchMail(visible, query)).flatMap((g) => g.rows), [visible, query]);
+  const groups = useMemo(() => groupRows(searchMail(visible, query)), [visible, query]);
   const counts = useMemo<Record<string, number>>(
     () => ({
       ...Object.fromEntries(VIEWS.map((v) => [v.id, messages.filter((m) => v.match(m) && !m.isRead && !filed(m) && !isSnoozed(m)).length])),
@@ -267,6 +270,9 @@ export function Email() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
+          <button className="chip" aria-pressed={unreadOnly} onClick={() => setUnreadOnly((v) => !v)}>
+            Unread only
+          </button>
         </div>
         <div className="mail tabs">
           {folderNav}

@@ -6,6 +6,7 @@ import { isAndroid, isTauri } from "./lib/platform";
 import { useStore } from "./store";
 import { Sidebar } from "./components/Sidebar";
 import { SyncPill } from "./components/SyncPill";
+import { ThemeSwitcher } from "./components/ThemeSwitcher";
 import { format } from "date-fns";
 import { AssistantDrawer, CommandBar } from "./components/Assistant";
 import { DayPanel } from "./components/DayPanel";
@@ -181,6 +182,7 @@ export default function App() {
           <span style={{ flex: 1 }} />
           <span className="topbar-date mono hide-sm">{format(new Date(), "EEE d MMM")}</span>
           <SyncPill />
+          <ThemeSwitcher />
           <button
             className="btn ghost"
             onClick={() => s.setUi({ emailImportOpen: true })}

@@ -15,7 +15,11 @@ const ACCENTS = ["#2f5d8a", "#4f6b3a", "#b4532a", "#b8860b", "#8a3a55", "#50606e
 describe("theme tokens (read from styles.css)", () => {
   it("defines every theme", () => {
     expect(Object.keys(themes).sort()).toEqual([
+      "arcade",
       "contrast",
+      "crimson",
+      "deepspace",
+      "editorial",
       "ember",
       "forest",
       "glass",
@@ -24,13 +28,20 @@ describe("theme tokens (read from styles.css)", () => {
       "lagoon",
       "lavender",
       "midnight",
+      "neumorphic",
       "nord",
       "ocean",
       "oled",
       "paper",
+      "pastel",
+      "rosegold",
       "sand",
       "sky",
       "slate",
+      "solarized",
+      "sunset",
+      "synthwave",
+      "tokyo",
     ]);
   });
   for (const [name, t] of Object.entries(themes)) {

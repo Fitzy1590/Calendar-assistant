@@ -154,3 +154,32 @@ Status: vote received (A); Phase 2 in progress. Card: `VOTING_CARD.html`, `.clau
 5. Icons to one stroke weight (`Icons.tsx`); copy pass; contrast tests extended; Playwright shots at 1280 px and 412 px.
 
 **Needs separate approval:** Yjs, Tailwind, any other core library swap; Stop hook and `outputStyle` edits in `.claude/settings.json` (proposed in the brief, not applied).
+
+---
+
+# 20-theme suite (Windows): spec, awaiting vote
+
+Status: Phase 1 only. No app code written. Options and contrast ratios: `VOTING_CARD.html`, `.claude/VOTING_CARD.md`.
+
+## Audit (2026-11-27)
+- A theme engine **already exists**: `[data-theme="…"]` token blocks in `src/styles.css` (16 themes: paper, sand, ink, slate, oled, forest, midnight, ember, graphite, nord, sky, lavender, lagoon, ocean, glass, contrast), `ThemeName` in `src/types.ts`, `useTheme()` in `App.tsx` (sets `dataset.theme`), accent logic in `src/lib/themes.ts` (`THEME_ACCENTS`, `resolveAccent`, `accentText`), picker in Settings. Plan: **extend it, not add a ThemeProvider or Tailwind** (no Tailwind in repo; tokens are `--bg --surface --text --accent --line`).
+- Mapping of the requested vars: `--bg-primary`=`--bg`, `--bg-card`=`--surface`, `--text-main`=`--text`, `--border-color`=`--line`, `--accent-primary`=`--accent`.
+- Already present: 1 Glass, 3 OLED (blue accent now), 4 Nord, 19 High contrast. The other 16 are new.
+- "1-tap switching": add a theme button + cycling picker in the top bar (today only Settings). Switching stays 0 ms (no transitions on theme change).
+
+## Conflicts to decide when voting
+- `.claude/rules/calendar-ui.md` allows glass/glow/gradients **only in Glass**. Themes 7 (glow, gradient), 10 (neumorphic shadows), 11 (glass), 20 (hard shadows, pixel font) need that rule widened to named themes.
+- Fonts: Outfit/Inter, Space Grotesk, JetBrains Mono already used by Glass; Press Start 2P (20) and a serif (9) would be bundled locally (no CDN).
+- AA contrast is tested for every theme. Below AA as drawn: 6 (3.4), 10 (3.4), 12 (2.5), 13 (4.1): accent *text* auto-darkens/lightens (`accentText`), fills keep the specified colour.
+- Settings sync: `theme` is per device; unchanged.
+- Sixteen existing themes stay unless you say to drop some; 20 + 12 kept = 32 choices, so the picker will need grouping (Dark / Light / Special) and a search-free grid.
+- Section 0 items already met: concise output style and `permissions.deny` in `.claude/settings.json`, build Stop hook, CLAUDE.md 132 lines. `.claude/rules/theme-engine.md` and `tauri-windows.md` are created in Phase 2.
+
+## Vote (record here)
+- [x] 1 Material Glass  - [x] 2 Tokyo Night  - [ ] 3 OLED Stealth  - [x] 4 Nordic Frost
+- [x] 5 Solarized Dark  - [ ] 6 Solarized Light  - [x] 7 Retro Synthwave  - [ ] 8 Emerald Matrix
+- [x] 9 Editorial Paper  - [x] 10 Neumorphic Soft  - [x] 11 Rose Gold  - [x] 12 Pastel Dreams
+- [x] 13 Crimson Eclipse  - [ ] 14 Amber Glow  - [x] 15 Deep Space  - [x] 16 Sunset Horizon
+- [ ] 17 Industrial Titanium  - [ ] 18 Hyper Minimal  - [x] 19 High Contrast  - [x] 20 Arcade 16-Bit
+
+Voted 2026-11-27: 1, 2, 4, 5, 7, 9, 10, 11, 12, 13, 15, 16, 19, 20. Not built: 3, 6, 8, 14, 17, 18 (OLED stays blue; Solarized is dark only).

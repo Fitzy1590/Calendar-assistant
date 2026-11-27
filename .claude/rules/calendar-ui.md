@@ -6,8 +6,8 @@ paths: ["src/components/**/*.tsx", "src/pages/**/*.tsx", "src/views/**/*.tsx", "
 
 ## Look (no AI slop) and design tokens
 - Use the tokens in `src/styles.css` (`--accent`, `--surface*`, `--text*`, `--font-*`, spacing). No new hex colours, no inline colour styles.
-- No gradients on text, emoji as icons, or decorative blobs. Flat surfaces, 1px borders, one accent in every theme except **Glass** (voted Nov 2026), the only theme that may use translucent glass, `backdrop-filter`, glow on today/primary actions and a gradient backdrop. Glass rules live under `[data-theme="glass"]` at the end of `styles.css`, keep opaque hex tokens so contrast stays testable, and fall back to solid surfaces under `prefers-reduced-transparency`.
-- Spacing uses `--sp-1..5` (4/8/16/24/32). Glass has no transitions (tabs, month/week changes, drawers snap); other themes keep their short ones.
+- No gradients on text, emoji as icons, or decorative blobs. Flat surfaces, 1px borders, one accent in every theme except the effect themes voted Nov 2026: **Glass** and **Rose Gold** (translucent glass, `backdrop-filter`, glow, gradient backdrop), **Synthwave** (glow, gradient), **Neumorphic** (embossed shadows), **Arcade** (hard offset shadows, pixel headings). Their rules live under `[data-theme="…"]` at the end of `styles.css`, keep opaque hex tokens so contrast stays testable, and fall back to solid surfaces under `prefers-reduced-transparency`.
+- Spacing uses `--sp-1..5` (4/8/16/24/32). Glass and the 11 suite themes have no transitions (tabs, month/week changes, drawers snap); older themes keep their short ones.
 - Copy is plain and specific ("3 events clash on Tue"), not marketing ("Supercharge your day ✨"). Sentence case.
 - Reuse `components/ui.tsx` (`Modal`, `Toggle`, `Seg`, `PageHead`, `Field`) before writing a new primitive.
 - Check both themes and 412 px width before finishing.

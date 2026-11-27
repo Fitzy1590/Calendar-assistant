@@ -213,3 +213,11 @@ Windows side and the shared engine first; Android joins next. Every stage also n
 
 | [x] | **Phase 1: audit, SPEC §10, voting card**: VOTED Option A (Material Glass HUD + Bento) | Open the card; reply 1, 2, 3 or a tweak; chosen option is ticked here and in SPEC §10 |
 | [x] | **Phase 2 (Glass theme, voted A)**: new dark Glass theme (picker, assistant, AA-tested); glass cards/bars with blur, glow on today and quick add, Space Grotesk numerals and Outfit headings, zero transitions, `--sp-1..5` spacing, 2 px icon stroke, bento Home/Tasks spacing (dense grid, 16 px gaps); top bar with date, sync pill and 1-tap + (new event next hour); **month grid keyboard + ARIA** (grid/row/gridcell, roving focus, arrows, Home/End, PgUp/PgDn, Enter selects; the global arrow shortcut skips the grid); rule file updated; `outputStyle: concise` (`.claude/output-styles/concise.md`) and Stop hook now runs `npm run build` (first 50 lines on failure); What's new 0.3.7 | `themes.test.ts` (73), full `npm test` (431), `tsc`, `build`, Prettier; Playwright at 1280 px and 412 px (Home, Calendar week and month, Tasks); keyboard walk of the month grid and the + exercised. NOT DONE: Windows tray drawer (Rust, can't be built or checked here), light-theme versions of the glass look, other pages (Email, Notes, Shopping) only get the glass surfaces, no bespoke bento; the sync pill shows relay/Drive status only (no Yjs/P2P) |
+
+---
+
+## 20-theme suite (Windows): built 2026-11-27, awaiting your look
+- Voted 1, 2, 4, 5, 7, 9, 10, 11, 12, 13, 15, 16, 19, 20. Built 11 new themes (tokyo, solarized, synthwave, editorial, neumorphic, rosegold, pastel, crimson, deepspace, sunset, arcade); Glass, Nord and High contrast already existed (High contrast got 3px borders).
+- Top-bar Theme button opens the picker modal (`ThemeSwitcher.tsx`). New themes switch with no transition. What's new 0.3.9.
+- Accent tweaks so the contrast tests pass: Pastel #a855f7 (voted #C084FC was 2.5:1 against the page), Neumorphic #4a66ee, Deep Space #6064f0. Second accents (lavender, cyan, violet…) are not used: one accent per theme.
+- Not built: 3 OLED (stays blue), 6, 8, 14, 17, 18. Not verified: WebView2 (Chromium only), narrow phone width, every page in every theme (home page checked in all 11 + High contrast).

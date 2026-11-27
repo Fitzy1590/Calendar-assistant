@@ -74,6 +74,17 @@ export const THEME_ACCENTS: Record<string, string> = {
   lagoon: "#0b7a82",
   ocean: "#2ec4c9",
   glass: "#00f2fe",
+  tokyo: "#7aa2f7",
+  solarized: "#2aa198",
+  synthwave: "#ff007f",
+  editorial: "#111111",
+  neumorphic: "#4a66ee",
+  rosegold: "#f43f5e",
+  pastel: "#a855f7",
+  crimson: "#e11d48",
+  deepspace: "#6064f0",
+  sunset: "#f97316",
+  arcade: "#ff0055",
 };
 
 /** The accent colour actually drawn: the high-contrast yellow, the person's own pick, or the theme's matching one. */

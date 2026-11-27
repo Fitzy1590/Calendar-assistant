@@ -5,6 +5,8 @@ import { MailHost } from "./components/mail/OutboxBar";
 import { isAndroid, isTauri } from "./lib/platform";
 import { useStore } from "./store";
 import { Sidebar } from "./components/Sidebar";
+import { SyncPill } from "./components/SyncPill";
+import { format } from "date-fns";
 import { AssistantDrawer, CommandBar } from "./components/Assistant";
 import { DayPanel } from "./components/DayPanel";
 import { FeedbackModal } from "./components/Feedback";
@@ -14,7 +16,7 @@ import { UpdatePrompt } from "./components/Updates";
 import { useRecordNewInstallVersion, WhatsNew } from "./components/WhatsNew";
 import { ErrorAlert, ErrorBoundary, useFirstRunCheck } from "./components/Errors";
 import { BrowserModeBanner } from "./components/BrowserModeBanner";
-import { IFullscreen, IIdea, IMail } from "./components/Icons";
+import { IFullscreen, IIdea, IMail, IPlus } from "./components/Icons";
 import { Home } from "./pages/Home";
 import { Calendar } from "./pages/Calendar";
 import { Email } from "./pages/Email";
@@ -177,6 +179,8 @@ export default function App() {
         <div className="topbar">
           <CommandBar />
           <span style={{ flex: 1 }} />
+          <span className="topbar-date mono hide-sm">{format(new Date(), "EEE d MMM")}</span>
+          <SyncPill />
           <button
             className="btn ghost"
             onClick={() => s.setUi({ emailImportOpen: true })}
@@ -191,6 +195,17 @@ export default function App() {
           )}
           <button className="btn ghost" onClick={() => s.setUi({ feedbackOpen: true })} title="Suggestions & feedback">
             <IIdea /> <span className="hide-sm">Feedback</span>
+          </button>
+          <button
+            className="btn primary quick-add"
+            aria-label="New event"
+            title="New event"
+            onClick={() => {
+              s.setPage("calendar");
+              s.setUi({ quickAdd: true });
+            }}
+          >
+            <IPlus />
           </button>
         </div>
         <BrowserModeBanner />

@@ -11,6 +11,8 @@
   --radius: 10px;
   --gap: 16px;
   --pad: 16px;
+  --sp-1: 4px; --sp-2: 8px; --sp-3: 16px; --sp-4: 24px; --sp-5: 32px; /* spacing scale */
+  --font-num: var(--font-mono); /* dates, times, countdowns (glass theme: Space Grotesk) */
   --scale: 1;
   --row-h: 40px; /* list row height: set by density */
   --accent-ink: #fff; /* text on an accent background: set from the accent colour */
@@ -222,6 +224,25 @@
   --ok: #7fe08a;
   --warn: #f2c14e;
   --bad: #ff9e93;
+  color-scheme: dark;
+}
+/* Glass: deep obsidian with translucent glass cards (voted Nov 2026). The only theme with blur, glow and a gradient
+   backdrop; the glass rules sit at the end of this file. Hex tokens stay opaque so contrast is testable. */
+[data-theme="glass"] {
+  --bg: #0b0e14;
+  --surface: #161a21;
+  --surface-2: #1f242d;
+  --text: #e8eef5;
+  --muted: #9aa7b8;
+  --faint: #66727f;
+  --line: #2a303a;
+  --line-strong: #3d4654;
+  --ok: #10b981;
+  --warn: #f59e0b;
+  --bad: #f26a6a;
+  --radius: 12px;
+  --font-display: "Outfit", "Inter", system-ui, "Segoe UI", sans-serif;
+  --font-num: "Space Grotesk", "JetBrains Mono", var(--font-mono);
   color-scheme: dark;
 }
 /* High contrast: black and white, AAA text, strong outlines. It brings its own accent (set in App.tsx). */
@@ -644,7 +665,7 @@ mark { color: inherit; border-radius: 2px; }
 :root, [data-theme="paper"], [data-theme="sand"], [data-theme="sky"], [data-theme="lavender"], [data-theme="lagoon"] {
   --n-yellow: #f6e7a6; --n-mint: #cfe8d5; --n-sky: #cfe0f1; --n-rose: #f3d3d3; --n-lilac: #e1d8f0; --n-sand: #ecdcc4; --n-ink: #24211b;
 }
-:root[data-theme="ink"], :root[data-theme="slate"], :root[data-theme="midnight"], :root[data-theme="ember"], :root[data-theme="graphite"], :root[data-theme="nord"], :root[data-theme="oled"], :root[data-theme="forest"], :root[data-theme="ocean"], :root[data-theme="contrast"] {
+:root[data-theme="ink"], :root[data-theme="slate"], :root[data-theme="midnight"], :root[data-theme="ember"], :root[data-theme="graphite"], :root[data-theme="nord"], :root[data-theme="oled"], :root[data-theme="forest"], :root[data-theme="ocean"], :root[data-theme="glass"], :root[data-theme="contrast"] {
   --n-yellow: #4a4326; --n-mint: #2c4433; --n-sky: #283d52; --n-rose: #4d2f31; --n-lilac: #3b3350; --n-sand: #4a3f30; --n-ink: #efece4;
 }
 .notes-board { columns: var(--note-w, 260px); column-gap: var(--gap); }
@@ -866,7 +887,7 @@ input[type="range"], input[type="checkbox"] { accent-color: var(--accent); }
 :root, [data-theme="paper"], [data-theme="sand"], [data-theme="sky"], [data-theme="lavender"], [data-theme="lagoon"] {
   --k-urgent: #c4262f; --k-action: #9a5b00; --k-financial: #1b7a43; --k-social: #6d44c4; --k-inbox: #285fc2; --k-subscriptions: #0b7480; --k-bills: #b0390a; --k-spam: #6b655b; --k-ink: #fff;
 }
-:root[data-theme="ink"], :root[data-theme="slate"], :root[data-theme="midnight"], :root[data-theme="ember"], :root[data-theme="graphite"], :root[data-theme="nord"], :root[data-theme="oled"], :root[data-theme="forest"], :root[data-theme="ocean"], :root[data-theme="contrast"] {
+:root[data-theme="ink"], :root[data-theme="slate"], :root[data-theme="midnight"], :root[data-theme="ember"], :root[data-theme="graphite"], :root[data-theme="nord"], :root[data-theme="oled"], :root[data-theme="forest"], :root[data-theme="ocean"], :root[data-theme="glass"], :root[data-theme="contrast"] {
   --k-urgent: #ff6b76; --k-action: #f5b43a; --k-financial: #4cd08a; --k-social: #a98bff; --k-inbox: #6ea8ff; --k-subscriptions: #3cc9d6; --k-bills: #ff9a5c; --k-spam: #9b988f; --k-ink: #0d0f1a;
 }
 .k-urgent { --k: var(--k-urgent); } .k-action { --k: var(--k-action); } .k-financial { --k: var(--k-financial); }
@@ -906,3 +927,58 @@ input[type="range"], input[type="checkbox"] { accent-color: var(--accent); }
   .month .cell .wxmini { margin-left: auto; }
   .month .cell.today .n b { min-width: 20px; height: 20px; padding: 0 3px; }
 }
+
+/* ---- Top bar: sync pill and quick add (all themes) ---- */
+.topbar-date { color: var(--muted); font-size: 12.5px; white-space: nowrap; }
+.sync-pill { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 10px; border-radius: 999px; border: 1px solid var(--line-strong); background: var(--surface); color: var(--text); font: 500 12px var(--font-num); cursor: pointer; }
+.sync-pill:hover { background: var(--surface-2); }
+.quick-add { min-width: 36px; min-height: 36px; padding: 0 10px; }
+@media (max-width: 700px) { .sync-pill, .quick-add { min-height: 44px; min-width: 44px; justify-content: center; } }
+
+/* ---- Glass theme: material glass HUD ----
+   Translucent cards over the obsidian backdrop, a soft glow on today, mono-style numerals for dates and times,
+   and no transitions at all (tabs, month and week changes, drawers snap). Solid surfaces where blur is unavailable
+   or the person asked for less transparency. */
+[data-theme="glass"] body { background: radial-gradient(120% 70% at 85% -10%, rgba(124, 58, 237, 0.2), transparent 60%), var(--bg); background-attachment: fixed; }
+[data-theme="glass"] *, [data-theme="glass"] *::before, [data-theme="glass"] *::after { transition: none !important; }
+[data-theme="glass"] .card, [data-theme="glass"] .side, [data-theme="glass"] .topbar, [data-theme="glass"] .modal,
+[data-theme="glass"] .week-board .daycol, [data-theme="glass"] .month, [data-theme="glass"] .timegrid {
+  background: rgba(255, 255, 255, 0.05); border-color: rgba(255, 255, 255, 0.1);
+  -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
+}
+[data-theme="glass"] .topbar { background: rgba(255, 255, 255, 0.04); }
+[data-theme="glass"] .card { border-radius: var(--radius); box-shadow: 0 1px 0 rgba(255, 255, 255, 0.06) inset; }
+[data-theme="glass"] .month .cell, [data-theme="glass"] .timegrid .colhead { background: rgba(255, 255, 255, 0.03); border-color: rgba(255, 255, 255, 0.08); }
+[data-theme="glass"] .month .cell.today { background: rgba(0, 242, 254, 0.08); box-shadow: inset 0 0 0 1px var(--accent), 0 0 12px rgba(0, 242, 254, 0.35); }
+[data-theme="glass"] .month .cell .n, [data-theme="glass"] .timegrid .dnum, [data-theme="glass"] .timegrid .hour,
+[data-theme="glass"] .sync-pill, [data-theme="glass"] .topbar-date, [data-theme="glass"] .nav-item .count { font-family: var(--font-num); }
+[data-theme="glass"] .brand, [data-theme="glass"] .page-head h1, [data-theme="glass"] .wizard h1 { letter-spacing: 0; }
+[data-theme="glass"] .cal-title, [data-theme="glass"] .clock, [data-theme="glass"] .wx-temp, [data-theme="glass"] .sw-date, [data-theme="glass"] .timegrid .colhead .dnum { font-family: var(--font-num); letter-spacing: 0; }
+[data-theme="glass"] .sync-pill { background: rgba(16, 185, 129, 0.12); border-color: rgba(16, 185, 129, 0.45); }
+[data-theme="glass"] .sync-pill:has(.dot.warn) { background: rgba(245, 158, 11, 0.12); border-color: rgba(245, 158, 11, 0.5); }
+[data-theme="glass"] .sync-pill:has(.dot.bad) { background: rgba(242, 106, 106, 0.12); border-color: rgba(242, 106, 106, 0.5); }
+[data-theme="glass"] .sync-pill:has(.dot:not(.ok):not(.warn):not(.bad)) { background: var(--surface); border-color: var(--line-strong); }
+[data-theme="glass"] .quick-add { box-shadow: 0 0 12px rgba(0, 242, 254, 0.4); }
+@media (prefers-reduced-transparency: reduce) {
+  [data-theme="glass"] .card, [data-theme="glass"] .side, [data-theme="glass"] .topbar, [data-theme="glass"] .modal,
+  [data-theme="glass"] .week-board .daycol, [data-theme="glass"] .month, [data-theme="glass"] .timegrid { background: var(--surface); -webkit-backdrop-filter: none; backdrop-filter: none; }
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  [data-theme="glass"] .card, [data-theme="glass"] .side, [data-theme="glass"] .topbar, [data-theme="glass"] .modal { background: var(--surface); }
+}
+@media (max-width: 700px) { .topbar > :first-child { min-width: 0; flex: 1 1 0; } .topbar { gap: 6px; } .topbar .btn.ghost { padding: 0 8px; } }
+.month .wk { display: contents; }
+
+/* ---- Glass: bento grid and one icon stroke ---- */
+[data-theme="glass"] svg { stroke-width: 2; } /* every icon draws at 2px (Icons.tsx draws 1.6 in the other themes) */
+[data-theme="glass"] .home { grid-auto-flow: dense; gap: var(--sp-3); }
+[data-theme="glass"] .home > .card { padding: var(--sp-3); }
+[data-theme="glass"] .home > .card > h2, [data-theme="glass"] .card-title { font-family: var(--font-display); }
+[data-theme="glass"] .home > .card > h2 .count { font-family: var(--font-num); color: var(--accent-text, var(--accent)); }
+[data-theme="glass"] .week-board { gap: var(--sp-3); }
+[data-theme="glass"] .week-board .daycol { padding: var(--sp-2) var(--sp-3) var(--sp-3); }
+[data-theme="glass"] .week-board .daycol.today { border-color: var(--accent); box-shadow: 0 0 12px rgba(0, 242, 254, 0.3); background: rgba(0, 242, 254, 0.06); }
+[data-theme="glass"] .board-card, [data-theme="glass"] .task-row { border-radius: calc(var(--radius) - 4px); }
+[data-theme="glass"] .board-card { background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.1); }
+[data-theme="glass"] .task-row .check:not(.on) { border-color: var(--line-strong); }
+[data-theme="glass"] .month .cell:focus-visible { outline-offset: -2px; }

@@ -91,7 +91,7 @@ export async function runLocal(input: string): Promise<A.ActionResult> {
     return A.setCalendarView(m[1] as "day");
   if (
     (m = low.match(
-      /\b(dark|light|paper|ink|slate|sand|midnight|ember|graphite|nord|sky|lavender|lagoon|ocean)\b (?:mode|theme)|theme (?:to )?(dark|light|paper|ink|slate|sand|midnight|ember|graphite|nord|sky|lavender|lagoon|ocean)/,
+      /\b(dark|light|paper|ink|slate|sand|midnight|ember|graphite|nord|sky|lavender|lagoon|ocean|glass)\b (?:mode|theme)|theme (?:to )?(dark|light|paper|ink|slate|sand|midnight|ember|graphite|nord|sky|lavender|lagoon|ocean|glass)/,
     ))
   ) {
     const name = (m[1] || m[2]) as string;
@@ -273,7 +273,22 @@ const TOOLS: Anthropic.Tool[] = [
     {
       theme: {
         type: "string",
-        enum: ["paper", "ink", "slate", "sand", "midnight", "ember", "graphite", "nord", "sky", "lavender", "lagoon", "ocean", "system"],
+        enum: [
+          "paper",
+          "ink",
+          "slate",
+          "sand",
+          "midnight",
+          "ember",
+          "graphite",
+          "nord",
+          "sky",
+          "lavender",
+          "lagoon",
+          "ocean",
+          "glass",
+          "system",
+        ],
       },
     },
     ["theme"],

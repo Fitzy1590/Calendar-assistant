@@ -15,7 +15,8 @@ tauri-build = { version = "2", features = [] }
 tauri = { version = "2", features = ["tray-icon"] }
 tauri-plugin-opener = "2"
 tauri-plugin-notification = "2"
-tauri-plugin-http = "2"
+# the npm package @tauri-apps/plugin-http is locked at 2.8.x and the Tauri CLI refuses a minor-version mismatch; Cargo.lock is not committed
+tauri-plugin-http = "~2.8"
 tauri-plugin-oauth = "2"
 tauri-plugin-dialog = "2"
 tauri-plugin-fs = "2"

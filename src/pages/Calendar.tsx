@@ -25,6 +25,7 @@ import { EventEditor } from "../components/EventEditor";
 import { MiniCalendar } from "../components/MiniCalendar";
 import { ICake, IDrop, ILeft, IMail, IPlus, IRight, WeatherIcon } from "../components/Icons";
 import { PageHead, Seg, Toggle } from "../components/ui";
+import { useCashflowFlags } from "../components/finance/useCashflowFlags";
 
 type View = "day" | "week" | "month" | "year";
 const HOUR_PX = 48;
@@ -258,6 +259,7 @@ function MonthView({
   const data = useRange(start, addDays(start, 42));
   const wx = useForecast();
   const wxBy = new Map((wx.data?.daily ?? []).map((d) => [d.date, d]));
+  const fin = useCashflowFlags();
   const toggleTask = (t: Task) => s.upsert("tasks", { id: t.id, done: !t.done, doneAt: Date.now() });
   // roving focus: only one day is in the tab order; arrows, Home/End and PgUp/PgDn move it
   const keys = days.map(ymd);
@@ -302,6 +304,7 @@ function MonthView({
             const k = ymd(d);
             const cell = data.get(k);
             const w = wxBy.get(k);
+            const flag = fin.get(k);
             const items = [...(cell?.occ ?? [])];
             return (
               <div
@@ -312,7 +315,7 @@ function MonthView({
                 tabIndex={k === roving ? 0 : -1}
                 aria-selected={s.selectedDay === k}
                 aria-current={isSameDay(d, new Date()) ? "date" : undefined}
-                aria-label={`${format(d, "EEEE d MMMM")}, ${items.length + (cell?.tasks.length ?? 0)} item${items.length + (cell?.tasks.length ?? 0) === 1 ? "" : "s"}`}
+                aria-label={`${format(d, "EEEE d MMMM")}, ${items.length + (cell?.tasks.length ?? 0)} item${items.length + (cell?.tasks.length ?? 0) === 1 ? "" : "s"}${flag ? (flag === "overdraft" ? ", account projected overdrawn" : ", account projected low") : ""}`}
                 onFocus={(e) => e.target === e.currentTarget && setFocusDay(k)}
                 onKeyDown={(e) => onCellKey(e, k)}
                 onClick={() => s.selectDay(k)}
@@ -320,6 +323,7 @@ function MonthView({
               >
                 <div className="n">
                   <b>{format(d, "d")}</b>
+                  {flag && <span className={"fin-mark " + flag}>{flag === "overdraft" ? "Overdrawn" : "Low cash"}</span>}
                   {w && (
                     <span className="wxmini">
                       <WeatherIcon sky={skyOf(w.code).sky} size={13} />

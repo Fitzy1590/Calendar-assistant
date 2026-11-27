@@ -15,7 +15,8 @@ tauri-build = { version = "2", features = [] }
 tauri = { version = "2", features = ["tray-icon"] }
 tauri-plugin-opener = "2"
 tauri-plugin-notification = "2"
-tauri-plugin-http = "2"
+# the npm package @tauri-apps/plugin-http is locked at 2.8.x and the Tauri CLI refuses a minor-version mismatch; Cargo.lock is not committed
+tauri-plugin-http = "~2.8"
 tauri-plugin-oauth = "2"
 tauri-plugin-dialog = "2"
 tauri-plugin-fs = "2"
@@ -33,6 +34,10 @@ native-tls = "0.2"
 mailparse = "0.15"
 lettre = { version = "0.11", default-features = false, features = ["builder", "smtp-transport", "native-tls", "hostname"] }
 base64 = "0.22"
+# finance vault: SQLCipher (AES-256) with its own OpenSSL, random key, zeroised key buffers
+rusqlite = { version = "0.32", features = ["bundled-sqlcipher-vendored-openssl"] }
+ring = "0.17"
+zeroize = "1"
 
 # Windows: native message box for the crash / "can't start" dialog
 [target.'cfg(windows)'.dependencies]

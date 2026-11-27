@@ -13,6 +13,15 @@ export interface WhatsNewEntry {
 
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    version: "0.3.11",
+    title: "Finance: cash flow, subscriptions and budgets",
+    points: [
+      "A new Finance page (turn it on first): see your balance day by day, with warnings before a bill takes you low or overdrawn, and Low cash / Overdrawn marks in the calendar month view.",
+      "Track subscriptions and price rises, get a reminder 3 days before a trial ends or a yearly plan renews, and plan with 50/30/20 or zero-based budgets and savings goals.",
+      "Everything is kept in an encrypted file on this PC, with its key in Windows Credential Manager. It is never synced, backed up or sent anywhere. Windows only.",
+    ],
+  },
+  {
     version: "0.3.10",
     title: "One font everywhere, with choices",
     points: [

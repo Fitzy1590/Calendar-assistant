@@ -74,6 +74,23 @@ Backlog, not voted: IMAP/SMTP (needs native Rust), push notifications (needs a s
 ## Weather: humidity per day (Nov 2026, ships as 0.3.5)
 - Done: average daily humidity (from Open-Meteo's hourly `relative_humidity_2m`) shown next to the temperature in the month cells, the week/day column headers, the Home forecast strip and today line, the day panel and the assistant's weather reply. Phone sizes stack it under the temperature. Checked in the real app with a synthetic forecast (the sandbox can't reach Open-Meteo): not seen with the live service.
 
+## 0c. Finance module "Broke-Assistant" (vote pending; design in `SPEC.md`, rules in `.claude/rules/finance-engine.md`)
+
+Phase 1 done. **Voted Option A (2026-11-27); Phase 2 in progress.** Card: `.claude/VOTING_CARD.md`.
+- [x] 1 Option A: SQLCipher AES-256 + OS Keychain + zero egress + cash flow calendar + subscription auditor + Obsidian Bento UI (recommended)
+- [ ] 2 Option B: unencrypted local SQLite (no SQLCipher)
+
+Open points in `SPEC.md` ("Conflicts to decide"): CSP would break existing services, `tauri-plugin-sql` + SQLCipher unverified, boundary "statement rows are never stored", mono font vs `--font-num`.
+
+| | Stage (after vote) | Verification |
+|---|---|---|
+| [~] | F1 Vault: Rust `vault_core.rs` (SQLCipher raw key, zeroize), `vault.rs` commands, key in Credential Manager, Android stub. DONE: core logic. CI (PR #34, commit bce550d): Windows and Android `build` jobs compile and pass, with `OPENSSL_SRC_PERL` set to Strawberry Perl for the vendored OpenSSL and `tauri-plugin-http` pinned to ~2.8. NOT VERIFIED: the vault running in the installed Windows app (Credential Manager write, first-run create, reopen) | standalone `cargo test` (7 passing: round trip, file not plain SQLite, wrong/missing key leaves file alone, table whitelist, atomic import, erase) |
+| [x] | F2 `cashflowEngine.ts` + weekend rule + low-balance flags | `cashflowEngine.test.ts` (shifts, month ends, overdraft, buffer edge) |
+| [x] | F3 `subscriptionTracker.ts` (3 % hike, 3-day alerts, local notifications via `alerts.ts` when Finance is on) | `subscriptionTracker.test.ts` (1.03 boundary, year end) |
+| [x] | F4 `budgetCalculator.ts` (50/30/20, zero-based, rollover, pace) | `budgetCalculator.test.ts` (sums to income) |
+| [~] | F5 `Finance.tsx` + `FinanceDashboard.tsx` + `FinanceMore.tsx`: accounts, bills/paydays, chart, low/overdraft days, subscriptions, envelopes with pace (50/30/20 and zero-based views), savings goals with monthly amount, statement import into the vault with sort-into-envelope (assigning recomputes the envelope's spent for this month; a typed "spent so far" is overwritten by the next assignment), calendar month overlay ("Low cash" / "Overdrawn", flags only, no amounts). NOT DONE: transaction list/search, editing or splitting a sorted line | `statementImport.test.ts`, `budgetCalculator.test.ts` (goalPlan); Playwright 1280/412 px with a mocked vault (no scroll, no errors); real vault untested |
+| [~] | F6 no-egress guard DONE (`noEgress.test.ts`). CSP NOT DONE: needs a Windows `tauri dev` run to list real hosts without breaking the app | Vitest guard; `tauri dev` on Windows |
+
 ## 0b. Drive sync (approved vote; design in `docs/DRIVE_SYNC.md`)
 
 Windows side and the shared engine first; Android joins next. Every stage also needs B1-B3 and B5.

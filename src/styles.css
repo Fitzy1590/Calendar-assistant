@@ -1202,3 +1202,39 @@ input[type="range"], input[type="checkbox"] { accent-color: var(--accent); }
 
 /* High contrast: ultra-thick borders */
 [data-theme="contrast"] .card, [data-theme="contrast"] .modal, [data-theme="contrast"] .side { border-width: 3px; border-color: var(--line-strong); }
+
+/* Finance page: bento grid on theme tokens, no transitions */
+.fin-grid { display: grid; gap: var(--sp-3); grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: start; }
+.fin-wide { grid-column: span 2; }
+@media (max-width: 900px) { .fin-grid { grid-template-columns: 1fr; } .fin-wide { grid-column: auto; } }
+.fin-head { display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; margin-bottom: var(--sp-2); }
+.fin-head h2 { margin: 0; font-size: 16px; flex: 1; }
+.fin-head .spacer { flex: 1; }
+.fin-big { font-size: 30px; font-weight: 700; }
+.fin-row { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-2); min-height: 44px; padding: var(--sp-1) 0; border-bottom: 1px solid var(--line); }
+.fin-row:last-child { border-bottom: 0; }
+.fin-btn { min-height: 44px; min-width: 44px; }
+.fin-list { list-style: none; margin: var(--sp-2) 0 0; padding: 0; display: grid; gap: var(--sp-1); }
+.fin-list li { display: flex; gap: var(--sp-2); align-items: center; min-height: 32px; }
+.fin-list li > :nth-child(2) { flex: 1; }
+.fin-in { color: var(--ok); }
+.fin-flag { font-size: 12px; font-weight: 600; padding: 2px 8px; border: 1px solid currentColor; border-radius: 6px; white-space: nowrap; }
+.fin-flag.bad { color: var(--bad); }
+.fin-flag.warn { color: var(--warn); }
+.fin-flag.ok { color: var(--ok); }
+.fin-chart text { font: 11px var(--font-num); fill: var(--muted); }
+.fin-line { fill: none; stroke: var(--accent); stroke-width: 2; }
+.fin-axis { stroke: var(--line-strong); }
+.fin-buffer { stroke: var(--warn); stroke-dasharray: 4 4; }
+.fin-od { fill: var(--bad); }
+.fin-low { fill: var(--warn); }
+.fin-env { padding: var(--sp-2) 0; border-bottom: 1px solid var(--line); }
+.fin-gauge { position: relative; height: 10px; border: 1px solid var(--line-strong); border-radius: 5px; background: var(--surface-2); margin: var(--sp-1) 0; }
+.fin-gauge i { display: block; height: 100%; border-radius: 4px; }
+.fin-gauge i.ok { background: var(--ok); }
+.fin-gauge i.bad { background: var(--bad); }
+.fin-gauge s { position: absolute; top: -4px; bottom: -4px; width: 2px; background: var(--text); }
+.fin-spent { width: 110px; min-height: 44px; }
+.fin-mark { font-size: 10px; font-weight: 600; padding: 0 4px; border: 1px solid currentColor; border-radius: 4px; margin-left: 4px; }
+.fin-mark.low { color: var(--warn); }
+.fin-mark.overdraft { color: var(--bad); }

@@ -204,6 +204,7 @@ export type PageId =
   | "news"
   | "sports"
   | "subscriptions"
+  | "finance"
   | "settings";
 
 export interface HomeWidget {
@@ -299,6 +300,8 @@ export interface Settings {
   mail: MailSettings;
   /** Found by scanning a bank statement on this device. Only the detected list is kept, never the statement. */
   subscriptions: { items: Subscription[]; cancelled: Record<string, string>; importedAt?: string };
+  /** Finance module (Windows). Per device, never synced. The data itself is in the encrypted vault, not here. */
+  finance: { enabled: boolean; bufferCents: number };
   /** Sync through the hidden Google Drive app folder (no server). Per device. */
   driveSync: {
     enabled: boolean;

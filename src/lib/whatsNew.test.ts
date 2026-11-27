@@ -16,6 +16,8 @@ describe("what's new", () => {
   });
   it("has an entry with points for every bundled version, newest first", () => {
     expect(WHATS_NEW.every((e) => e.points.length > 0 && e.points.length <= 3)).toBe(true);
-    expect(WHATS_NEW.map((e) => e.version)).toEqual([...WHATS_NEW.map((e) => e.version)].sort().reverse());
+    const num = (v: string) => v.split(".").map(Number);
+    const cmp = (a: string, b: string) => num(b).reduce((d, n, i) => d || n - num(a)[i], 0); // numeric, so 0.3.10 follows 0.3.9
+    expect(WHATS_NEW.map((e) => e.version)).toEqual([...WHATS_NEW.map((e) => e.version)].sort(cmp));
   });
 });

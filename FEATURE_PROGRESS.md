@@ -76,8 +76,8 @@ Backlog, not voted: IMAP/SMTP (needs native Rust), push notifications (needs a s
 
 ## 0c. Finance module "Broke-Assistant" (vote pending; design in `SPEC.md`, rules in `.claude/rules/finance-engine.md`)
 
-Phase 1 done (audit, rules, spec, voting card `VOTING_CARD.html`). **No app code yet; waiting for the vote.** Card: `.claude/VOTING_CARD.md`.
-- [ ] 1 Option A: SQLCipher AES-256 + OS Keychain + zero egress + cash flow calendar + subscription auditor + Obsidian Bento UI (recommended)
+Phase 1 done. **Voted Option A (2026-11-27); Phase 2 in progress.** Card: `.claude/VOTING_CARD.md`.
+- [x] 1 Option A: SQLCipher AES-256 + OS Keychain + zero egress + cash flow calendar + subscription auditor + Obsidian Bento UI (recommended)
 - [ ] 2 Option B: unencrypted local SQLite (no SQLCipher)
 
 Open points in `SPEC.md` ("Conflicts to decide"): CSP would break existing services, `tauri-plugin-sql` + SQLCipher unverified, boundary "statement rows are never stored", mono font vs `--font-num`.

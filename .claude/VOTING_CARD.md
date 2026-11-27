@@ -2,7 +2,7 @@
 
 Visual version: `VOTING_CARD.html` (sample data). Reply 1 for Option A, 2 for Option B, or type a tweak. Earlier card (20 themes) moved to `docs/voting-cards/`.
 
-- [ ] **1 Option A [RECOMMENDED PRIVACY SUITE]**: SQLCipher AES-256 local encryption + OS keychain storage + zero-egress network isolation + predictive cash flow calendar + subscription auditor + Obsidian Bento UI
+- [x] **1 Option A [RECOMMENDED PRIVACY SUITE]**: SQLCipher AES-256 local encryption + OS keychain storage + zero-egress network isolation + predictive cash flow calendar + subscription auditor + Obsidian Bento UI
   - Justification: complete Rocket Money style budgeting and calendar cash flow projections with 100% on-device data and zero external sharing.
 - [ ] **2 Option B**: unencrypted local SQLite database (no SQLCipher). Breaks the "never store plain SQLite with financial records" rule.
 
@@ -18,4 +18,4 @@ Visual version: `VOTING_CARD.html` (sample data). Reply 1 for Option A, 2 for Op
 | macOS/Linux keychains | Windows only | Windows Credential Manager |
 
 ## Vote (record here)
-Not yet voted.
+Voted 2026-11-27: Option A. No tweaks; plan defaults from SPEC "Conflicts to decide" apply.

@@ -186,9 +186,9 @@ Voted 2026-11-27: 1, 2, 4, 5, 7, 9, 10, 11, 12, 13, 15, 16, 19, 20. Not built: 3
 
 ---
 
-# Finance module "Broke-Assistant" (Windows): spec, awaiting vote
+# Finance module "Broke-Assistant" (Windows): spec, vote A received
 
-Status: Phase 1 only. No app code written. Card: `VOTING_CARD.html`, `.claude/VOTING_CARD.md`. Rules: `.claude/rules/finance-engine.md`. Windows only (browser mode shows a notice); shared code stays Android-safe.
+Status: vote received (A); Phase 2 in progress. Card: `VOTING_CARD.html`, `.claude/VOTING_CARD.md`. Rules: `.claude/rules/finance-engine.md`. Windows only (browser mode shows a notice); shared code stays Android-safe.
 
 ## Audit (2026-11-27)
 - Already in the repo: `lib/bankStatement.ts` (CSV/OFX/QIF parse) and `lib/subscriptions.ts` (detection, cadence, `priceChange`, cancel guides) with `pages/Subscriptions.tsx`; only the detected list is kept in `settings.subscriptions`, never statement rows. Rust `secure_store.rs` already uses the `keyring` crate (Windows Credential Manager). `lib/recurrence.ts` expands recurring items. Glass theme already is Obsidian `#0B0E14` + cyan `#00F2FE`.
@@ -215,5 +215,5 @@ Status: Phase 1 only. No app code written. Card: `VOTING_CARD.html`, `.claude/VO
 - **Checks**: Vitest for every pure module, no-egress guard, Rust standalone `cargo test`, `tsc`, `build`, Prettier, Playwright at 1280/412 px, Windows CI job.
 
 ## Vote (record here)
-- [ ] 1 Option A: SQLCipher AES-256 + OS Keychain + zero egress + cash flow calendar + subscription auditor + Obsidian Bento UI (recommended)
+- [x] 1 Option A: SQLCipher AES-256 + OS Keychain + zero egress + cash flow calendar + subscription auditor + Obsidian Bento UI (recommended)
 - [ ] 2 Option B: unencrypted local SQLite (no SQLCipher)

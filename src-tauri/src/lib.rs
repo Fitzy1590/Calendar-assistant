@@ -17,6 +17,10 @@ mod self_update;
 mod self_update_core;
 #[cfg(not(target_os = "android"))]
 mod smtp_core;
+#[cfg_attr(target_os = "android", path = "vault_stub.rs")]
+mod vault;
+#[cfg(not(target_os = "android"))]
+mod vault_core;
 #[cfg(windows)]
 mod webview_fix;
 
@@ -112,6 +116,13 @@ pub fn run() {
             imap_mail::imap_sync,
             imap_mail::imap_body,
             imap_mail::smtp_send,
+            vault::vault_open,
+            vault::vault_close,
+            vault::vault_list,
+            vault::vault_put,
+            vault::vault_put_many,
+            vault::vault_delete,
+            vault::vault_erase,
             self_update::install_update_direct,
             oauth_proxy::ms_token_request,
             oauth_proxy::ms_device_code

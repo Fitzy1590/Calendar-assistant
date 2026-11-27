@@ -123,6 +123,40 @@ pub fn secure_store_delete(key: String) -> Result<(), String> {
     }
 }
 
+/// For other Rust modules (the finance vault key). Same store, never exposed to JavaScript by these.
+#[cfg(not(target_os = "android"))]
+pub(crate) fn get_secret(key: &str) -> Result<Option<String>, String> {
+    #[cfg(windows)]
+    return read(&Windows, key);
+    #[cfg(not(windows))]
+    {
+        let _ = key;
+        Err("secure store is only available on Windows".into())
+    }
+}
+
+#[cfg(not(target_os = "android"))]
+pub(crate) fn set_secret(key: &str, value: &str) -> Result<(), String> {
+    #[cfg(windows)]
+    return put(&mut Windows, key, value);
+    #[cfg(not(windows))]
+    {
+        let _ = (key, value);
+        Err("secure store is only available on Windows".into())
+    }
+}
+
+#[cfg(not(target_os = "android"))]
+pub(crate) fn delete_secret(key: &str) -> Result<(), String> {
+    #[cfg(windows)]
+    return remove(&mut Windows, key);
+    #[cfg(not(windows))]
+    {
+        let _ = key;
+        Err("secure store is only available on Windows".into())
+    }
+}
+
 #[cfg(test)]
 #[derive(Default)]
 struct Mem(HashMap<String, String>);

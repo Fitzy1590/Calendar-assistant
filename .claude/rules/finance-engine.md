@@ -19,7 +19,7 @@ Applies only after the vote picks Option A (encrypted store). Record the vote in
 - Logs and error reports: amounts, merchants, account names and balances are redacted by `errors.ts`.
 
 ## Cash flow (`lib/finance/cashflowEngine.ts`, pure)
-- Projected balance(t) = opening balance + income(t) - bills(t), per account and combined. Dates are local `yyyy-MM-dd` via date-fns; recurrence via `lib/recurrence.ts`. Money is **integer minor units** (cents), never floats.
+- Projected balance(t) = opening balance + income(t) - bills(t), per account and combined. Dates are local `yyyy-MM-dd` via date-fns; recurrence by its own small expander (`dueDates`; monthly clamps the 31st to month end, which `lib/recurrence.ts` would skip). Money is **integer minor units** (cents), never floats.
 - Weekend rule: a payday on Sat/Sun moves to the preceding Friday; a bill on Sat/Sun moves to the following Monday. Keep the original date on the item (`due`) and the shifted one (`effective`).
 - Low-balance flag when projected < `settings.finance.bufferCents` (default 25000); overdraft flag when < 0.
 

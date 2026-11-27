@@ -84,7 +84,7 @@ Open points in `SPEC.md` ("Conflicts to decide"): CSP would break existing servi
 
 | | Stage (after vote) | Verification |
 |---|---|---|
-| [~] | F1 Vault: Rust `vault_core.rs` (SQLCipher raw key, zeroize), `vault.rs` commands, key in Credential Manager, Android stub. DONE: core logic. NOT VERIFIED: `vault.rs`, `lib.rs`, Cargo changes (need the Windows and Android CI jobs; vendored OpenSSL on Windows is the risk; fallback in SPEC) | standalone `cargo test` (7 passing: round trip, file not plain SQLite, wrong/missing key leaves file alone, table whitelist, atomic import, erase) |
+| [~] | F1 Vault: Rust `vault_core.rs` (SQLCipher raw key, zeroize), `vault.rs` commands, key in Credential Manager, Android stub. DONE: core logic. CI (PR #34, commit bce550d): Windows and Android `build` jobs compile and pass, with `OPENSSL_SRC_PERL` set to Strawberry Perl for the vendored OpenSSL and `tauri-plugin-http` pinned to ~2.8. NOT VERIFIED: the vault running in the installed Windows app (Credential Manager write, first-run create, reopen) | standalone `cargo test` (7 passing: round trip, file not plain SQLite, wrong/missing key leaves file alone, table whitelist, atomic import, erase) |
 | [x] | F2 `cashflowEngine.ts` + weekend rule + low-balance flags | `cashflowEngine.test.ts` (shifts, month ends, overdraft, buffer edge) |
 | [x] | F3 `subscriptionTracker.ts` (3 % hike, 3-day alerts, local notifications via `alerts.ts` when Finance is on) | `subscriptionTracker.test.ts` (1.03 boundary, year end) |
 | [x] | F4 `budgetCalculator.ts` (50/30/20, zero-based, rollover, pace) | `budgetCalculator.test.ts` (sums to income) |

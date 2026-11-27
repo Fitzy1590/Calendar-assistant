@@ -25,6 +25,7 @@ import { BUILT_IN_WORDS, browserSpeechAvailable, dictate, useVoice, voiceReady }
 import { isAndroid, isTauri, openUrl } from "../lib/platform";
 import { IPin } from "./Icons";
 import { Field, Suggest, Toggle } from "./ui";
+import { FONT_OPTIONS } from "../lib/fonts";
 import { cityGuesses, DEVICE_NAMES, KEY_LINKS, NEWS_KEYWORDS, regionDefaults, SYNC_URL_IDEAS } from "../lib/suggest";
 
 /** Building blocks shared by the first-run wizard and the Settings page, so both stay in step. */
@@ -197,6 +198,26 @@ export function ThemePicker() {
           value={s.settings.fontScale}
           onChange={(e) => s.updateSettings((st) => void (st.fontScale = +e.target.value))}
         />
+      </div>
+      <div className="row" role="group" aria-label="Font">
+        <span className="muted" style={{ width: 70 }}>
+          Font
+        </span>
+        <div className="font-tiles">
+          {FONT_OPTIONS.map((f) => (
+            <button
+              key={f.id}
+              className="font-tile"
+              aria-pressed={s.settings.font === f.id}
+              onClick={() => s.updateSettings((st) => void (st.font = f.id))}
+              style={f.stack ? ({ "--tile-font": f.stack } as React.CSSProperties) : undefined}
+            >
+              <b>{f.name}</b>
+              <span className="sample">Mon 27 · 12:30 PM · Dentist</span>
+              <span className="faint">{f.note}</span>
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -631,7 +652,7 @@ export function GoogleSetup({ compact }: { compact?: boolean }) {
             "Create a “Desktop app” OAuth client in Google Cloud. Sign-in opens your browser and returns to the app automatically; you stay signed in."
           ) : (
             <>
-              Register <span className="mono">{location.origin}/oauth.html</span> as the redirect URI.
+              Register <span className="mono code">{location.origin}/oauth.html</span> as the redirect URI.
             </>
           )}{" "}
           Use the step-by-step guide above if you get stuck.

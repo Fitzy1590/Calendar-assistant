@@ -13,6 +13,15 @@ export interface WhatsNewEntry {
 
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    version: "0.3.10",
+    title: "One font everywhere, with choices",
+    points: [
+      "Every page now uses one font family, including dates and times in the calendar, which were in a blocky monospace.",
+      "Pick a font in Settings, Theme (button in the top bar): IBM Plex Sans, Inter, Outfit, Atkinson Hyperlegible, the Windows system font, or Match theme to bring back each theme's own fonts.",
+      "Codes, keys and web addresses stay in monospace so they are easy to read out. Windows only.",
+    ],
+  },
+  {
     version: "0.3.9",
     title: "11 new themes and a Theme button",
     points: [

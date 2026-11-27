@@ -39,6 +39,7 @@ import { startDriveSync } from "./lib/driveSyncApp";
 import { startSportsCalendar } from "./lib/sportsCalendar";
 import { StaleBanner } from "./components/DriveSync";
 import { startMailPolling } from "./lib/mail/engine";
+import { fontStack } from "./lib/fonts";
 import { accentText, readableOn, resolveAccent } from "./lib/themes";
 import { checkTrackedPrices } from "./lib/shopping";
 
@@ -58,7 +59,7 @@ const PAGES = {
 };
 
 function useTheme() {
-  const { theme, accent, density, fontScale } = useStore((s) => s.settings);
+  const { theme, accent, density, fontScale, font } = useStore((s) => s.settings);
   useEffect(() => {
     const root = document.documentElement;
     const apply = () => {
@@ -73,11 +74,17 @@ function useTheme() {
     };
     apply();
     root.dataset.density = density;
+    // one family for body, headings and numbers; "theme" lets each theme's own fonts show
+    const stack = fontStack(font);
+    for (const v of ["--font-ui", "--font-display", "--font-num"]) {
+      if (stack) root.style.setProperty(v, stack);
+      else root.style.removeProperty(v);
+    }
     root.style.setProperty("--scale", String(fontScale));
     const mq = window.matchMedia("(prefers-color-scheme: dark)");
     mq.addEventListener("change", apply);
     return () => mq.removeEventListener("change", apply);
-  }, [theme, accent, density, fontScale]);
+  }, [theme, accent, density, fontScale, font]);
 }
 
 /** Background jobs: reminder notifications, daily backups, price checks, Google Calendar auto sync. */

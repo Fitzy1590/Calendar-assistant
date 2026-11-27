@@ -284,7 +284,7 @@ function DeviceCodeModal({ onClose, onDone }: { onClose: () => void; onDone: () 
             <div>
               On any device, open <b>google.com/device</b> and enter this code:
             </div>
-            <div className="mono" style={{ fontSize: 32, fontWeight: 700, letterSpacing: ".08em" }}>
+            <div className="mono code" style={{ fontSize: 32, fontWeight: 700, letterSpacing: ".08em" }}>
               {state.code.userCode}
             </div>
             <div className="faint" style={{ fontSize: 12.5 }}>

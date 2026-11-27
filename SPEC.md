@@ -131,13 +131,13 @@ Pure modules (`thread.ts`, `classify.ts`, `actions.ts` parsing, theme contrast, 
 
 ## 10. UI/UX redesign: "unslop" upgrade (vote pending, no code yet)
 
-Status: Phase 1 (audit + vote). Card: `VOTING_CARD.html`, `.claude/VOTING_CARD.md`. Windows first; shared code stays Android-safe.
+Status: vote received (A); Phase 2 in progress. Card: `VOTING_CARD.html`, `.claude/VOTING_CARD.md`. Windows first; shared code stays Android-safe.
 
 **Vote** (chosen option gets `[x]` once you reply):
-- [ ] A: Material Glass HUD + Bento (recommended)
+- [x] A: Material Glass HUD + Bento (recommended) (voted)
 - [ ] B: Material 3 adaptive surfaces
 - [ ] C: Minimalist editorial monochrome
-- Custom tweak: _none yet_
+- Custom tweak: none
 
 **Audit findings**
 - Styling is plain CSS tokens in `src/styles.css` (908 lines, `[data-theme]` / `[data-density]`, 11 themes, each tested for WCAG AA in `themes.test.ts`). No Tailwind. Fonts today: IBM Plex Sans / Fraunces / IBM Plex Mono.

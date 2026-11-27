@@ -177,6 +177,7 @@ export type ThemeName =
   | "lavender"
   | "lagoon"
   | "ocean"
+  | "glass"
   | "system";
 export type PageId =
   | "home"

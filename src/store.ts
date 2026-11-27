@@ -119,13 +119,14 @@ interface State {
   assistantOpen: boolean;
   feedbackOpen: boolean;
   emailImportOpen: boolean;
+  quickAdd: boolean; // the top-bar + was pressed: the Calendar opens a new-event window
   wizardSteps: string[] | null; // re-open the wizard on just these steps
   toast: string | null;
 
   setPage: (p: PageId) => void;
   selectDay: (d: string | null) => void;
   setSportFocus: (f: State["sportFocus"]) => void;
-  setUi: (p: Partial<Pick<State, "assistantOpen" | "feedbackOpen" | "emailImportOpen" | "wizardSteps" | "toast">>) => void;
+  setUi: (p: Partial<Pick<State, "assistantOpen" | "feedbackOpen" | "emailImportOpen" | "quickAdd" | "wizardSteps" | "toast">>) => void;
   updateSettings: (fn: (s: Settings) => Settings | void) => void;
   upsert: <C extends CollectionName>(c: C, rec: Partial<RecordOf<C>> & { id?: string }) => RecordOf<C>;
   remove: (c: CollectionName, id: string) => void;
@@ -162,6 +163,7 @@ export const useStore = create<State>()(
       assistantOpen: false,
       feedbackOpen: false,
       emailImportOpen: false,
+      quickAdd: false,
       wizardSteps: null,
       toast: null,
 

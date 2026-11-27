@@ -42,6 +42,7 @@ export const THEMES: { id: ThemeName; name: string; group: "light" | "dark" | "o
   { id: "graphite", name: "Graphite", group: "dark" },
   { id: "nord", name: "Nord", group: "dark" },
   { id: "ocean", name: "Ocean", group: "dark" },
+  { id: "glass", name: "Glass", group: "dark" },
   // still work for anyone who already chose them, but no longer offered
   { id: "oled", name: "OLED dark", group: "dark", legacy: true },
   { id: "forest", name: "Forest", group: "dark", legacy: true },

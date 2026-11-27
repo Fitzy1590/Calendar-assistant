@@ -18,6 +18,7 @@ describe("theme tokens (read from styles.css)", () => {
       "contrast",
       "ember",
       "forest",
+      "glass",
       "graphite",
       "ink",
       "lagoon",

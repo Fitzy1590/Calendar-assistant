@@ -72,6 +72,15 @@ export function Calendar() {
         ? { start: localIso(startOfDay(d)), end: localIso(addDays(startOfDay(d), 1)), allDay: true }
         : { start: localIso(d), end: localIso(new Date(d.getTime() + 3600e3)) },
     });
+  // the top-bar + opens a new event on the next whole hour
+  useEffect(() => {
+    if (!s.quickAdd) return;
+    s.setUi({ quickAdd: false });
+    const d = new Date();
+    d.setMinutes(0, 0, 0);
+    newAt(new Date(d.getTime() + 3600e3));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [s.quickAdd]);
   const openOcc = (o: Occurrence) => {
     if (isBirthdayEvent(o.event)) return s.setPage("contacts"); // birthdays are edited on the contact
     setEdit({ ev: o.event, occ: ymd(o.start) });

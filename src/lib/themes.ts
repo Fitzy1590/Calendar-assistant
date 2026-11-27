@@ -73,6 +73,7 @@ export const THEME_ACCENTS: Record<string, string> = {
   lavender: "#6a3fd1",
   lagoon: "#0b7a82",
   ocean: "#2ec4c9",
+  glass: "#00f2fe",
 };
 
 /** The accent colour actually drawn: the high-contrast yellow, the person's own pick, or the theme's matching one. */

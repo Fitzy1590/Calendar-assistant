@@ -456,7 +456,7 @@ function ImapGuide({ error, address }: { error: string; address: string }) {
       )}
       <details>
         <summary className="faint">Technical detail</summary>
-        <div className="mono" style={{ fontSize: 12, overflowWrap: "anywhere" }}>
+        <div className="mono code" style={{ fontSize: 12, overflowWrap: "anywhere" }}>
           {error}
         </div>
       </details>
@@ -759,7 +759,7 @@ function OutlookCodeModal({ onClose, onDone }: { onClose: () => void; onDone: ()
             <div>
               On any device, open <b>{state.code.url.replace(/^https:\/\//, "")}</b> and enter this code:
             </div>
-            <div className="mono" style={{ fontSize: 32, fontWeight: 700, letterSpacing: ".08em" }}>
+            <div className="mono code" style={{ fontSize: 32, fontWeight: 700, letterSpacing: ".08em" }}>
               {state.code.userCode}
             </div>
             <div className="faint" style={{ fontSize: 12.5 }}>

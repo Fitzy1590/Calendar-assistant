@@ -221,3 +221,9 @@ Windows side and the shared engine first; Android joins next. Every stage also n
 - Top-bar Theme button opens the picker modal (`ThemeSwitcher.tsx`). New themes switch with no transition. What's new 0.3.9.
 - Accent tweaks so the contrast tests pass: Pastel #a855f7 (voted #C084FC was 2.5:1 against the page), Neumorphic #4a66ee, Deep Space #6064f0. Second accents (lavender, cyan, violet…) are not used: one accent per theme.
 - Not built: 3 OLED (stays blue), 6, 8, 14, 17, 18. Not verified: WebView2 (Chromium only), narrow phone width, every page in every theme (home page checked in all 11 + High contrast).
+
+## Fonts (2026-11-27): one family everywhere + Font setting, not yet released
+- `Settings.font` (`lib/fonts.ts`): plex (default), inter, outfit, atkinson, system, theme. App.tsx sets `--font-ui/--font-display/--font-num` on the root; "theme" removes the override. Tiles with live previews in the theme picker (Settings, and the top-bar Theme button).
+- Dates, times, counts and scores moved from `--font-mono` to `--font-num` (UI family + tabular figures). Real code (`.input.mono`, `pre.mono`, `.mono.code`) stays monospace.
+- Side effect: with the default font, Arcade's pixel headings and Glass/Tokyo's Outfit are overridden; "Match theme" restores them.
+- Not verified: WebView2, fonts offline (Google Fonts link, falls back to system fonts), every page at phone width.

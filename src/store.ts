@@ -3,6 +3,7 @@ import { persist } from "zustand/middleware";
 import type { CollectionName, Contact, PageId, RecordOf, Settings, Synced } from "./types";
 import { pairingCode, uid } from "./lib/util";
 import { DEFAULT_MAIL_SETTINGS } from "./lib/mail/types";
+import { DEFAULT_FONT } from "./lib/fonts";
 
 export const DEFAULT_SETTINGS: Settings = {
   onboarded: false,
@@ -12,6 +13,7 @@ export const DEFAULT_SETTINGS: Settings = {
   accent: "theme",
   density: "comfortable",
   fontScale: 1,
+  font: DEFAULT_FONT,
   units: "metric",
   clock24: false,
   weekStartsOn: 1,

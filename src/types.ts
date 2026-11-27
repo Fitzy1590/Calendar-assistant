@@ -161,6 +161,8 @@ export interface FavTeam {
   badge?: string;
 }
 
+import type { FontChoice } from "./lib/fonts";
+
 export type ThemeName =
   | "paper"
   | "ink"
@@ -217,6 +219,7 @@ export interface Settings {
   accent: string; // "#rrggbb", or "theme" to use the theme's own matching accent
   density: "compact" | "comfortable" | "spacious";
   fontScale: number;
+  font: FontChoice; // one family for the whole app, or "theme" for each theme's own
   location?: Place;
   units: "metric" | "imperial";
   clock24: boolean;

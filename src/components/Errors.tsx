@@ -324,7 +324,7 @@ export function Diagnostics() {
       </div>
       <div className="faint" style={{ fontSize: 12.5 }}>
         If the Windows app ever closes on its own, it shows what went wrong and saves a crash report in
-        <span className="mono"> %LOCALAPPDATA%\com.fitzy.calendarassistant\crash-reports</span>.
+        <span className="mono code"> %LOCALAPPDATA%\com.fitzy.calendarassistant\crash-reports</span>.
       </div>
     </div>
   );

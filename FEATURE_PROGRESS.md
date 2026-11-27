@@ -208,3 +208,8 @@ Windows side and the shared engine first; Android joins next. Every stage also n
 | [x] | **Guardrails**: `.p12` deny rules, CLAUDE.md hard boundaries, `.claude/skills/release`, `.claude/rules/rust.md` | files on disk |
 | [x] | **Home Tasks card is a 7-day view**: overdue group first, then Today, Tomorrow and each weekday to day 7 (empty days say "Nothing due"), undated tasks last; ticking a task completes it. Customise label is "Tasks, next 7 days" | `tsc`, build; Playwright mock screenshots at 1280 px and 412 px (light theme only; dark not checked) |
 | [~] | **Home Headlines card** shows "Loading headlines…", the real error text and a Try again button, instead of always blaming browser CORS. NOT DONE: the underlying fetch failure on the user's device is undiagnosed (the sandbox has no internet, so real headlines were never seen) | Playwright screenshot of the error state only; needs a run in the Windows/Android app |
+
+## UI/UX redesign ("unslop") upgrade
+
+| [ ] | **Phase 1: audit, `SPEC.md` §10, `VOTING_CARD.html` + `.claude/VOTING_CARD.md`**: written; WAITING FOR VOTE (A Material Glass HUD / B Material 3 / C Editorial mono) | Open the card; reply 1, 2, 3 or a tweak; chosen option is ticked here and in SPEC §10 |
+| [ ] | Phase 2: tokens, header bar, calendar views, Bento Tasks/Home, icons, copy, motion | After the vote: `tsc`, `npm test` (AA tests per theme), `build`, Prettier, Playwright shots at 1280 px and 412 px |

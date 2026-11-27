@@ -128,3 +128,29 @@ Extends the existing tokens (`styles.css` `[data-theme]`, `[data-density]`, `--a
 ## 9. Testing approach
 
 Pure modules (`thread.ts`, `classify.ts`, `actions.ts` parsing, theme contrast, storage thresholds) get Vitest tests next to the code. Provider adapters take an injected API function (like `googleSync.ts`) and are tested against fakes of the Gmail and Graph APIs, including history/delta, expired tokens, 429s and `invalid_grant`. UI gets Playwright checks at 1280 px and 412 px, keyboard-only walkthroughs and axe-core. Rust `secure_store` is checked standalone with `cargo test` where possible and by the Windows CI job.
+
+## 10. UI/UX redesign: "unslop" upgrade (vote pending, no code yet)
+
+Status: Phase 1 (audit + vote). Card: `VOTING_CARD.html`, `.claude/VOTING_CARD.md`. Windows first; shared code stays Android-safe.
+
+**Vote** (chosen option gets `[x]` once you reply):
+- [ ] A: Material Glass HUD + Bento (recommended)
+- [ ] B: Material 3 adaptive surfaces
+- [ ] C: Minimalist editorial monochrome
+- Custom tweak: _none yet_
+
+**Audit findings**
+- Styling is plain CSS tokens in `src/styles.css` (908 lines, `[data-theme]` / `[data-density]`, 11 themes, each tested for WCAG AA in `themes.test.ts`). No Tailwind. Fonts today: IBM Plex Sans / Fraunces / IBM Plex Mono.
+- `.claude/rules/calendar-ui.md` forbids glass, glow and gradients. Option A needs that rule changed; A would ship as a new theme, not replace the others.
+- Sync is LWW records (`sync.ts`, `driveSync.ts`), not Yjs/CRDT. The header sync pill reads real status; "Wi-Fi P2P health" is out of scope without a separate approval to swap sync.
+- Already done and voted earlier (keep, restyle only): top nav, Tasks week board, Notes, Shopping, Email, Home cards, News/Sports/Subscriptions/Settings. A restyle must not undo those behaviours.
+- Brief items already present as repo practice: concise rules under 200 lines (CLAUDE.md is 132), deny rules for `.env`, keys, `package-lock.json`, `target`, `gen`.
+
+**Plan after the vote (not started)**
+1. Tokens: spacing 4/8/16/24/32, glass/priority/category tokens, type tokens (heading, UI, mono for dates/times/sync), 0 ms transitions (`prefers-reduced-motion` honoured).
+2. Header bar: date range, search, sync pill, 1-tap add (`App.tsx`, `Sidebar.tsx`).
+3. Calendar views, quick-add popover (inline time picker, category chips) (`pages/Calendar.tsx`, `EventEditor.tsx`).
+4. Bento Tasks and Home (`pages/Tasks.tsx`, `pages/Home.tsx`).
+5. Icons to one stroke weight (`Icons.tsx`); copy pass; contrast tests extended; Playwright shots at 1280 px and 412 px.
+
+**Needs separate approval:** Yjs, Tailwind, any other core library swap; Stop hook and `outputStyle` edits in `.claude/settings.json` (proposed in the brief, not applied).

@@ -159,7 +159,7 @@ Status: vote received (A); Phase 2 in progress. Card: `VOTING_CARD.html`, `.clau
 
 # 20-theme suite (Windows): spec, awaiting vote
 
-Status: Phase 1 only. No app code written. Options and contrast ratios: `VOTING_CARD.html`, `.claude/VOTING_CARD.md`.
+Status: Phase 1 only. No app code written. Options and contrast ratios: `docs/voting-cards/20-theme-suite.html`, `docs/voting-cards/20-theme-suite.md`.
 
 ## Audit (2026-11-27)
 - A theme engine **already exists**: `[data-theme="…"]` token blocks in `src/styles.css` (16 themes: paper, sand, ink, slate, oled, forest, midnight, ember, graphite, nord, sky, lavender, lagoon, ocean, glass, contrast), `ThemeName` in `src/types.ts`, `useTheme()` in `App.tsx` (sets `dataset.theme`), accent logic in `src/lib/themes.ts` (`THEME_ACCENTS`, `resolveAccent`, `accentText`), picker in Settings. Plan: **extend it, not add a ThemeProvider or Tailwind** (no Tailwind in repo; tokens are `--bg --surface --text --accent --line`).
@@ -183,3 +183,37 @@ Status: Phase 1 only. No app code written. Options and contrast ratios: `VOTING_
 - [ ] 17 Industrial Titanium  - [ ] 18 Hyper Minimal  - [x] 19 High Contrast  - [x] 20 Arcade 16-Bit
 
 Voted 2026-11-27: 1, 2, 4, 5, 7, 9, 10, 11, 12, 13, 15, 16, 19, 20. Not built: 3, 6, 8, 14, 17, 18 (OLED stays blue; Solarized is dark only).
+
+---
+
+# Finance module "Broke-Assistant" (Windows): spec, awaiting vote
+
+Status: Phase 1 only. No app code written. Card: `VOTING_CARD.html`, `.claude/VOTING_CARD.md`. Rules: `.claude/rules/finance-engine.md`. Windows only (browser mode shows a notice); shared code stays Android-safe.
+
+## Audit (2026-11-27)
+- Already in the repo: `lib/bankStatement.ts` (CSV/OFX/QIF parse) and `lib/subscriptions.ts` (detection, cadence, `priceChange`, cancel guides) with `pages/Subscriptions.tsx`; only the detected list is kept in `settings.subscriptions`, never statement rows. Rust `secure_store.rs` already uses the `keyring` crate (Windows Credential Manager). `lib/recurrence.ts` expands recurring items. Glass theme already is Obsidian `#0B0E14` + cyan `#00F2FE`.
+- Not in the repo: SQLCipher, `tauri-plugin-sql`, `ring`, `zeroize`, Yjs, Tailwind. `tauri.conf.json` has `csp: null`. No `.claude/rules` for finance existed.
+- Finance engine goes in `src/lib/finance/` (pure, Vitest) and Rust `vault_core.rs`; UI in `src/components/finance/` + `src/pages/Finance.tsx`.
+
+## Conflicts to decide when voting
+1. **Boundary change.** `CLAUDE.md` says "Statement rows are never stored". A `transactions` table reverses that. Option A is your explicit word to change it (CLAUDE.md edited in Phase 2). Existing `settings.subscriptions` migrates into the vault.
+2. **CSP as written would break the app.** `connect-src 'self' ws://127.0.0.1:*` blocks weather, news, sports, Google, Microsoft, Claude, Gemini, Drive and the sync relay (they go through the web view), and `script-src 'self'` may block the mail sandbox frame. The pasted CSP also contains the text "[suspicious link removed]". Plan: ship a CSP allowlisting only the hosts the app already uses (list taken from `lib/*.ts`), tested in `tauri dev`; zero egress for finance is enforced in code (no network imports, a Vitest guard, no finance tools in `runClaude`), not by the CSP alone. [UNCERTAIN] whether a strict CSP is safe for `RichBody`; verify on Windows before release.
+3. **SQLCipher via `tauri-plugin-sql`.** [UNCERTAIN] that the plugin can issue `PRAGMA key` / link SQLCipher; verify before building. Plan: own Rust `vault` commands on `rusqlite` with a SQLCipher feature (blocking work in `spawn_blocking`). Risk: vendored OpenSSL on the Windows CI job (Perl/NASM). Fallback if CI fails: AES-256-GCM encrypted blob store with the same keychain key (stated, not silent).
+4. **KDF.** A random 256-bit key from `SystemRandom` stored in Credential Manager needs no PBKDF2; SQLCipher takes it raw (`PRAGMA key = "x'...'"`). 64,000 iterations only matters for a passphrase. Plan: raw key; optional passphrase mode derives with `ring::pbkdf2` (>= 600,000 iterations, 32-byte random salt) [PLAUSIBLE: OWASP guidance for PBKDF2-SHA256, confirm]. Say if you want passphrase mode in v1.
+5. **Yjs/CRDT: skipped.** Finance never syncs (zero egress), so no CRDT. Local single-writer only. **Tailwind: skipped**; the repo uses CSS tokens.
+6. **Palette and fonts.** Obsidian/Emerald/Cyan/Amber become existing theme tokens (Glass/Midnight); no new hex values (`calendar-ui.md`). JetBrains Mono for balances conflicts with the 2026-11-27 font change (numbers off monospace, `--font-num`); plan keeps `--font-num`. Say if you want mono for currency only.
+7. **No Yjs, no macOS/Linux keychains.** Only Windows (`keyring` `windows-native`) is built; macOS/Linux are not targets.
+8. **Weekend rule** as written: payday -> preceding Friday, bill -> following Monday. Money is integer cents.
+9. **Notifications** (3 days before trials/renewals) use a local-only scheduler; synced `Reminder` records would leak merchant names and amounts to Drive/relay.
+
+## Design (if Option A)
+- **Vault** (`src-tauri/src/vault_core.rs` + `vault.rs`): tables `accounts, transactions, subscriptions, budgets, savings_goals, schedules, meta(schema_version)`. File `finance.vault` in the app data dir. Key: 32 random bytes -> Credential Manager (`finance-vault-key`); `Zeroizing` buffers. Commands: `vault_open`, `vault_query`, `vault_exec`, `vault_export_wipe`; the key never crosses to JS.
+- **`cashflowEngine.ts`**: `project(accounts, schedules, range, buffer)` -> per-day `{ date, balanceCents, flags: low | overdraft, items[] }`; weekend shift keeps `due` and `effective`.
+- **`subscriptionTracker.ts`**: wraps `lib/subscriptions.ts`; adds hike rule `now > prev * 1.03` and alerts at renewal - 3 days.
+- **`budgetCalculator.ts`**: 50/30/20, zero-based envelopes, rollover, pace.
+- **UI**: bento dashboard, calendar overlay (projected balance chip per day, low/overdraft marks with icon + text).
+- **Checks**: Vitest for every pure module, no-egress guard, Rust standalone `cargo test`, `tsc`, `build`, Prettier, Playwright at 1280/412 px, Windows CI job.
+
+## Vote (record here)
+- [ ] 1 Option A: SQLCipher AES-256 + OS Keychain + zero egress + cash flow calendar + subscription auditor + Obsidian Bento UI (recommended)
+- [ ] 2 Option B: unencrypted local SQLite (no SQLCipher)

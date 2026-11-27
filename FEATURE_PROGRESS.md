@@ -74,6 +74,23 @@ Backlog, not voted: IMAP/SMTP (needs native Rust), push notifications (needs a s
 ## Weather: humidity per day (Nov 2026, ships as 0.3.5)
 - Done: average daily humidity (from Open-Meteo's hourly `relative_humidity_2m`) shown next to the temperature in the month cells, the week/day column headers, the Home forecast strip and today line, the day panel and the assistant's weather reply. Phone sizes stack it under the temperature. Checked in the real app with a synthetic forecast (the sandbox can't reach Open-Meteo): not seen with the live service.
 
+## 0c. Finance module "Broke-Assistant" (vote pending; design in `SPEC.md`, rules in `.claude/rules/finance-engine.md`)
+
+Phase 1 done (audit, rules, spec, voting card `VOTING_CARD.html`). **No app code yet; waiting for the vote.** Card: `.claude/VOTING_CARD.md`.
+- [ ] 1 Option A: SQLCipher AES-256 + OS Keychain + zero egress + cash flow calendar + subscription auditor + Obsidian Bento UI (recommended)
+- [ ] 2 Option B: unencrypted local SQLite (no SQLCipher)
+
+Open points in `SPEC.md` ("Conflicts to decide"): CSP would break existing services, `tauri-plugin-sql` + SQLCipher unverified, boundary "statement rows are never stored", mono font vs `--font-num`.
+
+| | Stage (after vote) | Verification |
+|---|---|---|
+| [ ] | F1 Vault: Rust `vault_core.rs`, key in Credential Manager, zeroize | standalone `cargo test`; Windows CI job |
+| [ ] | F2 `cashflowEngine.ts` + weekend rule + low-balance flags | Vitest (shifts, month ends, overdraft) |
+| [ ] | F3 `subscriptionTracker.ts` (3 % hike, 3-day alerts) | Vitest (1.03 boundary) |
+| [ ] | F4 `budgetCalculator.ts` (50/30/20, envelopes, pace) | Vitest (sums to income) |
+| [ ] | F5 `FinanceDashboard.tsx` + calendar overlay | Playwright 1280/412 px |
+| [ ] | F6 CSP + no-egress guard | Vitest guard; `tauri dev` on Windows |
+
 ## 0b. Drive sync (approved vote; design in `docs/DRIVE_SYNC.md`)
 
 Windows side and the shared engine first; Android joins next. Every stage also needs B1-B3 and B5.

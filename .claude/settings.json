@@ -1,23 +1,27 @@
 {
   "permissions": {
     "deny": [
-      "Read(./.env)",
-      "Read(./.env.local)",
-      "Read(./**/.env)",
-      "Read(./**/.env.local)",
-      "Read(./**/*.key)",
       "Read(./**/*.jks)",
-      "Read(./**/client_secret*.json)",
-      "Read(./**/*.p12)",
+      "Read(./**/*.key)",
       "Read(./**/*.keystore)",
-      "Read(./secrets/**)",
-      "Read(signing/*.p12)",
-      "Read(./signing/*.p12)",
-      "Read(./package-lock.json)",
+      "Read(./**/*.lock)",
+      "Read(./**/*.p12)",
+      "Read(./**/.env)",
+      "Read(./**/.env*)",
+      "Read(./**/.env.local)",
+      "Read(./**/client_secret*.json)",
+      "Read(./.env)",
+      "Read(./.env*)",
+      "Read(./.env.local)",
+      "Read(./build/**)",
       "Read(./dist/**)",
-      "Read(./src-tauri/target/**)",
+      "Read(./node_modules/**)",
+      "Read(./package-lock.json)",
+      "Read(./secrets/**)",
+      "Read(./signing/*.p12)",
       "Read(./src-tauri/gen/**)",
-      "Read(./node_modules/**)"
+      "Read(./src-tauri/target/**)",
+      "Read(signing/*.p12)"
     ]
   },
   "hooks": {
@@ -47,5 +51,8 @@
       }
     ]
   },
-  "outputStyle": "concise"
+  "outputStyle": "concise",
+  "env": {
+    "CLAUDE_CODE_SUBAGENT_MODEL": "haiku"
+  }
 }

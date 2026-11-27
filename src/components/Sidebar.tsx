@@ -26,6 +26,7 @@ import {
   ISport,
   ITasks,
   IRepeat,
+  IWallet,
 } from "./Icons";
 
 const META: Record<PageId, { label: string; icon: (p: { size?: number }) => React.JSX.Element }> = {
@@ -40,6 +41,7 @@ const META: Record<PageId, { label: string; icon: (p: { size?: number }) => Reac
   news: { label: "News", icon: INews },
   sports: { label: "Sports", icon: ISport },
   subscriptions: { label: "Subscriptions", icon: IRepeat },
+  finance: { label: "Finance", icon: IWallet },
   settings: { label: "Settings", icon: ICog },
 };
 

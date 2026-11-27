@@ -42,3 +42,14 @@ export interface ProjectedDay {
   flags: DayFlag[];
   items: CashItem[];
 }
+
+/** A spending envelope for the current month. `spentCents` is entered by hand until statement import is added. */
+export interface BudgetRow {
+  id: string;
+  name: string;
+  bucket: "needs" | "wants" | "savings";
+  cents: Cents; // monthly budget
+  spentCents: Cents;
+  carriedCents?: Cents; // unspent (or overspent) from last month
+  month: string; // yyyy-MM the spending belongs to
+}

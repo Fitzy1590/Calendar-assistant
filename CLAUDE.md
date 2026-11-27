@@ -27,7 +27,7 @@ modules standalone (copy into a scratch crate, `cargo test`) and rely on the Git
 
 - Never read, print, commit or log secrets: `.env*`, `*.key`, `*.jks`, `*.p12`, `*.keystore`, `client_secret*.json`, `secrets/**` (denied in `.claude/settings.json`).
 - Never merge a PR, publish a release or push to `main` unless the user asks in that conversation.
-- Mail and bank data stay on the device. Statement rows are never stored; mail bodies never sync or enter backups. Only redacted thread text may go to an AI, after the user has seen it.
+- Mail and bank data stay on the device. Mail bodies never sync or enter backups. Statement rows are never stored in settings, sync or backups; finance data (Finance page, voted Nov 2026) lives only in the encrypted vault: `.claude/rules/finance-engine.md`. Only redacted thread text may go to an AI, after the user has seen it.
 - Never send mail, cancel anything or sign in to a third party on the user's behalf without an explicit button press.
 - Don't edit `src-tauri/tauri.conf.json` signing/updater keys or `.github/workflows/build.yml` release logic without being asked.
 
@@ -46,6 +46,7 @@ src-tauri/src/      lib.rs (startup, plugins, tray), crash.rs, webview_fix.rs, b
 server/             sync-server.mjs: WebSocket relay, RSVP pages, CORS/price proxy
 scripts/ docs/ .github/workflows/build.yml   versioning, setup guides, CI + releases
 src/lib/subscriptions.ts + bankStatement.ts   bank statement scan; pages/Subscriptions.tsx
+src/lib/finance/ + components/finance/ + pages/Finance.tsx   cash flow, subscriptions, budgets; Rust vault_core.rs/vault.rs (SQLCipher)
 ```
 
 ## Architecture

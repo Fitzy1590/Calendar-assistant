@@ -84,12 +84,12 @@ Open points in `SPEC.md` ("Conflicts to decide"): CSP would break existing servi
 
 | | Stage (after vote) | Verification |
 |---|---|---|
-| [ ] | F1 Vault: Rust `vault_core.rs`, key in Credential Manager, zeroize | standalone `cargo test`; Windows CI job |
-| [ ] | F2 `cashflowEngine.ts` + weekend rule + low-balance flags | Vitest (shifts, month ends, overdraft) |
-| [ ] | F3 `subscriptionTracker.ts` (3 % hike, 3-day alerts) | Vitest (1.03 boundary) |
-| [ ] | F4 `budgetCalculator.ts` (50/30/20, envelopes, pace) | Vitest (sums to income) |
-| [ ] | F5 `FinanceDashboard.tsx` + calendar overlay | Playwright 1280/412 px |
-| [ ] | F6 CSP + no-egress guard | Vitest guard; `tauri dev` on Windows |
+| [~] | F1 Vault: Rust `vault_core.rs` (SQLCipher raw key, zeroize), `vault.rs` commands, key in Credential Manager, Android stub. DONE: core logic. NOT VERIFIED: `vault.rs`, `lib.rs`, Cargo changes (need the Windows and Android CI jobs; vendored OpenSSL on Windows is the risk; fallback in SPEC) | standalone `cargo test` (7 passing: round trip, file not plain SQLite, wrong/missing key leaves file alone, table whitelist, atomic import, erase) |
+| [x] | F2 `cashflowEngine.ts` + weekend rule + low-balance flags | `cashflowEngine.test.ts` (shifts, month ends, overdraft, buffer edge) |
+| [x] | F3 `subscriptionTracker.ts` (3 % hike, 3-day alerts, local notifications via `alerts.ts` when Finance is on) | `subscriptionTracker.test.ts` (1.03 boundary, year end) |
+| [x] | F4 `budgetCalculator.ts` (50/30/20, zero-based, rollover, pace) | `budgetCalculator.test.ts` (sums to income) |
+| [~] | F5 `Finance.tsx` + `FinanceDashboard.tsx`: accounts, bills/paydays, chart, low/overdraft days, subscriptions, envelopes with pace. NOT DONE: calendar overlay, statement import into `transactions`, savings goals screen, zero-based screen | Playwright 1280/412 px with a mocked vault (no scroll, no errors); real vault untested |
+| [~] | F6 no-egress guard DONE (`noEgress.test.ts`). CSP NOT DONE: needs a Windows `tauri dev` run to list real hosts without breaking the app | Vitest guard; `tauri dev` on Windows |
 
 ## 0b. Drive sync (approved vote; design in `docs/DRIVE_SYNC.md`)
 

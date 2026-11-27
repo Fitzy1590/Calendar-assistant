@@ -88,3 +88,9 @@ export function project(
   }
   return days;
 }
+
+/** Average monthly amount of a repeating item (0 for a one-off), rounded to the cent. */
+export function monthlyEquivalent(cents: number, every: Every): number {
+  const per = { once: 0, weekly: 52 / 12, fortnightly: 26 / 12, monthly: 1, yearly: 1 / 12 }[every];
+  return Math.round(cents * per);
+}

@@ -49,6 +49,7 @@ export const DEFAULT_SETTINGS: Settings = {
   sync: { shareSettings: true, enabled: false, serverUrl: "", pairingCode: pairingCode(), deviceName: "" },
   phone: { route: "companion" },
   subscriptions: { items: [], cancelled: {} },
+  finance: { enabled: false, bufferCents: 25000 },
   assistant: { provider: "local", apiKey: "", geminiKey: "", geminiModel: "gemini-2.5-flash", voiceLang: "en-AU", speakReplies: false },
   email: {
     googleClientId: "",
@@ -73,6 +74,7 @@ export const DEFAULT_SETTINGS: Settings = {
       "notes",
       "shopping",
       "subscriptions",
+      "finance",
       "reminders",
       "contacts",
       "news",

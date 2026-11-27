@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { dueDates, expand, project, shiftWeekend } from "./cashflowEngine";
+import { dueDates, expand, monthlyEquivalent, project, shiftWeekend } from "./cashflowEngine";
 import type { FinAccount, Schedule } from "./types";
 
 // 2026-12-05 is a Saturday, 12-06 Sunday, 12-11 Friday, 12-12 Saturday, 12-13 Sunday, 12-14 Monday.
@@ -35,17 +35,19 @@ describe("dueDates", () => {
     expect(dueDates(s, "2026-01-01", "2026-04-30")).toEqual(["2026-01-31", "2026-02-28", "2026-03-31", "2026-04-30"]);
   });
   it("fortnightly, once, until", () => {
-    expect(dueDates(sched({ id: "p", kind: "income", cents: 1, start: "2026-12-04", every: "fortnightly" }), "2026-12-01", "2027-01-10")).toEqual([
-      "2026-12-04",
-      "2026-12-18",
-      "2027-01-01",
-    ]);
-    expect(dueDates(sched({ id: "o", kind: "bill", cents: 1, start: "2026-12-04", every: "once" }), "2026-12-05", "2026-12-31")).toEqual([]);
-    expect(dueDates(sched({ id: "u", kind: "bill", cents: 1, start: "2026-12-01", every: "weekly", until: "2026-12-15" }), "2026-12-01", "2026-12-31")).toEqual([
-      "2026-12-01",
-      "2026-12-08",
-      "2026-12-15",
-    ]);
+    expect(
+      dueDates(sched({ id: "p", kind: "income", cents: 1, start: "2026-12-04", every: "fortnightly" }), "2026-12-01", "2027-01-10"),
+    ).toEqual(["2026-12-04", "2026-12-18", "2027-01-01"]);
+    expect(dueDates(sched({ id: "o", kind: "bill", cents: 1, start: "2026-12-04", every: "once" }), "2026-12-05", "2026-12-31")).toEqual(
+      [],
+    );
+    expect(
+      dueDates(
+        sched({ id: "u", kind: "bill", cents: 1, start: "2026-12-01", every: "weekly", until: "2026-12-15" }),
+        "2026-12-01",
+        "2026-12-31",
+      ),
+    ).toEqual(["2026-12-01", "2026-12-08", "2026-12-15"]);
   });
 });
 
@@ -97,5 +99,13 @@ describe("project", () => {
     const b: FinAccount = { id: "b", name: "Savings", openingCents: 500000, asOf: "2026-11-27" };
     expect(project([acct, b], [], "2026-12-01", "2026-12-01", 0)[0].balanceCents).toBe(642000);
     expect(project([acct, b], [], "2026-12-01", "2026-12-01", 0, "b")[0].balanceCents).toBe(500000);
+  });
+});
+
+describe("monthlyEquivalent", () => {
+  it("averages repeating items and ignores one-offs", () => {
+    expect(monthlyEquivalent(1200, "yearly")).toBe(100);
+    expect(monthlyEquivalent(100000, "fortnightly")).toBe(216667);
+    expect(monthlyEquivalent(500, "once")).toBe(0);
   });
 });

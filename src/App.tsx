@@ -27,6 +27,7 @@ import { Reminders } from "./pages/Reminders";
 import { News } from "./pages/News";
 import { Sports } from "./pages/Sports";
 import { Subscriptions } from "./pages/Subscriptions";
+import { Finance } from "./pages/Finance";
 import { Settings } from "./pages/Settings";
 import { Notes } from "./pages/Notes";
 import { Shopping } from "./pages/Shopping";
@@ -42,6 +43,7 @@ import { startMailPolling } from "./lib/mail/engine";
 import { fontStack } from "./lib/fonts";
 import { accentText, readableOn, resolveAccent } from "./lib/themes";
 import { checkTrackedPrices } from "./lib/shopping";
+import { runFinanceAlerts } from "./lib/finance/alerts";
 
 const PAGES = {
   home: Home,
@@ -55,6 +57,7 @@ const PAGES = {
   news: News,
   sports: Sports,
   subscriptions: Subscriptions,
+  finance: Finance,
   settings: Settings,
 };
 
@@ -102,6 +105,7 @@ function useBackground() {
           .then((n) => sh.notifyDrops && n.forEach((m) => notify("Price drop", m)))
           .catch(() => {});
       dailyBackups();
+      if (useStore.getState().settings.finance.enabled) void runFinanceAlerts().catch(() => {});
     };
     tickReminders();
     tickSync();

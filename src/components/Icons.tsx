@@ -57,6 +57,11 @@ export const IFullscreen = (p: P) => (
     <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" />
   </S>
 );
+export const IWallet = (p: P) => (
+  <S {...p}>
+    <path d="M3 7a2 2 0 0 1 2-2h13v4M3 7v10a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1V10a1 1 0 0 0-1-1H5a2 2 0 0 1-2-2zM17 14h.01" />
+  </S>
+);
 export const IRepeat = (p: P) => (
   <S {...p}>
     <path d="M17 2l4 4-4 4M3 11V9a3 3 0 0 1 3-3h15M7 22l-4-4 4-4M21 13v2a3 3 0 0 1-3 3H3" />

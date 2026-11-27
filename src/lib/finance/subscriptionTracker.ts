@@ -13,6 +13,7 @@ export interface SubRecord {
   cadence: Subscription["cadence"];
   nextDate: string;
   trialEnds?: string;
+  notified?: string[]; // alert ids already shown on this PC
 }
 
 export const ALERT_DAYS = 3;

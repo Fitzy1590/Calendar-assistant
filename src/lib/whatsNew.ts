@@ -13,6 +13,14 @@ export interface WhatsNewEntry {
 
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    version: "0.3.7",
+    title: "Easier reading in Email",
+    points: [
+      "The email page now scrolls as one page, and the action bar no longer follows you down a message.",
+      "New Unread only button: opening a message marks it seen and clears it from that list. Windows only.",
+    ],
+  },
+  {
     version: "0.3.6",
     title: "Four new colour themes",
     points: [

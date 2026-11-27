@@ -213,3 +213,10 @@ Windows side and the shared engine first; Android joins next. Every stage also n
 
 | [x] | **Phase 1: audit, SPEC §10, voting card**: VOTED Option A (Material Glass HUD + Bento) | Open the card; reply 1, 2, 3 or a tweak; chosen option is ticked here and in SPEC §10 |
 | [x] | **Phase 2 (Glass theme, voted A)**: new dark Glass theme (picker, assistant, AA-tested); glass cards/bars with blur, glow on today and quick add, Space Grotesk numerals and Outfit headings, zero transitions, `--sp-1..5` spacing, 2 px icon stroke, bento Home/Tasks spacing (dense grid, 16 px gaps); top bar with date, sync pill and 1-tap + (new event next hour); **month grid keyboard + ARIA** (grid/row/gridcell, roving focus, arrows, Home/End, PgUp/PgDn, Enter selects; the global arrow shortcut skips the grid); rule file updated; `outputStyle: concise` (`.claude/output-styles/concise.md`) and Stop hook now runs `npm run build` (first 50 lines on failure); What's new 0.3.7 | `themes.test.ts` (73), full `npm test` (431), `tsc`, `build`, Prettier; Playwright at 1280 px and 412 px (Home, Calendar week and month, Tasks); keyboard walk of the month grid and the + exercised. NOT DONE: Windows tray drawer (Rust, can't be built or checked here), light-theme versions of the glass look, other pages (Email, Notes, Shopping) only get the glass surfaces, no bespoke bento; the sync pill shows relay/Drive status only (no Yjs/P2P) |
+
+---
+
+## 20-theme suite (Windows): Phase 1 done 2026-11-27, **waiting for vote**
+- Audit + conflicts in `SPEC.md` ("20-theme suite"); `VOTING_CARD.html` and `.claude/VOTING_CARD.md` replace the earlier Glass/Bento card (history in git).
+- Vote: none yet. Existing themes already covering the list: Glass, OLED, Nord, High contrast.
+- Phase 2 (after vote): add chosen `[data-theme]` blocks + `THEME_ACCENTS` + `ThemeName`, top-bar 1-tap theme control, contrast tests in `themes.test.ts`, rule updates, `.claude/rules/theme-engine.md`, `tauri-windows.md`, What's new entry.
